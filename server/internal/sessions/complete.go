@@ -707,6 +707,7 @@ func (s *Service) inbox(ctx context.Context, tx pgx.Tx, wsID, userID uuid.UUID, 
 const (
 	TypeWorkPaused    = inbox.TypeWorkPaused
 	TypeWorkCompleted = inbox.TypeWorkCompleted
+	TypeWorkIdle      = inbox.TypeWorkIdle
 )
 
 // WorkInbox puts a mission item (work_paused · work_completed) in the

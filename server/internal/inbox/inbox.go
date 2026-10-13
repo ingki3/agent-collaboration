@@ -36,6 +36,12 @@ const (
 	TypeWorkProposed  = "work_proposed"
 	TypeWorkPaused    = "work_paused"
 	TypeWorkCompleted = "work_completed"
+	// TypeWorkIdle is FR-2A.2.1b (Director 결정 2026-10-13): a mission whose
+	// open lanes hit zero without ever raising a completion approval request
+	// (no artifact submit/review/condition-change event ever fired one) gets
+	// this safety-net notice instead of sitting silently forever. ref_id is
+	// the system message that explains the mission's current state.
+	TypeWorkIdle = "work_idle"
 )
 
 // Recipient bases (InboxItem.recipient_basis) — the card's 「Director 로서」·
@@ -71,7 +77,7 @@ func Severity(itemType string) string {
 	case TypeHitlRequest, TypeLaneBlocked,
 		TypeRoomPaused, TypeWorkPaused, TypeIsolationConfirm:
 		return ActionRequired
-	case TypeRunFailed, TypeRuntimeOffline, TypeWorkdirGCBlocked, TypeWorkdirQuota, TypeWorkProposed:
+	case TypeRunFailed, TypeRuntimeOffline, TypeWorkdirGCBlocked, TypeWorkdirQuota, TypeWorkProposed, TypeWorkIdle:
 		return Attention
 	case TypeMention, TypeRoomInvited, TypeWorkCompleted:
 		return Info
@@ -136,7 +142,7 @@ func Actions(itemType, hitlType string, canRespond bool) []string {
 		// A room-level card (openapi 0.2.1): the room, not a mission, is what
 		// opens. A proposal is not a mission yet.
 		return []string{"open_room"}
-	case TypeWorkPaused, TypeWorkCompleted:
+	case TypeWorkPaused, TypeWorkCompleted, TypeWorkIdle:
 		return []string{"open_work"}
 	}
 	return []string{"open_session"}

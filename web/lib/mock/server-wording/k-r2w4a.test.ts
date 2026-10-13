@@ -1,6 +1,6 @@
 /**
  * 목 문장 ↔ 서버 문장 대조 (k) T-R2-W4a — S8 방 층 승인 · S15 활동 로그 · 알림 구독 3층의 문장은 `R4_SERVER`(r2w4a-wording.ts)에서만 오고,
- * 각 항목은 `server/<at>` 소스에 **글자 단위로** 있다. 인박스 표(심각도·동작)는 서버 `internal/inbox/inbox.go` 를 읽어 15종 전부 대조한다 —
+ * 각 항목은 `server/<at>` 소스에 **글자 단위로** 있다. 인박스 표(심각도·동작)는 서버 `internal/inbox/inbox.go` 를 읽어 16종 전부 대조한다 —
  * 목이 옛 7종 표에 머물면 새 타입이 `info` 로 떨어져 뱃지가 틀린다(W4a 에서 실제로 그랬다: work_proposed·room_paused 가 info 였다).
  */
 import { readFileSync } from "node:fs";
@@ -60,7 +60,7 @@ describe("(k) R4_SERVER 표의 문장은 server/ 소스의 그 파일에 글자 
   });
 });
 
-describe("(k) 인박스 표 — 목 inboxSeverity·inboxActions 가 서버 inbox.Severity·Actions 와 15종 전부 같다", () => {
+describe("(k) 인박스 표 — 목 inboxSeverity·inboxActions 가 서버 inbox.Severity·Actions 와 16종 전부 같다", () => {
   it("계약 enum 의 타입 전부를 서버가 분류한다", () => {
     const consts = Object.values(goTypeConsts());
     for (const t of CONTRACT_TYPES) expect(consts, t).toContain(t);

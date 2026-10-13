@@ -194,6 +194,12 @@ func NewServer(d Deps) *Server {
 		if _, err := srv.Sessions.SettleQuiet(context.WithoutCancel(ctx), workID); err != nil {
 			d.Log.Warn("settle approval quiet", "err", err, "work", workID)
 		}
+		// FR-2A.2.1b: the safety net for a mission whose completion tree
+		// never gets re-read because nobody fires a qualifying event. A
+		// no-op whenever the formal approval flow above already applies.
+		if _, err := srv.Sessions.NotifyMissionIdle(context.WithoutCancel(ctx), workID); err != nil {
+			d.Log.Warn("notify mission idle", "err", err, "work", workID)
+		}
 	}
 	// T-QUIET: the progress line 「에이전트끼리의 새 작업 N건을 멈춰 두었습니다」
 	// moves with every hold and release the router makes.
