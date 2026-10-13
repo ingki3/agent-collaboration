@@ -635,7 +635,10 @@ func Load(ctx context.Context, q db.DBTX, id uuid.UUID, caller *uuid.UUID) (*gen
 		       a.avatar_url, a.budget_per_task, a.max_concurrent_tasks, a.definition_source, a.definition_version, a.archived_at, a.created_at, a.updated_at,
 		       u.id, u.email, u.display_name, u.avatar_url, u.created_at,
 		       EXISTS (SELECT 1 FROM task t WHERE t.agent_id = a.id AND t.status IN ('dispatched','preparing','running')),
-		       EXISTS (SELECT 1 FROM task t WHERE t.agent_id = a.id AND t.status = 'waiting_human'),
+		       -- FR-1.3b (2026-10-13): only while it is its own lane's most
+		       -- recent task — same fix, same reason, as sessions.AgentStatuses.
+		       EXISTS (SELECT 1 FROM task t WHERE t.agent_id = a.id AND t.status = 'waiting_human'
+		                 AND NOT EXISTS (SELECT 1 FROM task t2 WHERE t2.lane_id = t.lane_id AND t2.created_at > t.created_at)),
 		       `+tasks.LastFailureKindSQL("")+`,
 		       -- FR-1.3 step 3 never fires while the server is re-queueing the
 		       -- failed task (attempt >= 2 back in the queue), including onto an
