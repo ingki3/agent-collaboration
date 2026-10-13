@@ -167,6 +167,39 @@ describe("타입별 입력부(FR-5.1 · SCREEN §2.3 C4)", () => {
     expect(screen.queryByTestId("hitl-budget-input")).toBeNull();
     expect((screen.getByTestId("hitl-reject") as HTMLButtonElement).disabled).toBe(true);
   });
+
+  // ── choice: 제안 목록 밖의 내 의견 — 셀렉트만으로는 쓸 수 없던 자리 ────────
+  const CHOICE_OPTIONS = ["E→A: 부티크로 시작해 제품화 (추천)", "A만: SaaS 제품", "B: IR 검증 SaaS"];
+
+  it("options 가 있으면 셀렉트 끝에 '직접 입력'이 더해진다 — 목록이 지워지지 않는다", () => {
+    render(<HitlCard request={req({ type: "choice", options: CHOICE_OPTIONS, proposed_default: CHOICE_OPTIONS[0] })} onRespond={vi.fn()} />);
+    const select = screen.getByTestId("hitl-choice") as HTMLSelectElement;
+    const values = [...select.options].map((o) => o.value);
+    expect(values).toEqual([...CHOICE_OPTIONS, "__custom__"]);
+    expect(screen.queryByTestId("hitl-choice-custom")).toBeNull();
+  });
+
+  it("'직접 입력'을 고르면 글칸이 나오고, 비워 두면 보내기가 막힌다(제안값으로 조용히 넘어가지 않는다)", () => {
+    const onRespond = vi.fn();
+    render(<HitlCard request={req({ type: "choice", options: CHOICE_OPTIONS, proposed_default: CHOICE_OPTIONS[0] })} onRespond={onRespond} />);
+    fireEvent.change(screen.getByTestId("hitl-choice"), { target: { value: "__custom__" } });
+    const input = screen.getByTestId("hitl-choice-custom") as HTMLTextAreaElement;
+    expect(input).toBeTruthy();
+    expect((screen.getByTestId("hitl-answer") as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(input, { target: { value: "둘 다 아니고, C를 재검토해 주세요" } });
+    expect((screen.getByTestId("hitl-answer") as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(screen.getByTestId("hitl-answer"));
+    expect(onRespond).toHaveBeenCalledWith({ answer: "둘 다 아니고, C를 재검토해 주세요" });
+  });
+
+  it("제안 목록 중 하나를 그대로 고르면 그 문자열 그대로 나간다(custom 글칸은 안 보인다)", () => {
+    const onRespond = vi.fn();
+    render(<HitlCard request={req({ type: "choice", options: CHOICE_OPTIONS, proposed_default: CHOICE_OPTIONS[0] })} onRespond={onRespond} />);
+    fireEvent.change(screen.getByTestId("hitl-choice"), { target: { value: CHOICE_OPTIONS[1] } });
+    expect(screen.queryByTestId("hitl-choice-custom")).toBeNull();
+    fireEvent.click(screen.getByTestId("hitl-answer"));
+    expect(onRespond).toHaveBeenCalledWith({ answer: CHOICE_OPTIONS[1] });
+  });
 });
 
 describe("상태 4종(계약 HitlStatus)", () => {
