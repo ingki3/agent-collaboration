@@ -71,13 +71,33 @@ const (
 	HeartbeatExpiry   = 3 * time.Minute
 	DispatchedTimeout = 5 * time.Minute
 	StallTimeout      = 3 * time.Minute
-	CancelDrainWait   = 30 * time.Second // FR-3.4: wait for an in-flight edit/shell before cancelling
-	CancelPromptWait  = 10 * time.Second
-	KillAfterTerm     = 10 * time.Second
-	HermesQuietWait   = 250 * time.Millisecond // PRD §8.2.5
-	ClaimMaxWait      = 30 * time.Second
-	RateLimitFallback = 30 * time.Minute // not_before when the reset time cannot be parsed
+	// StallTimeoutHermes (harness.md §7, 2026-10-13 실사용 결함) — hermes 는
+	// claude_code 의 원시 스트림(§9 usage_midturn)에 해당하는, stall 감시가
+	// 언제나 믿을 수 있는 활동 신호가 없다. 코드상 reasoning summary 델타가
+	// ACP session/update 까지 연결돼 있지만(어댑터 버전·모델 계열에 따라
+	// 실제로 오는지 실측하지 못했다 — 백로그 D-26), 와도 안 와도 작업은
+	// 끝까지 간다(재시도 뒤 성공). 신호가 없을 때 3분은 긴 사고 구간에서
+	// 너무 자주 끊었으므로 hermes 만 더 느긋하게 본다. 근본 수정(실제
+	// 활동 신호를 확인하거나 어댑터에 keepalive 를 요청하는 것)은 따로.
+	StallTimeoutHermes = 10 * time.Minute
+	CancelDrainWait    = 30 * time.Second // FR-3.4: wait for an in-flight edit/shell before cancelling
+	CancelPromptWait   = 10 * time.Second
+	KillAfterTerm      = 10 * time.Second
+	HermesQuietWait    = 250 * time.Millisecond // PRD §8.2.5
+	ClaimMaxWait       = 30 * time.Second
+	RateLimitFallback  = 30 * time.Minute // not_before when the reset time cannot be parsed
 )
+
+// StallTimeoutFor — harness.md §7/§8: the stall watch's no-activity threshold
+// per runtime kind. hermes gets a longer one (StallTimeoutHermes) because it
+// has no activity channel as reliable as claude_code's always-on raw stream;
+// every other kind (including an empty/unknown one) keeps StallTimeout.
+func StallTimeoutFor(kind RuntimeKind) time.Duration {
+	if kind == RuntimeHermes {
+		return StallTimeoutHermes
+	}
+	return StallTimeout
+}
 
 // RuntimeSessionRef — lane.runtime_session_ref (harness.md §6).
 type RuntimeSessionRef struct {

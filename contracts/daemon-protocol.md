@@ -115,7 +115,7 @@ POST /v1/daemon/runtimes/{runtime_id}/claim
   "prompt": "<턴 프롬프트 — 서버가 만든다. 재개면 <resumed> 구간 포함. v0.10.3: resume 이 있으면 델타(harness §10)>",
   "prompt_cold?": "<v0.10.3 — 같은 순간의 전체 턴 프롬프트. resume 이 있고 델타를 지었을 때만>",
   "resume": { "runtime_session_ref": <harness.md §6> } | null,   // v0.10.3: 서버의 재개 결정. null 이면 session/load 없이 새 세션
-  "limits": { "budget_usd", "stall_seconds": 180 },
+  "limits": { "budget_usd", "stall_seconds": 180 },  // 런타임별 값은 harness.md §7(claude_code 180·hermes 600)
   "posted_message_ids": [ … ]      // attempt ≥ 2일 때, 이미 게시한 메시지(FR-7.1)
 }
 ```
@@ -223,7 +223,7 @@ POST /v1/daemon/tasks/{task_id}/attempts/{attempt}/finish
 | `task_token` | **빈 문자열.** 데몬은 토큰이 없으면 `COLAB_*` 환경 변수를 넣지 않고, `mcpServers` 를 싣지 않고, hermes 래퍼 실행 파일(harness §10)도 만들지 않는다 — 에이전트는 메시지 게시·위임·HITL 을 **할 수 없고 순수 응답만** 한다(FR-1.8.1, E15-03). 브리프도 서버가 `[2]`(colab 명령) 없이 만든다 |
 | `workdir` | `{kind: "dir", path: "<workdir_root>/.colab/testchat/<test_chat_id>", reuse: true}` — 데몬이 첫 턴에 `mkdir -p`. 저장소 체크아웃·worktree·container 를 쓰지 않는다 |
 | `prompt` | 사용자 턴 본문 그대로(첫 턴은 서버가 "이것은 시험 대화다 — 플랫폼 명령은 쓸 수 없다" 한 줄을 앞에 붙인다). 방 히스토리는 없다 — 이전 턴은 `resume` 으로 이어진다 |
-| `limits` | `{budget_usd: <agent.budget_per_task>, stall_seconds: 180}` |
+| `limits` | `{budget_usd: <agent.budget_per_task>, stall_seconds: 180}` — 런타임별 값은 harness.md §7(claude_code 180·hermes 600) |
 
 **보고**: 데몬은 §4.2 그대로 보낸다. 서버는 테스트 채팅에 활동 피드가 없으므로 `task_event` 를 **저장하지 않고** 다음만 소비한다 — `message.say`(턴 단위로 합친 것) → 그 턴의 `agent` 응답 본문(openapi `TestChatTurn`), `usage.report`·`finish.usage` → `test_chat.input_tokens/output_tokens/cost_usd`(추정 규칙은 방과 같다; 워크스페이스 집계 `test_chat_usd`), heartbeat `preview.text` → SSE `test_chat.delta`. `finish` 가 오면 SSE `test_chat.turn`. `failed` 면 그 턴의 `error` 에 `failure_kind` 를 §8.4 문장으로 적는다(턴은 남고 채팅은 열려 있다).
 
