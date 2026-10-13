@@ -43,6 +43,8 @@ describe("심각도 배지 — 글리프는 심각도, 색은 원인 상태(리�
       work_completed: "done",
       room_invited: "run",
       workdir_quota: "block",
+      // FR-2A.2.1b(2026-10-13) — 조용해졌을 뿐 끝났다고 판정된 게 아니다, done 의 초록이 아니다(N5).
+      work_idle: "neutral",
     });
     // 같은 `action_required` 인데 색이 다르다 — 그것이 규칙의 요점이다.
     expect(TONE_BY_TYPE.hitl_request).not.toBe(TONE_BY_TYPE.lane_blocked);
@@ -58,9 +60,9 @@ describe("심각도 배지 — 글리프는 심각도, 색은 원인 상태(리�
     expect(badge.textContent).toContain("▲");
   });
 
-  it("13종 이름표가 모두 있다(P4 workdir_gc_blocked · v0.2.0 방·미션 7종 포함 · v0.3.0 R4 에서 session_completed·session_paused 삭제)", () => {
+  it("14종 이름표가 모두 있다(P4 workdir_gc_blocked · v0.2.0 방·미션 7종 포함 · v0.3.0 R4 에서 session_completed·session_paused 삭제 · FR-2A.2.1b work_idle)", () => {
     expect(Object.keys(TYPE_LABEL).sort()).toEqual(
-      ["hitl_request", "isolation_confirm", "lane_blocked", "mention", "room_invited", "room_paused", "run_failed", "runtime_offline", "work_completed", "work_paused", "work_proposed", "workdir_gc_blocked", "workdir_quota"],
+      ["hitl_request", "isolation_confirm", "lane_blocked", "mention", "room_invited", "room_paused", "run_failed", "runtime_offline", "work_completed", "work_idle", "work_paused", "work_proposed", "workdir_gc_blocked", "workdir_quota"],
     );
   });
 });

@@ -1,0 +1,12 @@
+-- 0048_inbox_work_idle.sql — 인박스 항목 `work_idle` (Director 결정 2026-10-13)
+--
+-- 완료 조건이 `user_approval` 하나뿐인 미션은 아티팩트 제출·리뷰·조건 수정
+-- 같은 사건이 한 번도 없으면 완료 승인 요청이 평생 안 뜬다(실사용 「1인
+-- 창업 사업 계획서 작성」 방 — lane 이 전부 끝났는데도 hitl_request 0행).
+-- 그 공백의 안전판: 미션의 열린 lane 이 0 이 되는 순간(이미 승인 대기 중이면
+-- 건너뜀) Director 에게 알린다. 계약 `InboxItemType` 에도 같은 값이
+-- 추가된다(Lead 계약 PR). 쓰는 쪽은 코드(sessions.Service.NotifyMissionIdle).
+--
+-- 0017 과 같은 이유로 이 파일엔 이 문장 하나만 있다: 새 enum 값은 그것을
+-- 추가한 트랜잭션 안에서 쓸 수 없다.
+ALTER TYPE inbox_item_type ADD VALUE IF NOT EXISTS 'work_idle';

@@ -47,6 +47,8 @@ export const TYPE_LABEL: Record<ItemType, string> = {
   work_completed: "미션 완료",
   room_invited: "방 초대",
   workdir_quota: "작업 폴더 용량 초과",
+  // FR-2A.2.1b(Director 결정 2026-10-13) — 열린 lane 이 0 이 됐지만 완료 승인 요청이 아직 안 뜬 미션의 안내.
+  work_idle: "미션 조용해짐",
 };
 
 /**
@@ -69,6 +71,8 @@ export const TONE_BY_TYPE: Record<ItemType, Tone> = {
   work_completed: "done",
   room_invited: "run",
   workdir_quota: "block",
+  // idle 은 done 의 초록이 아니다(N5) — 조용해졌을 뿐 끝났다고 판정된 게 아니다.
+  work_idle: "neutral",
 };
 
 /** 버튼 라벨(COMPONENTS §2.4 표 · SCREEN §4.6 인라인 동작). `restart` 는 "다시 지시"다 — 재시도가 아니다(리뷰 #01 C4). */

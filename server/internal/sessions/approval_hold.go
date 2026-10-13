@@ -2,6 +2,7 @@ package sessions
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -141,4 +142,78 @@ func (s *Service) SettleQuiet(ctx context.Context, workID uuid.UUID) (bool, erro
 		return false, err
 	}
 	return changed, nil
+}
+
+// NotifyMissionIdle is FR-2A.2.1b (Director 결정 2026-10-13): the safety net
+// for a mission whose completion tree never gets re-read because nobody ever
+// fires a qualifying event (artifact submit, review, condition change). Real
+// incident (「1인 창업 사업 계획서 작성」 방, 2026-10-13): every lane settled,
+// cards reported, but nobody called `colab artifact submit`, so
+// ApplyWorkEvent never ran once and the mission's user_approval request
+// (its only completion atom) sat unraised forever.
+//
+// This does NOT touch completion state — it only READS the tree (Satisfied /
+// needsUserApproval, same pure functions ApplyWorkEvent uses) to word the
+// notice, then posts a system message and a `work_idle` inbox item. It never
+// writes completion_met, never opens a hitl_request, and is a pure no-op
+// while the formal approval flow (FR-2A.2.1~.3) is already handling things:
+// held (`approval_held_at`) or an open `user_approval` request both skip it.
+//
+// Cheap when nothing applies (one indexed-ish read), so the task layer calls
+// it after every task that ends, beside ReleaseHeldApproval and SettleQuiet.
+func (s *Service) NotifyMissionIdle(ctx context.Context, workID uuid.UUID) (bool, error) {
+	var wsID, sessionID, director uuid.UUID
+	var raw, metRaw []byte
+	var due bool
+	err := s.DB.QueryRow(ctx, `
+		SELECT w.room_id, r.workspace_id, w.director_user_id, w.completion_condition, w.completion_met,
+		       w.status = 'active' AND w.approval_held_at IS NULL AND NOT `+busyTaskSQL+`
+		           AND NOT EXISTS (SELECT 1 FROM hitl_request h WHERE h.work_id = w.id AND h.source = 'system'
+		                             AND h.purpose = 'user_approval' AND h.status = 'open')
+		           AND NOT EXISTS (SELECT 1 FROM inbox_item i WHERE i.work_id = w.id AND i.type = 'work_idle' AND i.read_at IS NULL)
+		FROM work w JOIN room r ON r.id = w.room_id WHERE w.id = $1`,
+		workID).Scan(&sessionID, &wsID, &director, &raw, &metRaw, &due)
+	if errors.Is(err, pgx.ErrNoRows) || (err == nil && !due) {
+		return false, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("sessions: mission idle: %w", err)
+	}
+
+	met := map[string]bool{}
+	_ = json.Unmarshal(metRaw, &met)
+	// Satisfied/needsUserApproval only read Condition.Type, never .Agent, so
+	// the assignee resolution ApplyWorkEvent does before evaluating is not
+	// needed here — this is wording only, never a namesActor() call.
+	tree := ParseTree(raw)
+	body := "위임된 작업이 모두 끝나 미션이 조용해졌습니다.\n"
+	switch {
+	case Satisfied(tree, met):
+		// Vanishingly rare here (Satisfied without user_approval would have
+		// completed the mission already through the normal path) but kept
+		// honest rather than asserting it cannot happen.
+		body += "완료 조건은 이미 다 찼습니다."
+	case needsUserApproval(tree, met):
+		body += "완료 조건은 승인만 남았습니다 — 끝났다고 보시면 미션을 끝내 주세요."
+	default:
+		body += "완료 조건은 아직 안 찼습니다(예: 아티팩트 제출) — 다음 행동을 정해 주세요."
+	}
+
+	tx, err := s.DB.Begin(ctx)
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = tx.Rollback(context.WithoutCancel(ctx)) }()
+	if s.Router != nil {
+		if _, err := s.Router.SystemPostWork(ctx, tx, sessionID, &workID, body); err != nil {
+			return false, fmt.Errorf("sessions: mission idle notice: %w", err)
+		}
+	}
+	if err := WorkInboxItem(ctx, tx, wsID, director, TypeWorkIdle, sessionID, workID, s.Clock.Now()); err != nil {
+		return false, err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return false, err
+	}
+	return true, nil
 }

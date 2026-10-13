@@ -1586,6 +1586,7 @@ export function inboxSeverity(type: InboxItem["type"]): InboxItem["severity"] {
     case "workdir_gc_blocked":
     case "workdir_quota":
     case "work_proposed":
+    case "work_idle":
       return "attention";
     default:
       return "info";
@@ -1623,6 +1624,7 @@ export function inboxActions(type: InboxItem["type"], hitlType: string | undefin
       return ["open_room"];
     case "work_paused":
     case "work_completed":
+    case "work_idle":
       return ["open_work"];
     default:
       return ["open_session"];
