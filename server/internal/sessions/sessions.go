@@ -110,7 +110,18 @@ func AgentStatuses(ctx context.Context, q db.DBTX, roomID uuid.UUID, agentID *uu
 	rows, err := q.Query(ctx, `
 		SELECT a.id, a.respond_to, a.archived_at IS NOT NULL,
 		       EXISTS (SELECT 1 FROM task t WHERE t.agent_id = a.id AND t.session_id = sp.room_id AND t.status IN ('dispatched','preparing','running')),
-		       EXISTS (SELECT 1 FROM task t WHERE t.agent_id = a.id AND t.session_id = sp.room_id AND t.status = 'waiting_human'),
+		       -- FR-1.3b (2026-10-13, 실사용 사고): a waiting_human task only
+		       -- drives the chip while it is its OWN LANE's most recent task.
+		       -- A person who answers an open question with a plain chat
+		       -- mention instead of the card's "답변" button leaves that task
+		       -- stuck in waiting_human forever while the lane moves on with
+		       -- newer tasks — without this, the chip reads "승인 대기" long
+		       -- after the lane finished, with nothing left to approve. The
+		       -- request and the task itself are untouched (FR-1.9 M8: a
+		       -- person's unanswered question is never the agent's to lose) —
+		       -- only the CHIP looks past a superseded one.
+		       EXISTS (SELECT 1 FROM task t WHERE t.agent_id = a.id AND t.session_id = sp.room_id AND t.status = 'waiting_human'
+		                 AND NOT EXISTS (SELECT 1 FROM task t2 WHERE t2.lane_id = t.lane_id AND t2.created_at > t.created_at)),
 		       `+tasks.LastFailureKindSQL("AND t.session_id = sp.room_id")+`,
 		       EXISTS (SELECT 1 FROM task t WHERE t.agent_id = a.id AND t.session_id = sp.room_id AND t.status IN ('queued','deferred') AND t.attempt > 1),
 		       EXISTS (SELECT 1 FROM lane l WHERE l.agent_id = a.id AND l.session_id = sp.room_id AND l.status = 'blocked'),
