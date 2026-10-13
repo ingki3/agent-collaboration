@@ -31,6 +31,9 @@ export function defaultActionsFor(type: HitlType): HitlAction[] {
   return type === "approval" ? ["approve", "reject"] : ["answer"];
 }
 
+/** `choice` 의 `<select>` 끝에 더하는 선택지 — 고르면 제안 목록 대신 직접 쓴 글을 보낸다. */
+const CUSTOM_OPTION = "__custom__";
+
 export const HITL_STATUS_LABEL: Record<HitlStatus, string> = {
   open: "응답 대기",
   answered: "응답됨",
@@ -104,6 +107,9 @@ export function HitlBody(props: HitlBodyProps) {
   const { type, status, canRespond } = props;
   const [answer, setAnswer] = useState(props.proposedDefault ?? "");
   const [reason, setReason] = useState("");
+  // choice 의 "직접 입력" 글 — 에이전트가 적은 목록 밖의 내 의견. 셀렉트 자체가 아니라 별도 칸에 둔다(E7-?:
+  // 제안 목록을 지우지 않고 더한다 — 둘 다 보여야 뭘 골랐는지 다시 보인다).
+  const [customText, setCustomText] = useState("");
   // 상향 금액은 **아직 손대지 않았으면 `null`** 이다 — 인박스는 `purpose` 를 알아내려 HITL 상세를 뒤늦게
   // 읽으므로(`budgetOverride` 가 마운트 뒤에 붙는다) `useState(기본값)` 으로 굳히면 그때 계산한 빈 문자열이
   // 남는다. 손댄 적이 없으면 늘 지금의 기본값을 보인다.
@@ -147,6 +153,10 @@ export function HitlBody(props: HitlBodyProps) {
       : permission === "never"
         ? "Director·deputy 만 응답할 수 있습니다"
         : undefined;
+  // "직접 입력"을 고르고도 비워 두면 제안값으로 조용히 넘어가지 않는다 — 다른 의견을 쓰려던 사람의 뜻을 버리는 일이라서.
+  const customChosen = answer === CUSTOM_OPTION;
+  const customEmpty = customChosen && customText.trim() === "";
+  const answerToSend = customChosen ? customText.trim() : answer.trim() || (props.proposedDefault ?? "");
 
   return (
     <div className="hitl__body" data-testid="hitl-body" data-type={type} data-status={status} data-permission={permission}>
@@ -214,11 +224,25 @@ export function HitlBody(props: HitlBodyProps) {
             <label className="hitl__field">
               <span>답변</span>
               {props.options && props.options.length > 0 ? (
-                <select className="select" value={answer} onChange={(e) => setAnswer(e.target.value)} disabled={disabled} data-testid="hitl-choice">
-                  {props.options.map((o) => (
-                    <option key={o} value={o}>{o}</option>
-                  ))}
-                </select>
+                <>
+                  <select className="select" value={answer} onChange={(e) => setAnswer(e.target.value)} disabled={disabled} data-testid="hitl-choice">
+                    {props.options.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                    <option value={CUSTOM_OPTION}>직접 입력</option>
+                  </select>
+                  {answer === CUSTOM_OPTION && (
+                    <textarea
+                      className="input"
+                      rows={props.dense ? 2 : 3}
+                      value={customText}
+                      onChange={(e) => setCustomText(e.target.value)}
+                      disabled={disabled}
+                      placeholder="제시된 선택지와 다른 의견을 적어 주세요"
+                      data-testid="hitl-choice-custom"
+                    />
+                  )}
+                </>
               ) : (
                 <textarea
                   className="input"
@@ -270,9 +294,9 @@ export function HitlBody(props: HitlBodyProps) {
               <button
                 type="button"
                 className="btn btn--sm btn--primary"
-                disabled={disabled}
-                title={disabledTitle}
-                onClick={() => void send({ answer: answer.trim() || (props.proposedDefault ?? "") })}
+                disabled={disabled || customEmpty}
+                title={customEmpty ? "직접 입력을 선택했으면 내용을 적어 주세요" : disabledTitle}
+                onClick={() => void send({ answer: answerToSend })}
                 data-testid="hitl-answer"
               >
                 보내기
