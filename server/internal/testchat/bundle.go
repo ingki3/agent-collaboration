@@ -165,7 +165,7 @@ func dispatch(ctx context.Context, tx pgx.Tx, id, runtimeID uuid.UUID, now time.
 		Brief:   contracts.BundleBrief{Transport: transport, Text: brief.String()},
 		Prompt:  prompt,
 		Resume:  bundleResume(r.RuntimeSessionRef, runtimeKind),
-		Limits:  contracts.BundleLimits{BudgetUSD: budgetPerTask, StallSeconds: int(contracts.StallTimeout.Seconds())},
+		Limits:  contracts.BundleLimits{BudgetUSD: budgetPerTask, StallSeconds: int(contracts.StallTimeoutFor(contracts.RuntimeKind(runtimeKind)).Seconds())},
 	}
 	if _, err := tx.Exec(ctx, `
 		UPDATE test_chat SET turn_status = 'dispatched', dispatched_at = $2, workdir_path = $3, updated_at = $2

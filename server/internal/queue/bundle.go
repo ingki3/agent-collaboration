@@ -690,7 +690,7 @@ func buildBundle(ctx context.Context, tx pgx.Tx, t *tasks.Row, runtimeID uuid.UU
 		Prompt:     promptText,
 		PromptCold: promptCold,
 		Resume:     resume,
-		Limits:     contracts.BundleLimits{BudgetUSD: budget, StallSeconds: int(contracts.StallTimeout.Seconds())},
+		Limits:     contracts.BundleLimits{BudgetUSD: budget, StallSeconds: int(contracts.StallTimeoutFor(contracts.RuntimeKind(runtimeKind)).Seconds())},
 	}
 	if t.TriggerMessageID != nil {
 		b.Task.TriggerMessageID = t.TriggerMessageID.String()
