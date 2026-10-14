@@ -83,6 +83,8 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
   const [time, setTime] = useState(editing?.limits?.time_limit ?? "");
   const [wsDefault, setWsDefault] = useState<number | null>(null);
   const [autonomy, setAutonomy] = useState<AutonomyLevel | "">(editing?.autonomy ?? "");
+  // FR-2A.7(v1.2, 실사용 요청 2026-10-14) — 미션마다 고르고, 연 뒤에는 바꿀 수 없다(WorkUpdate 에 칸이 없다 — edit 모드는 아예 안 그린다).
+  const [planConfirmRequired, setPlanConfirmRequired] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -221,6 +223,7 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
       ...(deputy ? { deputy_user_id: deputy } : {}),
       ...(budget.trim() || time.trim() ? { limits: { ...(budget.trim() ? { budget_usd: Number(budget) } : {}), ...(time.trim() ? { time_limit: time.trim() } : {}) } } : {}),
       ...(autonomy ? { autonomy } : {}),
+      ...(planConfirmRequired ? { plan_confirm_required: true } : {}),
       ...(mode === "from" && (messageId ?? message?.id) ? { from_message_id: (messageId ?? message?.id)! } : {}),
     };
     try {
@@ -429,6 +432,22 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
                   );
                 })}
               </div>
+              {!edit && (
+                <div className="rd-section">
+                  <label className="rd-choice">
+                    <input
+                      type="checkbox"
+                      checked={planConfirmRequired}
+                      onChange={(e) => setPlanConfirmRequired(e.target.checked)}
+                      data-testid="rd-create-work-plan-confirm"
+                    />
+                    <span className="rd-choice__text">
+                      <span className="rd-choice__label">{CREATE_WORK.plan_confirm_label}</span>
+                      <span className="rd-choice__note">{CREATE_WORK.plan_confirm_note}</span>
+                    </span>
+                  </label>
+                </div>
+              )}
             </div>
           </details>
 

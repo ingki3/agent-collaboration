@@ -645,6 +645,7 @@ const (
 	HitlRequestPurposeIsolation    HitlRequestPurpose = "isolation"
 	HitlRequestPurposeLessThannil  HitlRequestPurpose = "<nil>"
 	HitlRequestPurposeLoop         HitlRequestPurpose = "loop"
+	HitlRequestPurposePlan         HitlRequestPurpose = "plan"
 	HitlRequestPurposeTime         HitlRequestPurpose = "time"
 	HitlRequestPurposeUserApproval HitlRequestPurpose = "user_approval"
 )
@@ -661,6 +662,8 @@ func (e HitlRequestPurpose) Valid() bool {
 	case HitlRequestPurposeLessThannil:
 		return true
 	case HitlRequestPurposeLoop:
+		return true
+	case HitlRequestPurposePlan:
 		return true
 	case HitlRequestPurposeTime:
 		return true
@@ -795,6 +798,7 @@ const (
 	InboxItemCardPurposeIsolation    InboxItemCardPurpose = "isolation"
 	InboxItemCardPurposeLessThannil  InboxItemCardPurpose = "<nil>"
 	InboxItemCardPurposeLoop         InboxItemCardPurpose = "loop"
+	InboxItemCardPurposePlan         InboxItemCardPurpose = "plan"
 	InboxItemCardPurposeTime         InboxItemCardPurpose = "time"
 	InboxItemCardPurposeUserApproval InboxItemCardPurpose = "user_approval"
 )
@@ -811,6 +815,8 @@ func (e InboxItemCardPurpose) Valid() bool {
 	case InboxItemCardPurposeLessThannil:
 		return true
 	case InboxItemCardPurposeLoop:
+		return true
+	case InboxItemCardPurposePlan:
 		return true
 	case InboxItemCardPurposeTime:
 		return true
@@ -3310,8 +3316,14 @@ type HitlCreateApproval struct {
 	// ArtifactId `--artifact`.
 	ArtifactId *openapi_types.UUID `json:"artifact_id,omitempty"`
 
+	// Context `--context`(이미 서버가 받던 칸 — 계약에 빠져 있었다). `HitlRequest.context` 로 그대로 저장된다.
+	Context *string `json:"context,omitempty"`
+
 	// DueIn ISO 8601 duration.
 	DueIn *string `json:"due_in,omitempty"`
+
+	// PlanConfirm v1.2(FR-2A.7, 0049) — 이 승인 요청이 미션의 계획 확인이라는 표시. `work.plan_confirm_required` 가 켜진 미션에서, 아직 확인 전에만 쓸 수 있다(그 밖은 `422 plan_confirm/not_applicable`). 승인되면 `work.plan_confirmed_at` 이 찍혀 그 미션의 `card_delegate` 게이트가 풀린다 — `context` 에 이해한 목표·접근법·범위를 적는다.
+	PlanConfirm *bool `json:"plan_confirm,omitempty"`
 
 	// Summary `--summary`. `question` 필드로 저장된다.
 	Summary string `json:"summary"`
@@ -3425,7 +3437,7 @@ type HitlRequest struct {
 	// ProposedDefault "에이전트 제안: …"으로 함께 표시.
 	ProposedDefault nullable.Nullable[string] `json:"proposed_default"`
 
-	// Purpose HITL 의 용도. **플랫폼 발행이면 용도별 고정값** — 종료 조건 승인 `user_approval`(E6-01) · 예산 `budget`(E9-01·04) · 시간 `time` · 루프 `loop`(E4-03) · **첫 실행 격리 확인 `isolation`**(v0.2.2, FR-2.1.1 — 승인=worktree, 거절=none 유지, 답까지 첫 dispatch 보류); 에이전트 발행(source=agent)은 `agent`. source=system + type=approval 만으로는 완료 승인과 예산·루프 정지를 구분할 수 없어 이 칸이 판정 기준이다(0012, PR #103·#108).
+	// Purpose HITL 의 용도. **플랫폼 발행이면 용도별 고정값** — 종료 조건 승인 `user_approval`(E6-01) · 예산 `budget`(E9-01·04) · 시간 `time` · 루프 `loop`(E4-03) · **첫 실행 격리 확인 `isolation`**(v0.2.2, FR-2.1.1 — 승인=worktree, 거절=none 유지, 답까지 첫 dispatch 보류); 에이전트 발행(source=agent)은 보통 `agent`, **단 `HitlCreateApproval.plan_confirm: true` 로 낸 것만 `plan`**(v1.2, FR-2A.7, 0049 — 에이전트가 고르는 유일한 용도값. 승인되면 그 미션의 `plan_confirmed_at` 이 찍혀 `card_delegate` 게이트가 풀린다). source=system + type=approval 만으로는 완료 승인과 예산·루프 정지를 구분할 수 없어 이 칸이 판정 기준이다(0012, PR #103·#108).
 	Purpose   nullable.Nullable[HitlRequestPurpose] `json:"purpose,omitempty"`
 	Question  string                                `json:"question"`
 	SessionId openapi_types.UUID                    `json:"session_id"`
@@ -3443,7 +3455,7 @@ type HitlRequest struct {
 	Type HitlType `json:"type"`
 }
 
-// HitlRequestPurpose HITL 의 용도. **플랫폼 발행이면 용도별 고정값** — 종료 조건 승인 `user_approval`(E6-01) · 예산 `budget`(E9-01·04) · 시간 `time` · 루프 `loop`(E4-03) · **첫 실행 격리 확인 `isolation`**(v0.2.2, FR-2.1.1 — 승인=worktree, 거절=none 유지, 답까지 첫 dispatch 보류); 에이전트 발행(source=agent)은 `agent`. source=system + type=approval 만으로는 완료 승인과 예산·루프 정지를 구분할 수 없어 이 칸이 판정 기준이다(0012, PR #103·#108).
+// HitlRequestPurpose HITL 의 용도. **플랫폼 발행이면 용도별 고정값** — 종료 조건 승인 `user_approval`(E6-01) · 예산 `budget`(E9-01·04) · 시간 `time` · 루프 `loop`(E4-03) · **첫 실행 격리 확인 `isolation`**(v0.2.2, FR-2.1.1 — 승인=worktree, 거절=none 유지, 답까지 첫 dispatch 보류); 에이전트 발행(source=agent)은 보통 `agent`, **단 `HitlCreateApproval.plan_confirm: true` 로 낸 것만 `plan`**(v1.2, FR-2A.7, 0049 — 에이전트가 고르는 유일한 용도값. 승인되면 그 미션의 `plan_confirmed_at` 이 찍혀 `card_delegate` 게이트가 풀린다). source=system + type=approval 만으로는 완료 승인과 예산·루프 정지를 구분할 수 없어 이 칸이 판정 기준이다(0012, PR #103·#108).
 type HitlRequestPurpose string
 
 // HitlResponse 타입에 맞는 필드만 쓴다 — question/choice는 `answer`, approval은 `approved`(+ `reason`, 예산이면 `budget_override_usd`, 시간이면 `time_extension`), info는 `answer` + `attachments`.
@@ -5194,8 +5206,14 @@ type Work struct {
 	// PausedDetail 사유 5종별 배너·해결 동작 데이터(SCREEN §4.5 O6).
 	PausedDetail *PausedDetail                      `json:"paused_detail,omitempty"`
 	PausedReason nullable.Nullable[WorkPauseReason] `json:"paused_reason"`
-	RoomId       openapi_types.UUID                 `json:"room_id"`
-	StartedAt    nullable.Nullable[time.Time]       `json:"started_at,omitempty"`
+
+	// PlanConfirmRequired v1.2(FR-2A.7) — `WorkCreate.plan_confirm_required`. 위임(`card_delegate`)이 계획 확인 전까지 막혀 있는지.
+	PlanConfirmRequired *bool `json:"plan_confirm_required,omitempty"`
+
+	// PlanConfirmedAt v1.2(FR-2A.7) — `plan_confirm_required` 가 켜진 미션의 계획을 Director 가 승인한 시각(`purpose: plan` HITL 승인). `plan_confirm_required` 가 꺼져 있으면 항상 null.
+	PlanConfirmedAt nullable.Nullable[time.Time] `json:"plan_confirmed_at,omitempty"`
+	RoomId          openapi_types.UUID           `json:"room_id"`
+	StartedAt       nullable.Nullable[time.Time] `json:"started_at,omitempty"`
 
 	// Status `work.status` (FR-2A.4) — v0.18 `session_status` 의 상태 머신을 미션에 그대로 쓴다.
 	Status WorkStatus `json:"status"`
@@ -5237,6 +5255,9 @@ type WorkCreate struct {
 
 	// Limits `limits.budget_usd` 를 **빼면**(키 없음·`limits` 없음·`{}`·`null`) 워크스페이스 `budget_policy.default_session_budget_usd` 를 채운다(그 값도 없으면 상한 없음). **명시적 `budget_usd: null`** 은 「이 미션은 상한 없음」 — 기본값을 채우지 않는다. 어느 쪽이든 방 한도가 따로 걸린다(작은 쪽이 이긴다).
 	Limits *WorkLimits `json:"limits,omitempty"`
+
+	// PlanConfirmRequired v1.2(FR-2A.7, 실사용 요청 2026-10-14) — 켜면 Lead 가 **위임(colab card delegate)하기 전에** 이해한 목표·접근법·범위를 승인 요청(`colab hitl ask`, `plan_confirm: true`)으로 올려 Director 승인을 받아야 한다. 승인 전까지 위임은 `409 plan_confirmation_required`. 생성 때만 정한다 — 연 뒤에는 바꿀 수 없다.
+	PlanConfirmRequired *bool `json:"plan_confirm_required,omitempty"`
 
 	// Title 비우면 goal 첫 줄.
 	Title *string `json:"title,omitempty"`

@@ -644,12 +644,16 @@ func (s *Server) openWork(ctx context.Context, tx pgx.Tx, a *rooms.Access, u *ge
 		proposalID = &id
 	}
 
+	planConfirmRequired := in.PlanConfirmRequired != nil && *in.PlanConfirmRequired
+
 	var workID uuid.UUID
 	if err := tx.QueryRow(ctx, `
 		INSERT INTO work (room_id, title, goal, acceptance_criteria, director_user_id, deputy_user_id, assignee_agent_id,
-		                  completion_condition, limits, autonomy, status, created_by, created_at, updated_at, started_at, opened_from_message_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::autonomy_level, $11::session_status, $12, $13, $13, $14, $15) RETURNING id`,
-		roomID, title, goal, criteria, director, deputy, assignee, cond, limits, autonomy, status, u.Id, now, startedAt, fromMsg).Scan(&workID); err != nil {
+		                  completion_condition, limits, autonomy, status, created_by, created_at, updated_at, started_at, opened_from_message_id,
+		                  plan_confirm_required)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::autonomy_level, $11::session_status, $12, $13, $13, $14, $15, $16) RETURNING id`,
+		roomID, title, goal, criteria, director, deputy, assignee, cond, limits, autonomy, status, u.Id, now, startedAt, fromMsg,
+		planConfirmRequired).Scan(&workID); err != nil {
 		return uuid.Nil, fmt.Errorf("createWork: insert: %w", err)
 	}
 	for _, id := range []*uuid.UUID{&director, deputy} {

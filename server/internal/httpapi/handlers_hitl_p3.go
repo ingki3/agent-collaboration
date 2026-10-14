@@ -78,6 +78,8 @@ type hitlCreateFields struct {
 	ApproverSpec    string
 	DueIn           time.Duration
 	ArtifactID      *uuid.UUID
+	// PlanConfirm is `approval`'s `plan_confirm: true` (v1.2, 0049, FR-2A.7).
+	PlanConfirm bool
 }
 
 func readHitlCreate(raw []byte) (hitlCreateFields, *Problem) {
@@ -99,6 +101,7 @@ func readHitlCreate(raw []byte) (hitlCreateFields, *Problem) {
 		ApproverSpec    string     `json:"approver_spec"`
 		DueIn           string     `json:"due_in"`
 		ArtifactID      *uuid.UUID `json:"artifact_id"`
+		PlanConfirm     bool       `json:"plan_confirm"`
 	}
 	if err := json.Unmarshal(raw, &in); err != nil {
 		return hitlCreateFields{}, unreadable("body", "malformed_json", bodyUnreadable, err)
@@ -106,6 +109,7 @@ func readHitlCreate(raw []byte) (hitlCreateFields, *Problem) {
 	f := hitlCreateFields{
 		Kind: in.Type, Options: in.Options, ProposedDefault: in.ProposedDefault,
 		ApproverSpec: in.ApproverSpec, ArtifactID: in.ArtifactID, DueIn: hitl.DefaultDueIn,
+		PlanConfirm: in.PlanConfirm,
 	}
 	// FR-5.1's table gives each type its own flag name and stores all of them
 	// in `question` — the CLI wording differs, the record does not.
@@ -186,11 +190,30 @@ func (s *Server) createHitl(ctx context.Context, taskID, sessionID uuid.UUID, f 
 	if err := tx.QueryRow(ctx, `SELECT id FROM hitl_request WHERE task_id = $1 AND status = 'open'`, taskID).Scan(&openID); err != nil && !errors.Is(err, pgx.ErrNoRows) {
 		return 0, nil, apperr.Internal(err)
 	}
+	// v1.2 (FR-2A.7, 0049): plan_confirm is DB state (hitl.PlanRegister stays
+	// pure) — only a mission that actually opted in, and has not already been
+	// confirmed, may receive one. Fail closed: a plan_confirm the gate would
+	// never read back is a confusing no-op, not a harmless extra field.
+	if f.PlanConfirm {
+		if t.WorkID == nil {
+			return 0, nil, apperr.Validation(apperr.Field("plan_confirm", "not_applicable",
+				"계획 확인은 미션 안에서만 할 수 있습니다"))
+		}
+		var required bool
+		var confirmedAt *time.Time
+		if err := tx.QueryRow(ctx, `SELECT plan_confirm_required, plan_confirmed_at FROM work WHERE id = $1`, *t.WorkID).Scan(&required, &confirmedAt); err != nil {
+			return 0, nil, apperr.Internal(err)
+		}
+		if !required || confirmedAt != nil {
+			return 0, nil, apperr.Validation(apperr.Field("plan_confirm", "not_applicable",
+				"이 미션은 계획 확인을 요구하지 않거나 이미 확인됐습니다"))
+		}
+	}
 
 	plan := hitl.PlanRegister(hitl.RegisterInput{
 		Kind: f.Kind, Question: f.Question, Options: f.Options,
 		ProposedDefault: f.ProposedDefault, ApproverSpec: f.ApproverSpec,
-		AlreadyOpen: openID != nil,
+		AlreadyOpen: openID != nil, PlanConfirm: f.PlanConfirm,
 	})
 	if !plan.Accepted {
 		if plan.ErrorCode == hitl.CodeAlreadyOpen {

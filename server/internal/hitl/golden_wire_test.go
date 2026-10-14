@@ -45,7 +45,7 @@ func adaptRegister(c registerCase) registerResult {
 	p := PlanRegister(RegisterInput{
 		Kind: c.kind, Question: c.question, Options: c.options,
 		ProposedDefault: c.proposedDefault, ApproverSpec: c.approverSpec,
-		AlreadyOpen: c.alreadyOpen,
+		AlreadyOpen: c.alreadyOpen, PlanConfirm: c.planConfirm,
 	})
 	if p.Accepted {
 		openRequestID = uuid.New()
@@ -54,7 +54,7 @@ func adaptRegister(c registerCase) registerResult {
 		Accepted: p.Accepted, ErrorCode: p.ErrorCode,
 		TurnEndRequired: p.TurnEndRequired, PendingHitl: p.PendingHitl,
 		TaskStatus: p.TaskStatus, FeedRecorded: p.FeedRecorded,
-		OpenRequestID: openRequestID,
+		OpenRequestID: openRequestID, Purpose: p.Purpose,
 	}
 }
 

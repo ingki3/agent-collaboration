@@ -203,6 +203,41 @@ func TestHitlApproveRequestNeedsSummary(t *testing.T) {
 	}
 }
 
+// v1.2 (FR-2A.7, 0049): --context was already accepted by the server but the
+// CLI never exposed it; --plan-confirm marks this approval as the mission's
+// plan confirmation.
+func TestHitlApproveRequestPlanConfirm(t *testing.T) {
+	s := clienttest.New(t)
+	res, err := colab.HitlApproveRequest(context.Background(), newClient(t, s), colab.HitlApproveRequestArgs{
+		Summary: "계획을 확인해 주세요", Context: "목표: …. 접근법: …. 범위: ….", PlanConfirm: true, IdempotencyKey: "k-1",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := s.HitlCalls[0].Body
+	if body["context"] != "목표: …. 접근법: …. 범위: …." || body["plan_confirm"] != true {
+		t.Fatalf("body = %v", body)
+	}
+	if res.Type != "approval" {
+		t.Fatalf("res = %+v", res)
+	}
+}
+
+// --plan-confirm without --context would send a confirmation request with
+// nothing to confirm — refused locally, same exit as a missing --summary.
+func TestHitlApproveRequestPlanConfirmNeedsContext(t *testing.T) {
+	s := clienttest.New(t)
+	_, err := colab.HitlApproveRequest(context.Background(), newClient(t, s), colab.HitlApproveRequestArgs{
+		Summary: "계획을 확인해 주세요", PlanConfirm: true,
+	})
+	if got := exitOf(t, err); got != client.ExitUsage {
+		t.Fatalf("exit = %d, want %d", got, client.ExitUsage)
+	}
+	if len(s.HitlCalls) != 0 {
+		t.Fatalf("sent %d requests, want none", len(s.HitlCalls))
+	}
+}
+
 // `info` (E7-21). The CLI sends the type and lets the server rule on it — it
 // does not refuse the type locally (Lead ruling, T-C4).
 func TestHitlRequestInfo(t *testing.T) {

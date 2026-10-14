@@ -323,6 +323,16 @@ func (s *Server) answerAgentHitl(ctx context.Context, row *hitlRow, sess *hitlSe
 		WHERE id = $1`, row.ID, in.Approved, stored, userID, now, override, plan.RequeueHeld); err != nil {
 		return 0, nil, apperr.Internal(err)
 	}
+	// v1.2 (FR-2A.7, 0049): an approved `purpose: plan` lifts the mission's
+	// card_delegate gate. A rejection does not — the Director's reason comes
+	// back in the asking task's <resumed> like any other answer, and the
+	// agent revises and asks again (no separate "card" to re-submit).
+	if row.Purpose != nil && *row.Purpose == hitl.PurposePlan && in.Approved != nil && *in.Approved && row.WorkID != nil {
+		if _, err := tx.Exec(ctx, `UPDATE work SET plan_confirmed_at = $2 WHERE id = $1 AND plan_confirmed_at IS NULL`,
+			*row.WorkID, now); err != nil {
+			return 0, nil, apperr.Internal(err)
+		}
+	}
 	if row.TaskID != nil {
 		// FR-3.5 (S-78): a person answered, so the task's chain restarts at
 		// them — whatever the agent does next is one hop below a human, not

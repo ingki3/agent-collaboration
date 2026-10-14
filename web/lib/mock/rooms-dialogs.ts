@@ -622,6 +622,8 @@ export function registerRoomDialogs(ctx: RoomDialogsCtx): void {
       status: b.draft ? "draft" : "active", paused_reason: null, cost_usd: 0, cost_estimated: false, summary_message_id: null,
       opened_from_message_id: b.from_message_id ?? null, my_work_role: director === user.id ? "director" : deputy === user.id ? "deputy" : "member",
       created_by: user.id, created_at: t, updated_at: t, started_at: b.draft ? null : t, finished_at: null, last_activity_at: t,
+      // FR-2A.7(v1.2) — 미션마다 고르고, 연 뒤에는 바꿀 수 없다(WorkUpdate 에 칸이 없다).
+      plan_confirm_required: b.plan_confirm_required ?? false, plan_confirmed_at: null,
     };
     { const { director: _d, deputy: _p, my_work_role: _r, subscription: _s, ...row } = w; s.works.set(w.id, row as MockWork); }
     if (b.from_message_id) {
