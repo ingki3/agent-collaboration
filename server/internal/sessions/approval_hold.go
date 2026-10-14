@@ -42,6 +42,37 @@ func missionBusy(ctx context.Context, q db.DBTX, workID uuid.UUID) (bool, error)
 	return busy, nil
 }
 
+// revisionAddressed is T-REVISION's gate (complete.go, `approvalAsk &&
+// out.HitlIssued`): whether the mission's MOST RECENT Director rejection of
+// a `user_approval` request has a task_card accepted after it. No rejection
+// yet → nothing to gate, true. An earlier rejection an accepted card already
+// answered does not re-arm this — only the latest one counts, so a second
+// rejection on fresh grounds needs its own new card.
+//
+// `task_card.updated_at` catches either shape work took in practice: a
+// brand-new numbered card, or an existing one revised in place and
+// re-accepted (version bumped, same number) — both are the agent doing
+// something, not just restating the old artifact.
+func revisionAddressed(ctx context.Context, q db.DBTX, workID uuid.UUID) (bool, error) {
+	var ok bool
+	err := q.QueryRow(ctx, `
+		SELECT NOT EXISTS (
+			SELECT 1 FROM hitl_request h
+			WHERE h.work_id = $1 AND h.purpose = $2 AND h.status = 'answered' AND h.approved = false
+		) OR EXISTS (
+			SELECT 1 FROM task_card c
+			WHERE c.work_id = $1 AND c.status = 'accepted' AND c.updated_at > (
+				SELECT h.answered_at FROM hitl_request h
+				WHERE h.work_id = $1 AND h.purpose = $2 AND h.status = 'answered' AND h.approved = false
+				ORDER BY h.answered_at DESC LIMIT 1
+			)
+		)`, workID, CondUserApproval).Scan(&ok)
+	if err != nil {
+		return false, fmt.Errorf("sessions: revision addressed: %w", err)
+	}
+	return ok, nil
+}
+
 // ReleaseHeldApproval re-reads a held mission once its work may have
 // settled. It is cheap when nothing is held (one indexed read) so the task
 // layer calls it after every task that ends, whatever the ending — finish,
