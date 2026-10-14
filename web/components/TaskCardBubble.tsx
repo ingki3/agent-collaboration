@@ -21,6 +21,7 @@ import { Badge } from "./Badge";
 import { Slot } from "./Slot";
 import { hhmm } from "@/lib/inbox-v19";
 import { cardNeed, cardVersion, goalExcerpt, judgeOf, metCount, visibleText, type CachedCard, type CardVersionView } from "@/lib/cards";
+import { openUrl } from "@/lib/media";
 import { TASK_CARD as L } from "@/lib/wording";
 import type { CardAction, CardEvidence, CardRef, Message, TaskCard } from "@/lib/api/types";
 import type { TimelineCtx } from "./TimelineItemView";
@@ -78,8 +79,10 @@ function Evidence({ e, onJump }: { e: CardEvidence; onJump: (id: string) => void
   const text = e.label ?? e.ref;
   const glyph = <span aria-hidden="true">{L.evidence_glyph[e.kind]} </span>;
   if (e.kind === "artifact") {
+    // 실사용 요청(2026-10-14): 근거 아티팩트도 /artifacts/:id 로 — 마크다운이면 그 자리에서 HTML 로 읽힌다
+    // (근거를 확인하려고 매번 내려받을 필요가 없다. 바로 다운로드가 필요하면 그 안에 링크가 있다).
     return (
-      <a className="tcard__ev" href={`/api/v1/artifacts/${e.ref}/content`} target="_blank" rel="noopener noreferrer" data-testid="card-evidence" data-ev-kind={e.kind}>
+      <a className="tcard__ev" href={openUrl(e.ref)} target="_blank" rel="noopener noreferrer" data-testid="card-evidence" data-ev-kind={e.kind}>
         {glyph}{text}
       </a>
     );

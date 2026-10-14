@@ -836,7 +836,7 @@ export default function RoomPage() {
       showWorkLink: sel.kind !== "work",
       pickButton: call("pickButton"), conversation: call("conversation"), layers: call("layers"), groupProcess: call("groupProcess"), taskActivity: call("taskActivity"),
       onLoadReplies: call("onLoadReplies"), onReply: call("onReply"), workLabel: call("workLabel"), workTitle: call("workTitle"), onToWork: call("onToWork"),
-      onRespondHitl: call("onRespondHitl"), onOpenWork: call("onOpenWork"), userName: call("userName"),
+      onRespondHitl: call("onRespondHitl"), onOpenWork: call("onOpenWork"), onOpenWorkBoard: call("onOpenWorkBoard"), userName: call("userName"),
       needCard, onCardAction: call("onCardAction"), onJump: call("onJump"), onJumpRef: call("onJumpRef"),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- 함수 칸이 읽는 상태를 일부러 deps 에 둔다(위 주석).
@@ -1079,6 +1079,7 @@ export default function RoomPage() {
     onToWork: openWorkFrom,
     onRespondHitl: respondHitl,
     onOpenWork: (id) => select({ kind: "work", id }),
+    onOpenWorkBoard: (id) => { select({ kind: "work", id }); setWorkTab("board"); },
     userName: (uid) => members.find((x) => x.user.id === uid)?.user.display_name,
     needCard,
     onCardAction: cardAction,

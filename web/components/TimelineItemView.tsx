@@ -54,6 +54,8 @@ export interface TimelineCtx {
   onToWork: (m: Message) => void;
   onRespondHitl: (hitlRequestId: string, body: HitlResponse) => Promise<void>;
   onOpenWork: (workId: string) => void;
+  /** 완료 승인 카드의 "분담표에서 카드별로 보기" 링크 — 미션 칸을 열고 분담표 탭으로(실사용 요청 2026-10-14). */
+  onOpenWorkBoard: (workId: string) => void;
   userName: (userId: string) => string | undefined;
   // ── 작업 카드(v0.19.15, PRD FR-3.8) ──
   /** 방 화면의 카드 캐시(카드 id → TaskCard) — 같은 카드의 말풍선 여럿이 이 한 캐시를 읽는다(lib/cards). */
@@ -151,6 +153,8 @@ const RENDER: Renderers = {
             budget={hitl.task_id ? { scope: "task", current: hitl.budget_override_usd, spent: null } : { scope: "session", current: ctx.roomBudget.current, spent: ctx.roomBudget.spent }}
             busy={ctx.busy}
             userName={ctx.userName}
+            workId={m.work_id}
+            onOpenWorkBoard={ctx.onOpenWorkBoard}
           />
         ) : (
           <article className="hitl hitl--loading" data-testid="hitl-card-loading" aria-busy="true">

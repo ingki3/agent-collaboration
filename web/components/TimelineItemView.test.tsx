@@ -37,6 +37,7 @@ function ctx(over: Partial<TimelineCtx> = {}): TimelineCtx {
     onToWork: () => undefined,
     onRespondHitl: async () => undefined,
     onOpenWork: () => undefined,
+    onOpenWorkBoard: () => undefined,
     userName: () => undefined,
     cards: {},
     needCard: () => undefined,
@@ -126,6 +127,21 @@ describe("TimelineItemView", () => {
     rerender(<TimelineItemView item={one(m)} ctx={ctx({ hitls: [h] })} />);
     expect(within(screen.getByTestId("timeline-hitl")).getByTestId("hitl-card")).toBeInTheDocument();
     expect(screen.queryByTestId("hitl-card-loading")).toBeNull();
+  });
+
+  // 실사용 요청(2026-10-14): `HitlRequest` 에는 미션 id 가 없다 — 그 요청의 메시지가 아는 `work_id` 를
+  // 이 자리가 `HitlCard` 로 넘겨야 "분담표에서 카드별로 보기" 링크가 맞는 미션을 연다.
+  it("완료 승인 카드의 분담표 링크는 그 메시지의 work_id 로 onOpenWorkBoard 를 부른다", () => {
+    const m = msg("h2", { kind: "hitl", author_type: "system", hitl_request_id: "q2", work_id: "w1" } as Partial<Message>);
+    const h = {
+      id: "q2", session_id: "r1", message_id: "h2", type: "approval", source: "system", purpose: "user_approval", status: "open",
+      question: "종료 조건이 모두 충족되었습니다. 승인하시겠습니까?", context: "작업 카드 2장 — 수락 2 · 판정 대기 0 · 진행 중 0 · 부분/미충족 기준 1",
+      proposed_default: null, can_respond: true, task_id: null, created_at: T0,
+    } as unknown as HitlRequest;
+    const onOpenWorkBoard = vi.fn();
+    render(<TimelineItemView item={one(m)} ctx={ctx({ hitls: [h], onOpenWorkBoard })} />);
+    fireEvent.click(screen.getByTestId("hitl-open-board"));
+    expect(onOpenWorkBoard).toHaveBeenCalledWith("w1");
   });
 
   it("부분 묶음 — 말풍선 하나 · 메뉴는 첫 부분 · 작업 과정은 경계(마지막) 부분으로 묻는다", () => {

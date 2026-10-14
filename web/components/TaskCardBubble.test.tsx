@@ -57,7 +57,7 @@ function ctx(over: Partial<TimelineCtx> = {}): TimelineCtx {
     pickButton: () => null,
     conversation: (m) => ({ speech: { kind: (m.speech ?? "chat") as never, to: (m.addressees ?? []).map((a) => ({ kind: a.kind as "agent", id: a.id, name: a.name })) }, grouped: false, onJump: () => undefined }),
     layers: () => undefined, groupProcess: () => undefined, taskActivity: () => null, onLoadReplies: () => undefined, onReply: () => undefined,
-    workLabel: () => undefined, workTitle: () => "마리오 카트", onToWork: () => undefined, onRespondHitl: async () => undefined, onOpenWork: () => undefined, userName: () => undefined,
+    workLabel: () => undefined, workTitle: () => "마리오 카트", onToWork: () => undefined, onRespondHitl: async () => undefined, onOpenWork: () => undefined, onOpenWorkBoard: () => undefined, userName: () => undefined,
     cards: {}, needCard: () => undefined, onCardAction: async () => undefined, onJump: () => undefined, onJumpRef: () => undefined,
     ...over,
   };
@@ -214,7 +214,7 @@ describe("결과 카드 — 칸 전부 · downgraded · 자동", () => {
     const rows = screen.getAllByTestId("card-verdict");
     expect(rows.map((r) => r.querySelector(".tcard__glyph")!.textContent)).toEqual(["✓", "◐", "◐"]);
     expect(rows[0]).toHaveTextContent("코너 진입 속도가 곡률에 따라 줄어든다");
-    expect(within(rows[0]).getByTestId("card-evidence")).toHaveAttribute("href", "/api/v1/artifacts/art-log/content");
+    expect(within(rows[0]).getByTestId("card-evidence")).toHaveAttribute("href", "/artifacts/art-log");
     expect(rows[1]).toHaveTextContent("부분 — 대각선 벽은 확인 못 함");
     expect(screen.getByTestId("card-confirmed")).toHaveTextContent("직선·곡선 벽 충돌 20회 재생");
     expect(screen.getByTestId("card-assumed")).toHaveClass("tcard__row--warn");
