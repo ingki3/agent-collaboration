@@ -186,6 +186,26 @@ describe("T-APPROVAL — 확인 요청은 버튼 카드다(평문 금지)", () =
     expect(await screen.findByTestId("hitl-card")).toBeInTheDocument();
   });
 
+  // 실사용 사고(2026-10-14): `hitl.created`·`hitl.updated` 는 방 전체에 보낸 **한 장의** 방송이라
+  // 서버가 viewer 없이 만든다(httpapi.publishHitlVia → hitlAPI(…, nil)) — 그래서 can_respond 는 늘
+  // false 로 온다. 화면이 그 값을 그대로 믿으면 Director 본인도 "응답 권한이 없습니다"를 본다(페이지를
+  // 새로고침해야 고쳐졌다 — 새로고침은 listHitlRequests 로 viewer 있는 값을 다시 읽기 때문). 방송을 받으면
+  // 그 요청 하나를 getHitlRequest 로 다시 읽어 viewer 의 진짜 can_respond 로 덮어써야 한다.
+  it("hitl.created 의 can_respond:false 방송을 그대로 믿지 않고 다시 읽어 고친다(실사용 사고)", async () => {
+    messages = [hitlMsg()];
+    // hitls 는 비어 있다(아직 목록에도 없다) — 목 서버의 getHitlRequest 는 찾지 못하면 기본
+    // approval()(can_respond: true, 진짜 Director 값)을 돌려준다.
+    await ready();
+    act(() => stream!({
+      id: "1", type: "hitl.created", at: "", room_id: "r1",
+      payload: approval({ can_respond: false, can_respond_from: null }) as unknown as Record<string, unknown>,
+    }));
+    // 방송 직후 한순간은 false 로 그려질 수 있다 — 끝내 서버의 진짜 값(true)으로 돌아와야 한다.
+    const card = await screen.findByTestId("hitl-card");
+    await waitFor(() => expect(within(card).getByTestId("hitl-approve")).toBeEnabled());
+    expect(screen.queryByTestId("hitl-no-right")).toBeNull();
+  });
+
   it("승인 버튼이 계약 본문을 보낸다 — approved: true", async () => {
     hitls = [approval()];
     post.mockResolvedValue({ hitl_request: approval({ status: "answered", approved: true, answered_by: "u1", answered_at: "2026-09-25T14:00:00Z" }), ignored: false });

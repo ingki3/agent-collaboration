@@ -528,6 +528,22 @@ export default function RoomPage() {
         const h = e.payload;
         if (h.session_id !== roomId) return;
         setHitls((cur) => upsertHitl(cur, h));
+        // `can_respond`/`can_respond_from` are per-viewer (hitl.Authorize
+        // against the request's Director chain), but this frame is one
+        // broadcast to the whole room — the server builds it with no viewer
+        // (httpapi.publishHitlVia → hitlAPI(…, nil)) and so always sends
+        // can_respond: false. Left as is, a live-arriving question or
+        // approval reads "응답 권한이 없습니다" even to the Director who can
+        // answer it (실사용 사고 2026-10-14 — only a full page reload, which
+        // reloads via the per-viewer listHitlRequests, showed the real
+        // permission). Re-read this one request with the viewer's own
+        // session right after, same move `unpairedHitlCards` already makes
+        // for a card that arrives with no request at all.
+        if (h.status === "open") {
+          void api.get("/hitl-requests/{hitlRequestId}", { path: { hitlRequestId: h.id } })
+            .then((fresh) => { if (fresh.session_id === roomId) setHitls((cur) => upsertHitl(cur, fresh)); })
+            .catch(() => undefined);
+        }
         break;
       }
       case "artifact.created":
