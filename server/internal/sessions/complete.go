@@ -300,6 +300,24 @@ func (s *Service) ApplyWorkEvent(ctx context.Context, workID uuid.UUID, ev Event
 		}
 		out.HitlIssued = !open
 	}
+	if approvalAsk && out.HitlIssued {
+		// T-REVISION (실사용 「금융 에이전트 시장 규모 추정 방」, 2026-10-14):
+		// a Director rejection survives in nothing but the decision log —
+		// `artifact_submitted` is untouched (E6-04), so the very next event
+		// that re-reads the tree (a later submit, EventTasksSettled,
+		// EventConditionChanged) would re-ask "종료 조건이 모두
+		// 충족되었습니다" over the SAME unrevised work the Director just
+		// turned down, whether or not an agent did anything about it. Real
+		// incident: Lead told the Director "I'll send a new card" and ended
+		// its turn without sending one — nothing caught that.
+		addressed, err := revisionAddressed(ctx, tx, workID)
+		if err != nil {
+			return nil, err
+		}
+		if !addressed {
+			out.HitlIssued = false
+		}
+	}
 	held := false
 	if approvalAsk && out.HitlIssued {
 		// T-APPROVAL (Director 2026-09-25): every other atom is met, but the
