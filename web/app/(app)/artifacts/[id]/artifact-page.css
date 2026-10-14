@@ -1,0 +1,19 @@
+.artifact-page__head {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+.artifact-page__head h1 {
+  margin: 0 0 4px;
+  font-size: 1.25rem;
+}
+.artifact-page__meta {
+  margin: 0 0 8px;
+  color: var(--ink-3);
+  font-size: 0.85rem;
+}
+.artifact-page__link {
+  font-size: var(--fs-sub);
+  color: var(--ink-2);
+  text-decoration: underline;
+}

@@ -35,3 +35,14 @@
 .hitl__reason { color: var(--ink-2); }
 /* 요청을 아직 못 읽은 hitl 카드 자리 — 평문 한 줄로 떨어지지 않는다(T-APPROVAL). */
 .hitl--loading { border-style: dashed; }
+/* 완료 승인의 카드 요약 줄 아래 분담표 링크(실사용 요청 2026-10-14). */
+.hitl__board-link {
+  align-self: flex-start;
+  font-size: var(--fs-sub);
+  color: var(--ink-2);
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+}

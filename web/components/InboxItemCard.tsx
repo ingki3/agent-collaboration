@@ -22,6 +22,7 @@ import {
 import { Badge } from "./Badge";
 import { HitlBody, type HitlAction } from "./HitlBody";
 import { dueLabel } from "./HitlBody";
+import { HitlCardHead, hitlMetaLine } from "./HitlCard";
 import { failureLabel } from "@/lib/failure";
 import { PAUSE_REASON_LABEL } from "@/lib/session-label";
 import { clockTime, relativeTime } from "@/lib/time";
@@ -283,24 +284,33 @@ export function InboxItemCard({ item, hitl: detail, onRespond, onAction, onMarkR
           onRespond={onRespond && ((body) => onRespond(item, body))}
         />
       ) : hitl && hitl.hitl_type ? (
-        // 세션을 열지 않고 답한다(F2) — 타임라인 카드와 **같은 하위 컴포넌트**.
-        <HitlBody
-          type={hitl.hitl_type}
-          status="open"
-          question={hitl.title ?? "응답이 필요합니다"}
-          context={hitl.body}
-          proposedDefault={hitl.proposed_default}
-          dueAt={item.due_at}
-          overdue={overdue}
-          canRespond={inline.length > 0}
-          canRespondFrom={respondFrom ?? null}
-          hideGate={!!delegation}
-          actions={inline}
-          budgetOverride={hitlBudget}
-          onRespond={onRespond && ((body) => onRespond(item, body))}
-          busy={busy}
-          dense
-        />
+        // 세션을 열지 않고 답한다(F2) — 타임라인 카드와 **같은 하위 컴포넌트**, 머리줄도 같다(실사용 요청
+        // 2026-10-14: 인박스 항목에 "누가 요청했는지"가 안 보였다 — `HitlCardHead` 로 통일).
+        <>
+          <HitlCardHead
+            type={hitl.hitl_type}
+            status="open"
+            author={hitl.agent_name ?? "시스템"}
+            meta={hitlMetaLine({ source: hitl.agent_name ? "agent" : "system", purpose: hitl.purpose, created_at: item.created_at })}
+          />
+          <HitlBody
+            type={hitl.hitl_type}
+            status="open"
+            question={hitl.title ?? "응답이 필요합니다"}
+            context={hitl.body}
+            proposedDefault={hitl.proposed_default}
+            dueAt={item.due_at}
+            overdue={overdue}
+            canRespond={inline.length > 0}
+            canRespondFrom={respondFrom ?? null}
+            hideGate={!!delegation}
+            actions={inline}
+            budgetOverride={hitlBudget}
+            onRespond={onRespond && ((body) => onRespond(item, body))}
+            busy={busy}
+            dense
+          />
+        </>
       ) : (
         <div className="inbox-item__body">
           {item.card?.title && <p className="inbox-item__title" data-testid="inbox-title">{item.card.title}</p>}

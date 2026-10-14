@@ -34,6 +34,24 @@ export function inlineUrl(artifactId: string): string {
 export function downloadUrl(artifactId: string): string {
   return `${API_BASE}/artifacts/${encodeURIComponent(artifactId)}/content`;
 }
+/** 이 아티팩트를 브라우저에서 여는 자리(`/artifacts/{id}`) — 마크다운이면 그 안에서 HTML로 렌더링하고,
+ * 그 밖은 바로 다운로드·미리보기 주소로 넘어간다(`web/app/(app)/artifacts/[id]/page.tsx`). */
+export function openUrl(artifactId: string): string {
+  return `/artifacts/${encodeURIComponent(artifactId)}`;
+}
+
+/** 서버 판정 content_type 이 마크다운인가(`text/markdown`, 파라미터·대소문자 무시) — 이 타입만 화면이 HTML로 그린다. */
+export function isMarkdown(contentType: string | null | undefined): boolean {
+  return (contentType ?? "").split(";")[0].trim().toLowerCase() === "text/markdown";
+}
+
+/** 아티팩트 본문을 글자로 받는다(마크다운 렌더링용) — `downloadUrl`을 세션 쿠키로 그대로 불러 텍스트로 읽는다.
+ * `api` 래퍼는 응답을 JSON으로만 푸는데 이 엔드포인트는 `application/octet-stream`이라 쓸 수 없다. */
+export async function fetchArtifactText(artifactId: string, signal?: AbortSignal): Promise<string> {
+  const res = await fetch(downloadUrl(artifactId), { credentials: "same-origin", signal });
+  if (!res.ok) throw new Error(`아티팩트를 읽지 못했습니다 (${res.status})`);
+  return res.text();
+}
 
 /** 사람이 읽는 크기 — 3.1MB · 820KB · 12B. */
 export function formatBytes(n: number | null | undefined): string {

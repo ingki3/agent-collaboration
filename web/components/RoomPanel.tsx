@@ -8,7 +8,7 @@
  */
 import { useState } from "react";
 import { MediaGroup } from "@/components/MediaPreview";
-import { mediaKind } from "@/lib/media";
+import { mediaKind, openUrl } from "@/lib/media";
 import Link from "next/link";
 import "./session-aside.css";
 import { Slot } from "./Slot";
@@ -107,7 +107,8 @@ export function RoomPanel(props: RoomPanelProps) {
                 testId="room-artifact-group"
                 row={(a) => (
                   <li key={a.id} data-testid="artifact-row" data-artifact-id={a.id}>
-                    <span className="aside__name">{a.name}</span>
+                    {/* 실사용 요청(2026-10-14): url 로 브라우저에서 바로 연다 — 전에는 이름이 글자일 뿐이었다. */}
+                    <Link href={openUrl(a.id)} target="_blank" className="aside__name" data-testid="artifact-open">{a.name}</Link>
                     <span className="aside__ver" data-testid="artifact-version"> v{a.version}</span>
                     <span className="aside__quiet"> · {a.type} · {a.submitted_by?.agent_name ?? "—"} · {relativeTime(a.created_at)}</span>
                     {/* v0.19.12 미디어 미리보기(PRD FR-4.3.1) — 우열은 최신 버전만 재생기·썸네일을 단다(이전 버전은 이름 줄만). */}

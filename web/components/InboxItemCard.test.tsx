@@ -113,6 +113,21 @@ describe("hitl_request — 인박스에서 맥락 없이 답한다(F2, U3)", () 
     expect(screen.getByTestId("inbox-session").textContent).toContain("시장 조사");
   });
 
+  // 실사용 요청(2026-10-14): 「누가 요청했는지」가 인박스 카드에 없었다 — 타임라인과 같은 머리줄(`HitlCardHead`)을 쓴다.
+  it("누가 요청했는지 머리줄에 보인다 — 에이전트 발행은 그 이름, 시스템 발행은 「시스템」", () => {
+    render(<InboxItemCard item={item()} onRespond={vi.fn()} />);
+    expect(screen.getByTestId("hitl-author").textContent).toBe("Writer");
+    expect(screen.getByTestId("hitl-meta").textContent).toContain("에이전트가 요청");
+
+    cleanup();
+    render(<InboxItemCard item={item({
+      card: { title: "종료 조건이 모두 충족되었습니다. 승인하시겠습니까?", hitl_type: "approval", purpose: "user_approval" },
+      actions: ["approve", "reject"],
+    })} onRespond={vi.fn()} />);
+    expect(screen.getByTestId("hitl-author").textContent).toBe("시스템");
+    expect(screen.getByTestId("hitl-meta").textContent).toContain("종료 조건");
+  });
+
   it("답변을 보내면 계약 HitlResponse 모양으로 나간다", () => {
     const onRespond = vi.fn();
     render(<InboxItemCard item={item()} onRespond={onRespond} />);

@@ -255,6 +255,40 @@ describe("시스템 발행 문구 — purpose 가 판정 기준이다(0012)", ()
   });
 });
 
+// 실사용 요청(2026-10-14): 완료 승인의 카드 요약 줄("작업 카드 N장 — 수락 n · 판정 대기 n · 진행 중 n ·
+// 부분/미충족 기준 n")이 숫자뿐이라 무슨 뜻인지 알 수 없었다 — 분담표로 가는 링크를 붙인다.
+describe("완료 승인 카드 — 분담표 링크(카드 요약 줄 상세)", () => {
+  const approval = (over: Partial<HitlRequest> = {}): HitlRequest =>
+    req({
+      source: "system", type: "approval", purpose: "user_approval", proposed_default: null,
+      question: "종료 조건이 모두 충족되었습니다. 승인하시겠습니까?",
+      context: "작업 카드 2장 — 수락 2 · 판정 대기 0 · 진행 중 0 · 부분/미충족 기준 1",
+      ...over,
+    });
+
+  it("카드 요약(context)·workId·onOpenWorkBoard 가 다 있으면 링크가 뜨고, 누르면 그 미션으로", () => {
+    const onOpenWorkBoard = vi.fn();
+    render(<HitlCard request={approval()} onRespond={vi.fn()} workId="w1" onOpenWorkBoard={onOpenWorkBoard} />);
+    fireEvent.click(screen.getByTestId("hitl-open-board"));
+    expect(onOpenWorkBoard).toHaveBeenCalledWith("w1");
+  });
+
+  it("카드 요약이 없으면(카드 0장인 미션의 승인) 링크를 그리지 않는다", () => {
+    render(<HitlCard request={approval({ context: null })} onRespond={vi.fn()} workId="w1" onOpenWorkBoard={vi.fn()} />);
+    expect(screen.queryByTestId("hitl-open-board")).toBeNull();
+  });
+
+  it("완료 승인이 아니면(질문·예산 등) 카드 요약 줄이 있어도 링크를 그리지 않는다", () => {
+    render(<HitlCard request={req({ context: "참고로 이런 것도 있습니다" })} onRespond={vi.fn()} workId="w1" onOpenWorkBoard={vi.fn()} />);
+    expect(screen.queryByTestId("hitl-open-board")).toBeNull();
+  });
+
+  it("workId·onOpenWorkBoard 를 안 넘기면(인박스 등) 조건이 맞아도 링크가 없다", () => {
+    render(<HitlCard request={approval()} onRespond={vi.fn()} />);
+    expect(screen.queryByTestId("hitl-open-board")).toBeNull();
+  });
+});
+
 // PRD FR-3.1 — 질문 본문은 **인라인** 마크다운만(짧은 본문). 블록 문법은 문자 그대로. 세부는 `lib/markdown.test.tsx`.
 describe("질문 본문 — 인라인 마크다운", () => {
   it("굵게·코드·멘션 칩은 살고, 목록·제목 문법은 문자 그대로·HTML 은 태그가 되지 않는다", () => {
