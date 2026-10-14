@@ -84,6 +84,9 @@ type registerCase struct {
 
 	// alreadyOpen is E7-04: this task already has an open request.
 	alreadyOpen bool
+
+	// planConfirm is v1.2's `approval`'s plan_confirm: true (FR-2A.7).
+	planConfirm bool
 }
 
 // registerResult is what the server must answer.
@@ -110,6 +113,10 @@ type registerResult struct {
 	// OpenRequestID identifies which request stands after the call. For E7-04
 	// it must still be the FIRST one.
 	OpenRequestID uuid.UUID
+
+	// Purpose is what the request would be stored with (v1.2 — "agent" for an
+	// ordinary ask, "plan" for an accepted plan_confirm: true).
+	Purpose string
 }
 
 // registerHitl is wired by T-S5 to the real registration path.
@@ -227,6 +234,34 @@ func TestHitlRegisterGolden(t *testing.T) {
 			if !r.Accepted {
 				t.Errorf("approver_spec %q must be accepted (FR-5.4), got error=%q", spec, r.ErrorCode)
 			}
+		}
+	})
+
+	// v1.2 (FR-2A.7, 0049): plan_confirm is the one agent-chosen purpose.
+	t.Run("plan_confirm_on_an_approval_stores_purpose_plan", func(t *testing.T) {
+		r := mustRegister(t, registerCase{kind: "approval", question: "계획을 확인해 주세요", planConfirm: true})
+		if !r.Accepted {
+			t.Fatalf("plan_confirm on an approval must register (error=%q)", r.ErrorCode)
+		}
+		if r.Purpose != "plan" {
+			t.Errorf("purpose = %q, want plan — the card_delegate gate reads this back", r.Purpose)
+		}
+	})
+
+	t.Run("plan_confirm_on_anything_but_approval_is_rejected", func(t *testing.T) {
+		r := mustRegister(t, registerCase{kind: "question", question: "독자?", proposedDefault: "투자자", planConfirm: true})
+		if r.Accepted {
+			t.Fatal("plan_confirm only makes sense on an approval — a question card_delegate never reads back is a confusing no-op, not a silent ignore")
+		}
+		if r.ErrorCode != "validation" {
+			t.Errorf("error = %q, want validation (422)", r.ErrorCode)
+		}
+	})
+
+	t.Run("an_ordinary_approval_still_carries_purpose_agent", func(t *testing.T) {
+		r := mustRegister(t, registerCase{kind: "approval", question: "초안 승인 요청"})
+		if r.Purpose != "agent" {
+			t.Errorf("purpose = %q, want agent — plan_confirm is opt-in per call, not implied by type: approval", r.Purpose)
 		}
 	})
 }

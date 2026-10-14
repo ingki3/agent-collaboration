@@ -152,6 +152,25 @@ describe("S21 미션 열기", () => {
     expect((onOpened.mock.calls[0][0] as Work).opened_from_message_id).toBe(m.id);
   });
 
+  // FR-2A.7(v1.2, 실사용 요청 2026-10-14) — 미션을 열 때만 고를 수 있다(편집 모드는 칸 자체가 없다).
+  it("계획 확인 체크박스 — 끄면 안 보내고, 켜면 plan_confirm_required: true 로 연다", async () => {
+    const onOpened = vi.fn();
+    render(<CreateWorkDialog roomId={roomId} mode="new" onOpened={onOpened} onClose={() => {}} />);
+    fireEvent.change(screen.getByTestId("rd-create-work-goal"), { target: { value: "계획 확인 미션" } });
+    fireEvent.click(screen.getByTestId("rd-create-work-open"));
+    await waitFor(() => expect(onOpened).toHaveBeenCalled());
+    expect((onOpened.mock.calls[0][0] as Work).plan_confirm_required).toBe(false);
+    cleanup();
+
+    const onOpened2 = vi.fn();
+    render(<CreateWorkDialog roomId={roomId} mode="new" onOpened={onOpened2} onClose={() => {}} />);
+    fireEvent.change(screen.getByTestId("rd-create-work-goal"), { target: { value: "계획 확인 미션 2" } });
+    fireEvent.click(screen.getByTestId("rd-create-work-plan-confirm"));
+    fireEvent.click(screen.getByTestId("rd-create-work-open"));
+    await waitFor(() => expect(onOpened2).toHaveBeenCalled());
+    expect((onOpened2.mock.calls[0][0] as Work).plan_confirm_required).toBe(true);
+  });
+
   it("보관된 방 — 「보관된 방에서는 새 미션을 열 수 없습니다」 + 입력 전체 비활성", async () => {
     await bridge.call("POST", `/rooms/${roomId}/archive`);
     render(<CreateWorkDialog roomId={roomId} mode="new" onOpened={() => {}} onClose={() => {}} />);

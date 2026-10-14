@@ -40,6 +40,9 @@ type HitlCreate struct {
 	ArtifactID      string   `json:"artifact_id,omitempty"`
 	What            string   `json:"what,omitempty"`
 	Why             string   `json:"why,omitempty"`
+	// PlanConfirm — v1.2 (FR-2A.7, 0049): `approval` only, marks this request
+	// as the mission's plan confirmation (`colab hitl approve-request --plan-confirm`).
+	PlanConfirm bool `json:"plan_confirm,omitempty"`
 }
 
 // HitlCreateResult — createHitlRequest 201 {hitl_request, turn_end_required,

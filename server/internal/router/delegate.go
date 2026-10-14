@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -85,6 +86,21 @@ func (s *Service) Delegate(ctx context.Context, callerTask uuid.UUID, in Delegat
 	// "the room's mission" would be every mission once there are several.
 	if _, err := tx.Exec(ctx, `SELECT 1 FROM room WHERE id = $1 FOR UPDATE`, sessionID); err != nil {
 		return nil, err
+	}
+	// v1.2 (FR-2A.7, 0049): a mission the Director opted into plan confirmation
+	// blocks every delegation until an approved `purpose: plan` HITL lifts it —
+	// the point is that nothing is handed to a teammate before the Director has
+	// seen and confirmed the Lead's understanding of the mission.
+	if callerWork != nil {
+		var planRequired bool
+		var planConfirmedAt *time.Time
+		if err := tx.QueryRow(ctx, `SELECT plan_confirm_required, plan_confirmed_at FROM work WHERE id = $1`, *callerWork).Scan(&planRequired, &planConfirmedAt); err != nil {
+			return nil, err
+		}
+		if planRequired && planConfirmedAt == nil {
+			return nil, apperr.Conflict("plan_confirmation_required",
+				"이 미션은 위임하기 전에 계획 확인이 필요합니다 — colab hitl ask (type: approval, plan_confirm: true)로 이해한 목표·접근법·범위를 적어 Director 승인을 먼저 받으세요")
+		}
 	}
 
 	d := in.Card

@@ -98,7 +98,8 @@ const workSelect = `
 	       wk.summary_message_id, wk.opened_from_message_id, wk.created_by, wk.created_at, wk.updated_at, wk.started_at, wk.finished_at,
 	       (SELECT max(m.created_at) FROM message m WHERE m.work_id = wk.id),
 	       EXISTS (SELECT 1 FROM hitl_request h WHERE h.work_id = wk.id AND h.status = 'open'),
-	       s.legacy_work_id IS NOT DISTINCT FROM wk.id, wk.approval_held_at IS NOT NULL
+	       s.legacy_work_id IS NOT DISTINCT FROM wk.id, wk.approval_held_at IS NOT NULL,
+	       wk.plan_confirm_required, wk.plan_confirmed_at
 	FROM work wk JOIN room s ON s.id = wk.room_id`
 
 // WorkRow is one mission as the handlers need it besides the API shape.
@@ -123,11 +124,13 @@ func scanWork(row pgx.Row) (*WorkRow, error) {
 		cost                                    float64
 		estimated                               bool
 		startedAt, finishedAt, last             *time.Time
+		planConfirmRequired                     bool
+		planConfirmedAt                         *time.Time
 	)
 	err := row.Scan(&w.Id, &w.RoomId, &w.WorkspaceID, &w.Title, &w.Goal, &w.AcceptanceCriteria, &w.DirectorUserId, &deputy,
 		&assignee, &cond, &met, &limits, &autonomy, &status, &reason, &detail, &cost, &estimated,
 		&summaryID, &openedFrom, &w.CreatedBy, &w.CreatedAt, &w.UpdatedAt, &startedAt, &finishedAt, &last,
-		&w.WaitingHuman, &w.Legacy, &w.approvalHeld)
+		&w.WaitingHuman, &w.Legacy, &w.approvalHeld, &planConfirmRequired, &planConfirmedAt)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, apperr.NotFound("work")
 	}
@@ -162,6 +165,8 @@ func scanWork(row pgx.Row) (*WorkRow, error) {
 	w.StartedAt = tasks.NullTime(startedAt)
 	w.FinishedAt = tasks.NullTime(finishedAt)
 	w.LastActivityAt = tasks.NullTime(last)
+	w.PlanConfirmRequired = &planConfirmRequired
+	w.PlanConfirmedAt = tasks.NullTime(planConfirmedAt)
 	w.metRaw, w.condRaw, w.assignee = met, cond, assignee
 	return &w, nil
 }

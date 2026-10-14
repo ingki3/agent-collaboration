@@ -33,13 +33,18 @@ const (
 )
 
 // Purposes (openapi HitlRequest.purpose, 0012). Platform-issued requests carry
-// a fixed value per purpose; an agent's own request is `agent`.
+// a fixed value per purpose; an agent's own request is `agent` — EXCEPT
+// `plan` (v1.2, 0049, FR-2A.7): the one agent-chosen purpose, set when the
+// agent marks an `approval` request `plan_confirm: true`. It still has
+// `source: agent` (the agent wrote the question), but the server reads it
+// back to lift the mission's card_delegate gate on approval (router.Delegate).
 const (
 	PurposeAgent        = "agent"
 	PurposeUserApproval = "user_approval"
 	PurposeBudget       = "budget"
 	PurposeTime         = "time"
 	PurposeLoop         = "loop"
+	PurposePlan         = "plan"
 )
 
 // Approver specs supported in v1 (FR-5.4). Anything else is refused at
@@ -81,6 +86,14 @@ type RegisterInput struct {
 	ApproverSpec string
 	// AlreadyOpen is "this task already holds an open request" (FR-7.1 step 4).
 	AlreadyOpen bool
+	// PlanConfirm is `approval`'s `plan_confirm: true` (v1.2, 0049, FR-2A.7) —
+	// the agent is asking the Director to confirm the mission's plan before it
+	// may delegate. Only an `approval` request may carry it; anything else is
+	// a request that LOOKS like plan confirmation to a reader but is not one
+	// the card_delegate gate recognises, so it is refused rather than silently
+	// ignored. Whether the mission actually wants one (work.plan_confirm_required)
+	// is DB state the caller (httpapi.createHitl) checks — this function stays pure.
+	PlanConfirm bool
 }
 
 // RegisterPlan is the verdict. A refusal is a refusal: there is no branch that
@@ -145,6 +158,12 @@ func PlanRegister(in RegisterInput) RegisterPlan {
 		// nobody enforces, and every member becomes an approver.
 		return reject(CodeValidation, "approver_spec",
 			"답할 사람은 director · any_member 또는 사용자 id 중 하나로 지정해 주세요")
+	}
+	if in.PlanConfirm {
+		if in.Kind != KindApproval {
+			return reject(CodeValidation, "plan_confirm", "계획 확인은 승인 요청에만 붙일 수 있습니다")
+		}
+		p.Purpose = PurposePlan
 	}
 	if in.AlreadyOpen {
 		// FR-7.1 step 4: one open request per task. The FIRST one stands — a

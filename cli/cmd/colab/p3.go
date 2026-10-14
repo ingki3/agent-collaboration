@@ -19,7 +19,7 @@ import (
 // honour would be worse than none (v0.5.1, C-4).
 
 const hitlUsage = `usage: colab hitl ask --question <text> --default <text> [--choices a,b,c] [--context <text>]
-       colab hitl approve-request --summary <text> [--artifact <id>]
+       colab hitl approve-request --summary <text> [--context <text>] [--artifact <id>] [--plan-confirm]
        colab hitl request-info --what <text> [--why <text>]`
 
 func runHitl(args []string, getenv client.Getenv, stdout, stderr io.Writer) int {
@@ -52,7 +52,9 @@ func runHitl(args []string, getenv client.Getenv, stdout, stderr io.Writer) int 
 		fs, _ := newFlagSet("hitl approve-request", stderr)
 		session := fs.String("session", "", "room id override (default COLAB_ROOM_ID / /cli/context)")
 		summary := fs.String("summary", "", "what you are asking approval for (required)")
+		ctxt := fs.String("context", "", "the detail the Director needs to decide — e.g. the mission plan with --plan-confirm")
 		artifact := fs.String("artifact", "", "artifact id this approval is about")
+		planConfirm := fs.Bool("plan-confirm", false, "this approval IS the mission's plan confirmation (needs --context: goal, approach, scope) — v1.2")
 		key := fs.String("idempotency-key", "", "optional Idempotency-Key (uuid) to make a retry replay")
 		if err := fs.Parse(args[1:]); err != nil {
 			return client.ExitUsage
@@ -61,7 +63,7 @@ func runHitl(args []string, getenv client.Getenv, stdout, stderr io.Writer) int 
 			return usage(stderr, "hitl approve-request: unexpected argument %q", fs.Arg(0))
 		}
 		v, err := colab.HitlApproveRequest(ctx, c, colab.HitlApproveRequestArgs{
-			Session: *session, Summary: *summary, Artifact: *artifact, IdempotencyKey: *key})
+			Session: *session, Summary: *summary, Context: *ctxt, Artifact: *artifact, PlanConfirm: *planConfirm, IdempotencyKey: *key})
 		return emit(stdout, stderr, v, err)
 	case "request-info":
 		fs, _ := newFlagSet("hitl request-info", stderr)

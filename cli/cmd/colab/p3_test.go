@@ -71,6 +71,22 @@ func TestCLIHitlApproveRequestAndRequestInfo(t *testing.T) {
 		t.Fatalf("approve-request: code=%d v=%v", code, v)
 	}
 
+	// v1.2 (FR-2A.7, 0049): --context (already accepted by the server, newly
+	// exposed on the CLI) and --plan-confirm.
+	s1b := clienttest.New(t)
+	code, v, _ = exec(t, s1b.Env(t.TempDir()), "hitl", "approve-request", "--summary", "계획을 확인해 주세요",
+		"--context", "목표·접근법·범위", "--plan-confirm")
+	if code != client.ExitOK || v["type"] != "approval" {
+		t.Fatalf("approve-request --plan-confirm: code=%d v=%v", code, v)
+	}
+	if s1b.HitlCalls[0].Body["context"] != "목표·접근법·범위" || s1b.HitlCalls[0].Body["plan_confirm"] != true {
+		t.Fatalf("body = %v", s1b.HitlCalls[0].Body)
+	}
+	s1c := clienttest.New(t)
+	if code, _, _ := exec(t, s1c.Env(t.TempDir()), "hitl", "approve-request", "--summary", "s", "--plan-confirm"); code != client.ExitUsage {
+		t.Fatalf("--plan-confirm without --context: code=%d, want usage", code)
+	}
+
 	s2 := clienttest.New(t)
 	code, v, _ = exec(t, s2.Env(t.TempDir()), "hitl", "request-info", "--what", "API 키", "--why", "재현 불가")
 	if code != client.ExitOK || v["type"] != "info" {

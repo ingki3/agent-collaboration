@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Colab Server API
-  version: 0.3.14-draft
+  version: 0.3.15-draft
   summary: Colab 서버 REST API — P1~P3(수직 슬라이스 · 협업 코어 · HITL/재개/예산)에서 웹(W)과 colab CLI(C)가 호출하는 전부.
   description: |
     # 읽는 법
@@ -1557,7 +1557,7 @@ paths:
       summary: 위임 — 위임 카드로 새 lane(`colab card delegate`)
       description: |
         권한: `TaskToken`(에이전트만 — 사람은 `postMessage`의 `new_lane`을 쓴다). 명령 `card_delegate` 를 가진 역할(FR-1.9.1).
-        **v0.3.10 — 위임은 카드로만(PRD FR-3.8 1).** 본문은 위임 카드(`card`) — 옛 `agent_id`·`brief` 본문은 없어졌다(카드 없이 부르면 `422 card_required`, 사람 말 사유 「위임은 카드로 합니다 — 목표·완료 기준(확인 방법)·하지 않을 것을 적은 카드를 내세요」). 카드 검사를 어기면 `422 card_invalid` + `errors[]`. 해소 규칙 2 — **항상 새 lane**(E2-02·03). `delegated_from_task_id` = 호출 task(합류 그룹 키, FR-6.5). 대상은 방 참여자로 제한 — 아니면 `422 not_participant`와 안내("`hitl ask`로 Director에게 참여자 추가 요청", E15-02). 호출 task 가 카드 task 면 새 카드의 `parent_card_id` = 그 카드. 서버가 카드 번호를 매기고(미션 안 1부터), 위임 카드 말풍선(`speech: delegate`, `card_role: delegation`, 멘션 `[@담당](mention://agent/<id>)`, `content` = 카드를 사람 말로 적은 요약)을 호출 에이전트 이름으로 게시하고, 새 lane 의 첫 task 를 `kind: card` 로 만든다(`lane.brief` = 목표). 방이 `paused`면 lane은 만들되 task는 dispatch되지 않는다. 승인 대기 보류(FR-2A.2.3)·루프 상한은 지금 규칙 그대로.
+        **v0.3.10 — 위임은 카드로만(PRD FR-3.8 1).** 본문은 위임 카드(`card`) — 옛 `agent_id`·`brief` 본문은 없어졌다(카드 없이 부르면 `422 card_required`, 사람 말 사유 「위임은 카드로 합니다 — 목표·완료 기준(확인 방법)·하지 않을 것을 적은 카드를 내세요」). 카드 검사를 어기면 `422 card_invalid` + `errors[]`. 해소 규칙 2 — **항상 새 lane**(E2-02·03). `delegated_from_task_id` = 호출 task(합류 그룹 키, FR-6.5). 대상은 방 참여자로 제한 — 아니면 `422 not_participant`와 안내("`hitl ask`로 Director에게 참여자 추가 요청", E15-02). 호출 task 가 카드 task 면 새 카드의 `parent_card_id` = 그 카드. 서버가 카드 번호를 매기고(미션 안 1부터), 위임 카드 말풍선(`speech: delegate`, `card_role: delegation`, 멘션 `[@담당](mention://agent/<id>)`, `content` = 카드를 사람 말로 적은 요약)을 호출 에이전트 이름으로 게시하고, 새 lane 의 첫 task 를 `kind: card` 로 만든다(`lane.brief` = 목표). 방이 `paused`면 lane은 만들되 task는 dispatch되지 않는다. 승인 대기 보류(FR-2A.2.3)·루프 상한은 지금 규칙 그대로. **v1.2(FR-2A.7, 0049)** — 호출 task 의 미션이 `plan_confirm_required: true` 이고 아직 `plan_confirmed_at` 이 없으면 `409 plan_confirmation_required`(사람 말 사유에 `colab hitl ask`(`plan_confirm: true`) 안내).
       x-colab-cli: card delegate
       x-prd: [FR-3.8, FR-6.2, FR-6.5, FR-1.5, FR-3.3]
       x-phase: P2
@@ -3366,7 +3366,7 @@ paths:
       summary: 미션 목록(칩 줄 · 지난 미션)
       description: |
         권한: 방을 볼 수 있는 사람.
-      x-prd: [FR-2A.5]
+      x-prd: [FR-2A.7]
       x-screen: [S7]
       x-phase: R0
       parameters:
@@ -5914,8 +5914,8 @@ components:
         artifact_id: { type: [string, 'null'], format: uuid, description: approval 대상 아티팩트. }
         purpose:
           type: [string, 'null']
-          enum: [agent, user_approval, budget, time, loop, isolation, null]
-          description: "HITL 의 용도. **플랫폼 발행이면 용도별 고정값** — 종료 조건 승인 `user_approval`(E6-01) · 예산 `budget`(E9-01·04) · 시간 `time` · 루프 `loop`(E4-03) · **첫 실행 격리 확인 `isolation`**(v0.2.2, FR-2.1.1 — 승인=worktree, 거절=none 유지, 답까지 첫 dispatch 보류); 에이전트 발행(source=agent)은 `agent`. source=system + type=approval 만으로는 완료 승인과 예산·루프 정지를 구분할 수 없어 이 칸이 판정 기준이다(0012, PR #103·#108)."
+          enum: [agent, user_approval, budget, time, loop, isolation, plan, null]
+          description: "HITL 의 용도. **플랫폼 발행이면 용도별 고정값** — 종료 조건 승인 `user_approval`(E6-01) · 예산 `budget`(E9-01·04) · 시간 `time` · 루프 `loop`(E4-03) · **첫 실행 격리 확인 `isolation`**(v0.2.2, FR-2.1.1 — 승인=worktree, 거절=none 유지, 답까지 첫 dispatch 보류); 에이전트 발행(source=agent)은 보통 `agent`, **단 `HitlCreateApproval.plan_confirm: true` 로 낸 것만 `plan`**(v1.2, FR-2A.7, 0049 — 에이전트가 고르는 유일한 용도값. 승인되면 그 미션의 `plan_confirmed_at` 이 찍혀 `card_delegate` 게이트가 풀린다). source=system + type=approval 만으로는 완료 승인과 예산·루프 정지를 구분할 수 없어 이 칸이 판정 기준이다(0012, PR #103·#108)."
         approver_spec: { type: string, description: '`director` · `room_owner`(v0.2.0 — 미션 밖 task·방 상한·격리 확인, 부재 위임 FR-2A.3) · `any_member` · 사용자 uuid.' }
         due_at: { type: string, format: date-time }
         overdue: { type: boolean }
@@ -5987,7 +5987,9 @@ components:
           required: [summary]
           properties:
             summary: { type: string, minLength: 1, description: '`--summary`. `question` 필드로 저장된다.' }
+            context: { type: string, description: '`--context`(이미 서버가 받던 칸 — 계약에 빠져 있었다). `HitlRequest.context` 로 그대로 저장된다.' }
             artifact_id: { type: string, format: uuid, description: '`--artifact`.' }
+            plan_confirm: { type: boolean, default: false, description: 'v1.2(FR-2A.7, 0049) — 이 승인 요청이 미션의 계획 확인이라는 표시. `work.plan_confirm_required` 가 켜진 미션에서, 아직 확인 전에만 쓸 수 있다(그 밖은 `422 plan_confirm/not_applicable`). 승인되면 `work.plan_confirmed_at` 이 찍혀 그 미션의 `card_delegate` 게이트가 풀린다 — `context` 에 이해한 목표·접근법·범위를 적는다.' }
 
     HitlCreateInfo:
       allOf:
@@ -6149,7 +6151,7 @@ components:
             proposed_default: { type: [string, 'null'] }
             hitl_type: { $ref: '#/components/schemas/HitlType' }
             paused_reason: { $ref: '#/components/schemas/PauseReason' }
-            purpose: { type: [string, 'null'], enum: [agent, user_approval, budget, time, loop, isolation, null], description: "HITL 항목이면 `HitlRequest.purpose` 를 그대로 싣는다(K-9) — 웹이 task 범위 예산 HITL(방은 active)에 상향 입력을 붙이려면 카드에서 바로 읽어야 한다. 비-HITL 항목은 null." }
+            purpose: { type: [string, 'null'], enum: [agent, user_approval, budget, time, loop, isolation, plan, null], description: "HITL 항목이면 `HitlRequest.purpose` 를 그대로 싣는다(K-9) — 웹이 task 범위 예산 HITL(방은 active)에 상향 입력을 붙이려면 카드에서 바로 읽어야 한다. 비-HITL 항목은 null." }
             failure_kind: { $ref: '#/components/schemas/FailureKind' }
             runtime_name: { type: [string, 'null'] }
             grace_ends_at: { type: [string, 'null'], format: date-time }
@@ -6670,6 +6672,8 @@ components:
         started_at: { type: [string, 'null'], format: date-time }
         finished_at: { type: [string, 'null'], format: date-time }
         last_activity_at: { type: [string, 'null'], format: date-time }
+        plan_confirm_required: { type: boolean, description: 'v1.2(FR-2A.7) — `WorkCreate.plan_confirm_required`. 위임(`card_delegate`)이 계획 확인 전까지 막혀 있는지.' }
+        plan_confirmed_at: { type: [string, 'null'], format: date-time, description: 'v1.2(FR-2A.7) — `plan_confirm_required` 가 켜진 미션의 계획을 Director 가 승인한 시각(`purpose: plan` HITL 승인). `plan_confirm_required` 가 꺼져 있으면 항상 null.' }
     WorkCreate:
       type: object
       description: 미션 열기(S21). goal 만 필수 — 나머지는 방 설정을 상속한다(FR-2A.1).
@@ -6689,6 +6693,7 @@ components:
         from_message_id: { type: string, format: uuid, description: '「이걸 미션으로」 — 원 메시지와 그 스레드의 `work_id = null` 인 것을 한 번 귀속하고 그 스레드의 lane 도 채운다(FR-3.1.1 사후 귀속).' }
         from_proposal_id: { type: string, format: uuid, description: 에이전트 제안에서 연다(S26). }
         draft: { type: boolean, default: false }
+        plan_confirm_required: { type: boolean, default: false, description: 'v1.2(FR-2A.7, 실사용 요청 2026-10-14) — 켜면 Lead 가 **위임(colab card delegate)하기 전에** 이해한 목표·접근법·범위를 승인 요청(`colab hitl ask`, `plan_confirm: true`)으로 올려 Director 승인을 받아야 한다. 승인 전까지 위임은 `409 plan_confirmation_required`. 생성 때만 정한다 — 연 뒤에는 바꿀 수 없다.' }
     WorkUpdate:
       type: object
       properties:

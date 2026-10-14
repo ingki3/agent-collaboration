@@ -19,10 +19,11 @@ import type { HitlRequest, HitlResponse } from "@/lib/api/types";
 type Purpose = NonNullable<HitlRequest["purpose"]>;
 
 /**
- * 시스템 발행 사유 문구(purpose 별). 에이전트 발행(`agent`)에는 이 줄이 없다 — 발행 이유가 곧 질문이기 때문이다.
+ * 시스템 발행 사유 문구(purpose 별). 에이전트 발행(`agent`·`plan`, v1.2)에는 이 줄이 없다 — 발행 이유가 곧 질문
+ * 이거나(`agent`) 카드 자체가 말한다(`plan` — hitlMetaLine 이 `source: agent` 에서 일찍 반환한다).
  * 문자열은 계약 enum 값(`user_approval`·`budget`·`time`·`loop`)에 붙어 있다.
  */
-export const PURPOSE_REASON: Record<Exclude<Purpose, "agent">, string> = {
+export const PURPOSE_REASON: Record<Exclude<Purpose, "agent" | "plan">, string> = {
   user_approval: "종료 조건(Director 승인)",
   budget: "예산 상한 초과",
   time: "시간 상한 도달",
@@ -34,7 +35,7 @@ export const PURPOSE_REASON: Record<Exclude<Purpose, "agent">, string> = {
 /** 메타 한 줄(COMPONENTS §2.3 `i2BcH`). 시스템 발행이면 사유 + `source: system`. */
 export function hitlMetaLine(r: Pick<HitlRequest, "source" | "purpose" | "created_at">): string {
   if (r.source !== "system") return `${clockTime(r.created_at)} · 에이전트가 요청`;
-  const p = r.purpose && r.purpose !== "agent" ? PURPOSE_REASON[r.purpose] : null;
+  const p = r.purpose && r.purpose !== "agent" && r.purpose !== "plan" ? PURPOSE_REASON[r.purpose] : null;
   return p ? `${p} 때문에 자동으로 올라온 요청` : "시스템이 올린 요청";
 }
 

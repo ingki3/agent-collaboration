@@ -98,11 +98,18 @@ func HitlAsk(ctx context.Context, c *client.Client, a HitlAskArgs) (*HitlResult,
 }
 
 // HitlApproveRequestArgs — `colab hitl approve-request --summary <s>
-// [--artifact <id>]` / colab_hitl_approve_request.
+// [--context <c>] [--artifact <id>] [--plan-confirm]` /
+// colab_hitl_approve_request.
 type HitlApproveRequestArgs struct {
 	Session  string `json:"session,omitempty"`
 	Summary  string `json:"summary"`
+	Context  string `json:"context,omitempty"`
 	Artifact string `json:"artifact,omitempty"`
+	// PlanConfirm — v1.2 (FR-2A.7, 0049): this approval IS the mission's plan
+	// confirmation. Only accepted when the mission opted in and has not
+	// already confirmed one (server 422 `plan_confirm/not_applicable`
+	// otherwise). Approval lifts the mission's card_delegate gate.
+	PlanConfirm bool `json:"plan_confirm,omitempty"`
 
 	IdempotencyKey string `json:"idempotency_key,omitempty"`
 }
@@ -116,13 +123,17 @@ func HitlApproveRequest(ctx context.Context, c *client.Client, a HitlApproveRequ
 	if strings.TrimSpace(a.Summary) == "" {
 		return nil, client.Usage("hitl approve-request: --summary is required (what you are asking approval for)")
 	}
+	if a.PlanConfirm && strings.TrimSpace(a.Context) == "" {
+		return nil, client.Usage("hitl approve-request: --plan-confirm needs --context — the goal, approach and scope the Director is confirming")
+	}
 	if a := strings.TrimSpace(a.Artifact); a != "" {
 		if err := requireArtifactID("hitl approve-request --artifact", a); err != nil {
 			return nil, err
 		}
 	}
 	return createHitl(ctx, c, client.CmdHitlApproveRequest, a.Session, a.IdempotencyKey, client.HitlCreate{
-		Type: client.HitlApproval, Summary: a.Summary, ArtifactID: strings.TrimSpace(a.Artifact),
+		Type: client.HitlApproval, Summary: a.Summary, Context: a.Context, ArtifactID: strings.TrimSpace(a.Artifact),
+		PlanConfirm: a.PlanConfirm,
 	})
 }
 
