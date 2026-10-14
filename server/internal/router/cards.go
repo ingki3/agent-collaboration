@@ -80,7 +80,7 @@ func (s *Service) SubmitResult(ctx context.Context, taskID uuid.UUID, attempt in
 	if _, ok := cards.Transition(c.Status, cards.ActSubmit, false); !ok || c.Status != cards.InProgress && c.Status != cards.ResultSubmitted {
 		return nil, apperr.Conflict("card_not_open", cards.CardNotOpenSentence)
 	}
-	res, down, errs := cards.CheckResult(in, len(c.Criteria))
+	res, down, errs := cards.CheckResult(in, c.Criteria)
 	if len(errs) == 0 {
 		bad, err := cards.CheckEvidenceExist(ctx, tx, c.RoomID, in)
 		if err != nil {

@@ -1020,7 +1020,7 @@ export interface paths {
         /**
          * 결과 카드 제출(`colab card report`)
          * @description 권한: `TaskToken` — 호출 task 가 이 카드의 **카드 task**(`task.kind = card`, `task.card_id` = 이 카드, 현재 판)여야 한다. 아니면 `403 not_card_task`(질문 task·다른 카드·사람 세션 포함).
-         *     v0.3.10 (PRD FR-3.8 3). 카드가 `in_progress` 가 아니면 `409 card_not_open`. 검사(`422 result_card_incomplete` + `errors[]`): 기준 번호가 현재 판의 1..N 을 **각 한 번** 덮지 않음(빠짐·중복·범위 밖) · 근거 참조가 같은 방에 없음. **근거가 하나도 없는 `met` 은 `partial` 로 낮춰 저장**하고 응답 `downgraded[]`(기준 번호)와 `notice` 문장에 적는다(거절하지 않는다). 저장하면 카드 `result_submitted`, 결과 카드 말풍선 게시(`speech: report`, `card_role: result`, `responds_to_message_id` = 이 판의 위임 카드 말풍선), `card.updated`. lane 완료는 지금 규칙 그대로(이 호출은 lane 을 끝내지 않는다 — `status set done` 또는 턴 종료). 같은 판에 두 번 내면 뒤의 것이 이긴다(말풍선은 새로, 앞의 것은 `message.updated` 로 「바뀜」 표시 없이 남는다 — 이력). 멱등키는 `message post` 와 같은 규칙.
+         *     v0.3.10 (PRD FR-3.8 3). 카드가 `in_progress` 가 아니면 `409 card_not_open`. 검사(`422 result_card_incomplete` + `errors[]`): 기준 번호가 현재 판의 1..N 을 **각 한 번** 덮지 않음(빠짐·중복·범위 밖) · 근거 참조가 같은 방에 없음. **근거가 하나도 없는 `met`, 그리고 확인 방법이 `artifact`인 기준의 `met`이 근거 중 `kind: artifact`가 하나도 없는 경우는 `partial` 로 낮춰 저장**하고 응답 `downgraded[]`(기준 번호)와 `notice` 문장에 적는다(거절하지 않는다; v0.3.14, 2026-10-13 실사용 사고 — message·commit 근거만으로 `artifact` 기준이 `met`이 되어 실제로는 제출 안 된 문서를 Director 가 찾지 못했다). 저장하면 카드 `result_submitted`, 결과 카드 말풍선 게시(`speech: report`, `card_role: result`, `responds_to_message_id` = 이 판의 위임 카드 말풍선), `card.updated`. lane 완료는 지금 규칙 그대로(이 호출은 lane 을 끝내지 않는다 — `status set done` 또는 턴 종료). 같은 판에 두 번 내면 뒤의 것이 이긴다(말풍선은 새로, 앞의 것은 `message.updated` 로 「바뀜」 표시 없이 남는다 — 이력). 멱등키는 `message post` 와 같은 규칙.
          */
         post: operations["submitCardResult"];
         delete?: never;
