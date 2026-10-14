@@ -88,7 +88,6 @@ export function AgentChip(props: AgentChipProps) {
       data-agent-id={props.agentId}
       data-status={status}
       data-archived={props.archived ? "true" : undefined}
-      title={props.statusNote ?? undefined}
     >
       <span className="agent-chip__avatar" aria-hidden="true">
         {props.avatarUrl ? <img src={props.avatarUrl} alt="" /> : props.name.slice(0, 1).toUpperCase()}
@@ -101,12 +100,17 @@ export function AgentChip(props: AgentChipProps) {
             <span className="agent-chip__archived" data-testid="agent-chip-archived">보관됨</span>
           )}
           <Badge kind="agent" value={status} size="sm" />
+          {/* 상세 정보(역할·런타임·모델·부가 메모)는 더 이상 칩에 바로 안 보인다 — i 아이콘에 올리면 레이어로 뜬다
+              (실사용 요청 2026-10-14: 참여자 목록이 너무 복잡하다). 레이어는 숨겨져 있을 뿐 DOM 에는 그대로 있다. */}
+          {size === "md" && line2 && (
+            <span className="agent-chip__info" tabIndex={0} data-testid="agent-chip-info">
+              <span className="agent-chip__info-glyph" aria-hidden="true">ⓘ</span>
+              <span className="agent-chip__info-pop" role="tooltip" data-testid="agent-chip-line2">
+                {line2}
+              </span>
+            </span>
+          )}
         </span>
-        {size === "md" && line2 && (
-          <span className="agent-chip__line2" data-testid="agent-chip-line2">
-            {line2}
-          </span>
-        )}
       </span>
     </Tag>
   );

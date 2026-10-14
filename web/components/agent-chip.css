@@ -10,6 +10,19 @@
 .agent-chip__name { font-size: var(--fs-card); font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .agent-chip__assignee { font-size: var(--fs-meta); color: var(--ink-2); border: 1px solid var(--line); border-radius: 4px; padding: 0 4px; }
 .agent-chip__line2 { font-size: var(--fs-sub); color: var(--ink-2); line-height: 1.5; overflow-wrap: anywhere; }
+/* 상세 정보 레이어 — i 아이콘에 올리거나(마우스) 포커스하면(키보드) 뜬다. 레이어 내용은 기존 둘째 줄과 같다. */
+.agent-chip__info { position: relative; display: inline-flex; align-items: center; color: var(--ink-3); cursor: default; outline: none; }
+.agent-chip__info-glyph { font-size: var(--fs-meta); line-height: 1; }
+.agent-chip__info-pop {
+  position: absolute; z-index: 20; top: calc(100% + 6px); left: 0; width: max-content; max-width: 240px;
+  padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--bg); color: var(--ink-2);
+  font-size: var(--fs-sub); line-height: 1.5; box-shadow: 0 2px 8px color-mix(in srgb, var(--ink) 16%, transparent);
+  opacity: 0; visibility: hidden; transform: translateY(-2px); transition: opacity 0.1s ease, transform 0.1s ease;
+  pointer-events: none;
+}
+.agent-chip__info:hover .agent-chip__info-pop, .agent-chip__info:focus-visible .agent-chip__info-pop {
+  opacity: 1; visibility: visible; transform: translateY(0);
+}
 .agent-chip--sm { max-width: none; width: auto; padding: 2px 6px; grid-template-columns: 20px 1fr; gap: 6px; display: inline-grid; align-items: center; }
 .agent-chip--sm .agent-chip__avatar { width: 20px; height: 20px; font-size: var(--fs-meta); }
 .agent-chip--sm .agent-chip__name { font-size: var(--fs-body); }

@@ -47,3 +47,16 @@
   border-color: var(--badge-solid);
   color: var(--bg);
 }
+
+/* tone=run 은 "지금 계속 돈다"는 뜻이다 — 글리프가 은은히 맥박쳐 멈춘 화면과 구분한다
+   (실사용 요청 2026-10-14: 실행 중인지 멈췄는지 한눈에 안 보였다). */
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+.badge[data-tone="run"] .badge__glyph {
+  animation: badge-pulse 1.4s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .badge[data-tone="run"] .badge__glyph { animation: none; }
+}
