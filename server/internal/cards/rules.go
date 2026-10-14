@@ -228,13 +228,22 @@ type Result struct {
 
 var commitRe = regexp.MustCompile(`^[0-9a-fA-F]{7,40}$`)
 
-// CheckResult is FR-3.8 3's table against a card with n criteria. It returns
-// every broken rule (422 result_card_incomplete), and — when there is none —
-// the result to store and the criteria whose `met` had no evidence and were
-// saved as `partial` (openapi submitCardResult: 낮춰 저장하고 거절하지 않는다).
-// Whether an artifact·message ref exists in the room is the caller's
-// (CheckEvidenceExist).
-func CheckResult(in ResultIn, n int) (Result, []int, []apperr.FieldError) {
+// CheckResult is FR-3.8 3's table against a card's criteria (their declared
+// Method included — a criterion whose method is `artifact` names the
+// deliverable's actual submitted artifact as the thing to check, so a `met`
+// backed only by a message or a commit has nothing to open and is treated
+// the same as no evidence at all, 2026-10-13 실사용 사고: a business plan
+// card's criterion 1 ("… writer-brief.md 의 1~16절 목차가 모두 있다",
+// method: artifact) was judged `met` on the delegator's own message, and the
+// Director had to ask in chat how to see the document because it was never
+// actually submitted). It returns every broken rule (422
+// result_card_incomplete), and — when there is none — the result to store
+// and the criteria whose `met` had no (or the wrong kind of) evidence and
+// were saved as `partial` (openapi submitCardResult: 낮춰 저장하고 거절하지
+// 않는다). Whether an artifact·message ref exists in the room is the
+// caller's (CheckEvidenceExist).
+func CheckResult(in ResultIn, criteria []Criterion) (Result, []int, []apperr.FieldError) {
+	n := len(criteria)
 	var errs []apperr.FieldError
 	add := func(field, code, msg string) { errs = append(errs, apperr.Field(field, code, msg)) }
 	switch {
@@ -326,7 +335,7 @@ func CheckResult(in ResultIn, n int) (Result, []int, []apperr.FieldError) {
 			ev = []Evidence{}
 		}
 		sv := Verdict{Criterion: v.Criterion, Verdict: v.Verdict, StatedVerdict: v.Verdict, Evidence: ev, Note: v.Note}
-		if v.Verdict == "met" && len(ev) == 0 {
+		if v.Verdict == "met" && !metSupported(criteria[v.Criterion-1].Method, ev) {
 			sv.Verdict, sv.Downgraded = "partial", true
 			downgraded = append(downgraded, v.Criterion)
 		}
@@ -341,6 +350,26 @@ func CheckResult(in ResultIn, n int) (Result, []int, []apperr.FieldError) {
 		downgraded = []int{}
 	}
 	return out, downgraded, nil
+}
+
+// metSupported is whether evidence actually backs a `met` verdict: any
+// evidence at all for most methods, but a criterion checked by `artifact`
+// (the deliverable's own submitted artifact — PRD 완료 기준 표) needs at
+// least one evidence entry that IS an artifact, not a message describing one
+// or a commit (2026-10-13 실사용 사고, see CheckResult).
+func metSupported(method string, ev []Evidence) bool {
+	if len(ev) == 0 {
+		return false
+	}
+	if method != "artifact" {
+		return true
+	}
+	for _, e := range ev {
+		if e.Kind == "artifact" {
+			return true
+		}
+	}
+	return false
 }
 
 func nonNil(xs []string) []string {
@@ -359,7 +388,7 @@ func DowngradeNotice(ns []int) *string {
 	for i, n := range ns {
 		parts[i] = strconv.Itoa(n)
 	}
-	s := fmt.Sprintf("Criterion %s said met without evidence, so it was saved as partial. Add evidence and submit again if it is really met.", strings.Join(parts, ", "))
+	s := fmt.Sprintf("Criterion %s said met, but the evidence does not actually support it — missing, or (for a criterion checked by its own artifact) not an artifact — so it was saved as partial. Add the right evidence and submit again if it is really met.", strings.Join(parts, ", "))
 	return &s
 }
 

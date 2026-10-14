@@ -82,6 +82,10 @@ func hasHangul(s string) bool {
 func TestCheckResult(t *testing.T) {
 	art := uuid.New().String()
 	ev := []Evidence{{Kind: "artifact", Ref: art}}
+	// None of these three is `artifact` — this table is about the
+	// missing/duplicate/out-of-range/evidence-presence rules, not the
+	// method↔evidence-kind rule (its own TestCheckResultArtifactMethod).
+	criteria := []Criterion{{Text: "x", Method: "run"}, {Text: "y", Method: "review"}, {Text: "z", Method: "inspect"}}
 	base := func() ResultIn {
 		return ResultIn{Summary: "로그인 화면을 만들었고 테스트가 통과한다.",
 			Verdicts: []VerdictIn{
@@ -119,7 +123,7 @@ func TestCheckResult(t *testing.T) {
 		t.Run(c.name, func(t *testing.T) {
 			in := base()
 			c.mut(&in)
-			res, down, errs := CheckResult(in, 3)
+			res, down, errs := CheckResult(in, criteria)
 			var got []string
 			for _, e := range errs {
 				got = append(got, e.Field+":"+e.Code)
@@ -143,11 +147,59 @@ func TestCheckResult(t *testing.T) {
 			}
 		})
 	}
-	if n := DowngradeNotice([]int{1, 3}); n == nil || *n != "Criterion 1, 3 said met without evidence, so it was saved as partial. Add evidence and submit again if it is really met." {
+	if n := DowngradeNotice([]int{1, 3}); n == nil || *n != "Criterion 1, 3 said met, but the evidence does not actually support it — missing, or (for a criterion checked by its own artifact) not an artifact — so it was saved as partial. Add the right evidence and submit again if it is really met." {
 		t.Errorf("notice = %v", n)
 	}
 	if DowngradeNotice(nil) != nil {
 		t.Error("no downgrade, no notice")
+	}
+}
+
+// TestCheckResultArtifactMethod is the 2026-10-13 실사용 사고's regression:
+// a criterion whose method is `artifact` must be backed by an actual
+// artifact, not a message or a commit describing one (CheckResult, see its
+// doc comment) — real incident: a business-plan.md criterion was judged met
+// on the delegator's own message, and the Director had to ask in chat how
+// to find the document because it was never actually submitted as a room
+// artifact. 회귀 주입: metSupported 의 `method != "artifact"` 이른-반환을
+// 지우면 이 테스트가 FAIL한다(message 근거가 그냥 통과해 버린다).
+func TestCheckResultArtifactMethod(t *testing.T) {
+	criteria := []Criterion{{Text: "산출물이 아티팩트로 있다", Method: "artifact"}}
+	base := func() ResultIn {
+		return ResultIn{Summary: "문서를 작성해 제출했다.", Confirmed: []string{"확인"}, Assumed: []string{}}
+	}
+	msgID := uuid.New().String()
+	artID := uuid.New().String()
+	for _, c := range []struct {
+		name string
+		ev   []Evidence
+		down bool
+	}{
+		{"artifact-evidence-ok", []Evidence{{Kind: "artifact", Ref: artID}}, false},
+		{"message-evidence-downgraded", []Evidence{{Kind: "message", Ref: msgID}}, true},
+		{"commit-evidence-downgraded", []Evidence{{Kind: "commit", Ref: "abc1234"}}, true},
+		{"no-evidence-downgraded", nil, true},
+		{"artifact-plus-message-ok", []Evidence{{Kind: "message", Ref: msgID}, {Kind: "artifact", Ref: artID}}, false},
+	} {
+		t.Run(c.name, func(t *testing.T) {
+			in := base()
+			in.Verdicts = []VerdictIn{{Criterion: 1, Verdict: "met", Evidence: c.ev}}
+			res, down, errs := CheckResult(in, criteria)
+			if len(errs) > 0 {
+				t.Fatalf("errs = %v", errs)
+			}
+			if c.down != (len(down) == 1 && down[0] == 1) {
+				t.Fatalf("downgraded = %v, want down=%v", down, c.down)
+			}
+			v := res.Verdicts[0]
+			if c.down {
+				if v.Verdict != "partial" || v.StatedVerdict != "met" || !v.Downgraded {
+					t.Errorf("verdict = %+v, want saved partial stated met", v)
+				}
+			} else if v.Verdict != "met" || v.Downgraded {
+				t.Errorf("verdict = %+v, want met not downgraded", v)
+			}
+		})
 	}
 }
 
