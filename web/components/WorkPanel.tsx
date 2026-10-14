@@ -257,8 +257,11 @@ function WorkOverview(props: WorkPanelProps) {
           )}
         </div>
       )}
+      {/* 제목 줄 — "최근 활동" 줄(바로 위)이나 "미션 목표"(바로 아래)와 같은 문장이면 또 적지 않는다
+          (실사용 요청 2026-10-14: 같은 긴 문장이 한 칸에 세 번까지 보였다 — 미션을 메시지에서 열면
+          title 이 goal 의 복사본이라 흔하다). 상태 배지는 그 자리에 그대로 둔다. */}
       <div className="work-panel__title">
-        <b data-testid="work-title">{work.title}</b>
+        {mode.kind !== "recent" && work.title.trim() !== work.goal.trim() && <b data-testid="work-title">{work.title}</b>}
         <Badge kind="work" value={work.status} size="sm" data-testid="work-status" />
       </div>
       <dl className="aside__dl">

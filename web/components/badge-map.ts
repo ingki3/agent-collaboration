@@ -87,7 +87,9 @@ export const BADGE_MAP = {
   /** PRD FR-1.3 에이전트 상태 6종 — SCREEN §4.5 좌열 */
   agent: {
     idle: spec("○", "neutral", "대기"),
-    working: spec("●", "run", "작업 중"),
+    // 서브 미션 카드(lane)·task 배지가 같은 뜻을 "실행 중"이라고 부른다 — 한 화면에서 같은 상태가
+    // "작업 중"/"실행 중" 두 말로 보이던 것을 통일(실사용 요청 2026-10-14). 값(working)은 그대로.
+    working: spec("●", "run", "실행 중"),
     waiting_human: spec("⏳\uFE0E", "wait", "승인 대기"),
     error: spec("⚠", "fail", "오류", "solid"),
     offline: spec("✕", "fail", "오프라인", "solid"),
