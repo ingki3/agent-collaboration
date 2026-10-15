@@ -77,7 +77,7 @@ export function conditionGate(d: ConditionDraft, participantIds: readonly string
 /** 요약 문장의 이름 목록 — "보고서 제출 (담당 에이전트)" · "Lead 의 검토 승인" · "Director 승인". */
 export function draftNames(d: ConditionDraft, nameOf: (agentId: string) => string): string[] {
   return COND_ORDER.filter((t) => d.conds.includes(t)).map((t) => {
-    if (t === "artifact_submitted") return `${conditionName(t)} (${d.submitter ? `@${nameOf(d.submitter)}` : CONDITION_EDITOR.submitter_default_short})`;
+    if (t === "artifact_submitted") return `${conditionName(t)} (${d.submitter ? nameOf(d.submitter) : CONDITION_EDITOR.submitter_default_short})`;
     if (t === "agent_approval") return conditionName(t, d.reviewer ? nameOf(d.reviewer) : null);
     return conditionName(t);
   });

@@ -79,7 +79,7 @@ describe("위임 카드 — 칸 전부", () => {
   it("머리(C-3 · 1판 · 진행 중) · 목표 · 완료 기준 ol + 확인 방법 칩 · 하지 않을 것(경계 막대) · 참고 칩 · 결과물 · 예산 · aria-label", () => {
     render(<TimelineItemView item={one(delegation())} ctx={ctx({ cards: { c3: card() } })} />);
     const art = screen.getByRole("article");
-    expect(art).toHaveAttribute("aria-label", TASK_CARD.aria_delegation("Lead", "C-3", "@Developer", "진행 중"));
+    expect(art).toHaveAttribute("aria-label", TASK_CARD.aria_delegation("Lead", "C-3", "Developer", "진행 중"));
     const head = screen.getByTestId("card-head");
     expect(head).toHaveTextContent("C-3");
     expect(head).toHaveTextContent("1판");
@@ -230,12 +230,12 @@ describe("결과 카드 — 칸 전부 · downgraded · 자동", () => {
     expect(within(rows[2]).getByTestId("card-downgraded")).toHaveTextContent("부분 · 근거 없음");
     expect(screen.getAllByTestId("card-downgraded")).toHaveLength(1);
   });
-  it("수락 — 판정 칩 수락 · 판정 줄 「수락 · @Lead 15:58 — 〈코멘트〉」(v0.19.17)", () => {
+  it("수락 — 판정 칩 수락 · 판정 줄 「수락 · Lead 15:58 — 〈코멘트〉」(v0.19.17, @ 제거는 실사용 리뷰 2026-10-15)", () => {
     const c = card({ status: "accepted", result: result(), judgement: { action: "accepted", by: { kind: "agent", id: "a1", name: "Lead" }, at: "2026-09-30T06:58:00Z", reason: null, comment: "커브 테스트 로그와 영상을 확인했습니다" } });
     render(<TimelineItemView item={one(resultMsg())} ctx={ctx({ cards: { c3: c } })} />);
     expect(within(screen.getByTestId("card-head")).getByRole("img", { name: "수락" })).toHaveAttribute("data-tone", "done");
     // SCREEN §4.6 — 시각은 분까지(「15:58」), 초는 내지 않는다(#406 리뷰 NN3).
-    expect(screen.getByTestId("card-judgement")).toHaveTextContent(/^✓수락 · @Lead \d\d:58 — 커브 테스트 로그와 영상을 확인했습니다$/);
+    expect(screen.getByTestId("card-judgement")).toHaveTextContent(/^✓수락 · Lead \d\d:58 — 커브 테스트 로그와 영상을 확인했습니다$/);
   });
   it("수정 요청 판정 줄 — 「수정 요청 · 형주 — 사유」 + 「새 판 보기」(새 판 위임 카드로)", () => {
     const onJump = vi.fn();
@@ -371,14 +371,14 @@ describe("사람의 되돌리기 — 「⋯」 메뉴는 TaskCard.actions 만 �
 });
 
 describe("‹질문› — 카드 없는 에이전트 → 에이전트 멘션", () => {
-  it("speech question 은 「질문」 라벨 · block 톤(?) · 받는 쪽 @에이전트 · 그 답은 「답」", () => {
+  it("speech question 은 「질문」 라벨 · block 톤(?) · 받는 쪽 에이전트 이름 · 그 답은 「답」", () => {
     const q = msg("q1", { author_id: "a5", author: { name: "Writer", avatar_url: null }, speech: "question", addressees: [{ kind: "agent", id: "a4", name: "Researcher" }], content: "드리프트도 봤나요?", work_id: null });
     render(<TimelineItemView item={one(q)} ctx={ctx()} />);
     const chip = screen.getByTestId("speech-kind");
     expect(chip).toHaveTextContent("질문");
     expect(chip).toHaveAttribute("data-tone", "block");
     expect(chip).toHaveTextContent("?");
-    expect(screen.getByTestId("speech-to")).toHaveTextContent("@Researcher");
+    expect(screen.getByTestId("speech-to")).toHaveTextContent("Researcher");
     expect(screen.getByRole("article")).toHaveAttribute("data-side", "left");
     cleanup();
     render(<TimelineItemView item={one(msg("a1m", { speech: "answer", addressees: [{ kind: "agent", id: "a5", name: "Writer" }] }))} ctx={ctx()} />);

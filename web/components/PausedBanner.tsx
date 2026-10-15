@@ -52,7 +52,7 @@ export function pausedSummary(d: PausedDetail, agentName?: (id: string) => strin
     case "loop": {
       const l = d.loop;
       if (!l?.limit) return "에이전트끼리 주고받기가 상한에 닿았습니다.";
-      const who = (l.agents ?? []).map((id) => `@${agentName?.(id) ?? id.slice(0, 8)}`).join(" ↔ ");
+      const who = (l.agents ?? []).map((id) => agentName?.(id) ?? id.slice(0, 8)).join(" ↔ ");
       const pair = l.limit === "pair_roundtrips" && who ? `${who} ` : "";
       return `${LOOP_LIMIT_LABEL[l.limit]} — ${pair}${l.count ?? 0}회`;
     }

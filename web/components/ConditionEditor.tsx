@@ -28,7 +28,7 @@ export interface ConditionEditorProps {
 
 export function ConditionEditor({ value, onChange, participants, assigneeId, reviewerRequiredText }: ConditionEditorProps) {
   const nameOf = (id: string) => participants.find((p) => p.id === id)?.name ?? id;
-  const submitterLabel = value.submitter ? `@${nameOf(value.submitter)}` : CONDITION_EDITOR.submitter_default_short;
+  const submitterLabel = value.submitter ? nameOf(value.submitter) : CONDITION_EDITOR.submitter_default_short;
   const toggle = (t: CondType, next: boolean) =>
     onChange({ ...value, conds: next ? [...value.conds, t] : value.conds.filter((x) => x !== t) });
 

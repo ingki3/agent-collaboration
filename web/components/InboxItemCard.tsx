@@ -316,7 +316,7 @@ export function InboxItemCard({ item, hitl: detail, onRespond, onAction, onMarkR
         <div className="inbox-item__body">
           {item.card?.title && <p className="inbox-item__title" data-testid="inbox-title">{item.card.title}</p>}
           {item.card?.body && <p className="inbox-item__text" data-testid="inbox-body">{item.card.body}</p>}
-          {item.card?.agent_name && <p className="inbox-item__text">에이전트 @{item.card.agent_name}</p>}
+          {item.card?.agent_name && <p className="inbox-item__text">에이전트 {item.card.agent_name}</p>}
         </div>
       )}
 

@@ -190,7 +190,7 @@ describe("[FOLDERS] 방 → 미션 → 에이전트 트리(SCREEN §4.16 · daem
     const missionRows = groups[0].querySelectorAll('[data-testid="workdir-row"]');
     expect(missionRows[0].getAttribute("data-role")).toBe("shared");
     expect(missionRows[0].querySelector('[data-testid="workdir-kind"]')!.textContent).toBe("공용");
-    expect(missionRows[1].querySelector('[data-testid="workdir-name"]')!.textContent).toBe("@Backend");
+    expect(missionRows[1].querySelector('[data-testid="workdir-name"]')!.textContent).toBe("Backend");
   });
 
   it("에이전트 이름을 바꾼 뒤에는 경로 옆에 「폴더 이름은 만들 때의 이름입니다」", async () => {

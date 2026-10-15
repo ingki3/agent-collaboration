@@ -3,7 +3,7 @@
  * Part Bubble · Part Head — 부분 메시지 말풍선(COMPONENTS §9.11 · SCREEN §4.6 v0.19.11 · PRD FR-3.1.4).
  *
  * 에이전트 Chat Bubble(§9.8)을 부분(section) 여럿으로 나눈 것. 테두리·배경·폭·아바타는 §9.8 그대로(`.convo[data-side=left]`).
- *  - 작성자 머리: 아바타 + 「@작성자」 + 시각 + 미션 라벨 + 「⋯」 — **한 번**. 받는 쪽·종류는 부분마다 다르므로 여기 없다.
+ *  - 작성자 머리: 아바타(사진 있으면 사진, 없으면 이니셜) + 작성자 이름(멘션 아님 — `@` 없음) + 시각 + 미션 라벨 + 「⋯」 — **한 번**. 받는 쪽·종류는 부분마다 다르므로 여기 없다.
  *  - 부분마다: Part Head(종류 배지 → 받는 쪽 칩 · 위임 상태 칩) · 보고면 「↩ … 에 대한 보고」 · 본문 · 부분 꼬리(아티팩트 · 작업 내용 · 답글).
  *  - 부분 사이 1px `$line`. 말풍선 꼬리: 작업 과정 **하나**(한 턴 — 묶음은 경계 하나).
  *  - 「나」 강조: 보는 사람이 받는 쪽인 부분은 받는 쪽 칩 굵게 + 부분 왼쪽 2px `$s-run` 선.
@@ -15,7 +15,7 @@ import type { Message } from "@/lib/api/types";
 import { clockTime, relativeTime } from "@/lib/time";
 import { Badge } from "@/components/Badge";
 import { AddresseeChips, KindChip, ReportOfLink, addresseeName, speechLabel } from "./AddresseeLine";
-import { MessageBody, MessageCard, authorName, type ConversationSlot, type MessageLayerSlots } from "./MessageCard";
+import { MessageBody, MessageCard, authorName, authorAvatar, type ConversationSlot, type MessageLayerSlots } from "./MessageCard";
 import { MEDIA, PARTS as L } from "@/lib/wording";
 import { MediaGroup } from "./MediaPreview";
 import { fromAttachmentRef } from "@/lib/media";
@@ -160,6 +160,7 @@ export function PartBubble(props: PartBubbleProps) {
   const { parts } = props;
   const first = parts[0];
   const name = authorName(first);
+  const avatar = authorAvatar(first);
   const slots = parts.map((m) => props.conversation(m, {}));
   const aria = `${name} · ${L.count[0]}${props.size}${L.count[1]} · ${clockTime(first.created_at)}`;
   return (
@@ -172,7 +173,7 @@ export function PartBubble(props: PartBubbleProps) {
       data-filling={parts.length < props.size ? "true" : undefined}
       aria-label={aria}
     >
-      <span className="convo__avatar" aria-hidden="true">{name.slice(0, 1).toUpperCase()}</span>
+      <span className="convo__avatar" aria-hidden="true">{avatar ? <img src={avatar} alt="" /> : name.slice(0, 1).toUpperCase()}</span>
       <div className="convo__col">
         <div className="msg__head convo__head" data-testid="part-author">
           <span className="msg__author msg__author--agent">{name}</span>

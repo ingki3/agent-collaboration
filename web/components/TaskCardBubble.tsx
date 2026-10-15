@@ -256,7 +256,7 @@ export function TaskCardBubble(props: CardBubbleProps) {
       {view.status ? <Badge kind="card" value={view.status} size="sm" /> : <Badge kind="card_judge" value="revise_requested" size="sm" />}
     </span>
   ) : null;
-  const aria = card && view ? L.aria_delegation(authorName(m), card.label, `@${card.assignee.name}`, view.status ? L.status[view.status] : L.judge.revise_requested) : undefined;
+  const aria = card && view ? L.aria_delegation(authorName(m), card.label, card.assignee.name, view.status ? L.status[view.status] : L.judge.revise_requested) : undefined;
   const body = !card || !view ? <Loading m={m} /> : (
     <>
       {view.revise_reason && (
@@ -363,8 +363,8 @@ export function ResultCardBubble(props: CardBubbleProps) {
         <p className="tcard__judged" data-testid="card-judgement" data-action={j.action}>
           <span aria-hidden="true" className="tcard__glyph" data-verdict={j.action === "accepted" ? "met" : "partial"}>{j.action === "accepted" ? "✓" : "↺"}</span>
           {j.action === "accepted" ? L.judged_accept : L.judged_revise}
-          {j.by.kind === "agent" ? `@${j.by.name}` : j.by.name}
-          {/* SCREEN §4.6 판정 줄 「수락 · @Lead 15:58 — 〈코멘트〉」 — 시각은 분까지(HH:MM, inbox 위임 줄과 같은 포맷터). */}
+          {j.by.name}
+          {/* SCREEN §4.6 판정 줄 「수락 · Lead 15:58 — 〈코멘트〉」(실사용 리뷰 2026-10-15, @ 제거) — 시각은 분까지(HH:MM, inbox 위임 줄과 같은 포맷터). */}
           {j.action === "accepted" ? ` ${hhmm(j.at)}${j.comment ? ` — ${j.comment}` : ""}` : j.reason ? ` — ${j.reason}` : ""}
           {j.action === "revise_requested" && card.version > view.version && card.delegate_message_id && (
             <>

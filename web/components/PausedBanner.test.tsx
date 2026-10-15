@@ -28,7 +28,7 @@ describe("PausedBanner — 루프 상한(U15-8)", () => {
     expect(screen.getByTestId("paused-title").textContent).toContain("주고받기 상한");
     const sum = screen.getByTestId("paused-summary").textContent ?? "";
     expect(sum).toContain("두 에이전트가 상한까지 주고받았습니다"); // 내부 키는 문장에 넣지 않는다(§8.4)
-    expect(sum).toContain("@Backend ↔ @QA");
+    expect(sum).toContain("Backend ↔ QA");
     expect(sum).toContain("5회");
     const hint = screen.getByTestId("paused-loop-limit");
     expect(hint.getAttribute("data-limit")).toBe("pair_roundtrips");

@@ -1329,6 +1329,7 @@ export default function RoomPage() {
                   agentId={agentId}
                   taskId={taskId}
                   agentName={agentById.get(agentId)?.name ?? "agent"}
+                  avatarUrl={agentById.get(agentId)?.avatar_url}
                   summary={taskId ? summarizeProcess(events[taskId], tail) : null}
                   focus={focusFor(agentId, taskId)}
                   now={now}
@@ -1347,7 +1348,7 @@ export default function RoomPage() {
             })}
             {typingAgents.length > 0 && (
               <p className="small muted-3" data-testid="typing">
-                {typingAgents.map((n) => `@${n}`).join(", ")} {ROOM_CENTER.typing}
+                {typingAgents.join(", ")} {ROOM_CENTER.typing}
               </p>
             )}
             <div ref={bottomRef} data-testid="timeline-end" />

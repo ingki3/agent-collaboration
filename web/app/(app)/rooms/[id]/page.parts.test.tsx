@@ -157,16 +157,16 @@ describe("부분 메시지 — 한 말풍선, 받는 쪽마다 한 부분", () =
     expect(document.querySelectorAll('[data-testid="message-card"][data-message-id="p1"]')).toHaveLength(0);
   });
 
-  it("부분 머리 — ‹보고› → 서연 + ↩ / ‹요청› → @Designer / ‹요청› → @Developer · 본문 속 @Designer 칩은 받는 쪽이 아니다", async () => {
+  it("부분 머리 — ‹보고› → 서연 + ↩ / ‹요청› → Designer / ‹요청› → Developer · 본문 속 @Designer 칩은 받는 쪽이 아니다", async () => {
     await ready();
     const [a, b, c] = within(bubblesP()[0]).getAllByTestId("part");
     expect(within(a).getByTestId("speech-kind")).toHaveTextContent("보고");
     expect(within(a).getByTestId("speech-to")).toHaveTextContent("서연");
     expect(within(a).getByTestId("report-of")).toHaveTextContent("서연");
     expect(within(b).getByTestId("speech-kind")).toHaveTextContent("요청");
-    expect(within(b).getByTestId("speech-to")).toHaveTextContent("@Designer");
+    expect(within(b).getByTestId("speech-to")).toHaveTextContent("Designer");
     expect(within(b).queryByTestId("report-of")).toBeNull();
-    expect(within(c).getByTestId("speech-to").textContent).toBe("@Developer");
+    expect(within(c).getByTestId("speech-to").textContent).toBe("Developer");
   });
 
   it("(작업 내용 부분마다 · 작업 과정 하나) 작업 내용은 그 부분에만 · 작업 과정 줄은 말풍선 맨 아래 하나(부분 셋 전부의 조각)", async () => {
@@ -221,7 +221,7 @@ describe("부분 메시지 — 한 말풍선, 받는 쪽마다 한 부분", () =
     const [a, bb] = within(b).getAllByTestId("part");
     expect(a.tagName).toBe("SECTION");
     expect(a.getAttribute("aria-label")).toBe("서연에게 보고");
-    expect(bb.getAttribute("aria-label")).toBe("@Designer에게 요청");
+    expect(bb.getAttribute("aria-label")).toBe("Designer에게 요청");
   });
 });
 

@@ -170,7 +170,7 @@ export default function WorkdirsPage() {
             const blocked = deleteBlocked(w);
             const asked = refused[w.id];
             // 소유가 작업 줄기면 **id 를 보여 주지 않는다**(§8.4) — 사람은 그 문자열로 아무 결정도 하지 못한다.
-            const owner = w.role === "shared" ? FOLDERS_WORDING.shared_name : w.agent_id ? `@${agentName(w.agent_id)}` : w.lane_id ? "서브 미션" : "—";
+            const owner = w.role === "shared" ? FOLDERS_WORDING.shared_name : w.agent_id ? agentName(w.agent_id) : w.lane_id ? "서브 미션" : "—";
             // 굵게는 현재 이름, 경로는 만들 때의 이름(§6.1 만들 때 고정). 둘이 다르면 표시.
             const renamed = w.role !== "shared" && renamedSince(w, w.agent_id ? agentName(w.agent_id) : null);
             return (

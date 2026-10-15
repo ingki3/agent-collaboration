@@ -49,7 +49,7 @@ export function RoomBlockedBanner({ room, me, agentName, busy, onUnblock, onAppr
       lead = room.runtime?.name ? <Slot text={ROOM_BANNER.runtime_offline} n={room.runtime.name} /> : ROOM_BANNER.runtime_offline_plain;
       break;
     case "loop": {
-      const pair = (d.loop_agents ?? []).map((id) => `@${agentName?.(id) ?? "agent"}`).join(" ↔ ");
+      const pair = (d.loop_agents ?? []).map((id) => agentName?.(id) ?? "agent").join(" ↔ ");
       lead = (
         <>
           {ROOM_BANNER.loop}

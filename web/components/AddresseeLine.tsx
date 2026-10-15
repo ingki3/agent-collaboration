@@ -37,7 +37,6 @@ export function addresseeName(a: Addressee): string {
     case "record":
       return L.to_record;
     case "agent":
-      return `@${a.name}`;
     default:
       return a.name;
   }

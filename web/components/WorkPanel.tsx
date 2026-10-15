@@ -322,7 +322,7 @@ function WorkOverview(props: WorkPanelProps) {
         note={BUDGET_CAP.work_note}
       />
       <p className="aside__quiet" data-testid="work-assignee">
-        {work.assignee_agent_id ? <>{WORK_PANEL.assignee}@{props.agentName?.(work.assignee_agent_id) ?? "agent"}</> : WORK_PANEL.no_assignee}
+        {work.assignee_agent_id ? <>{WORK_PANEL.assignee}{props.agentName?.(work.assignee_agent_id) ?? "agent"}</> : WORK_PANEL.no_assignee}
       </p>
       {!closed && actions}
     </section>

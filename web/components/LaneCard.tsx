@@ -68,7 +68,7 @@ export function laneNote(lane: Lane): string | null {
     case "running":
       return lane.current_activity ?? "실행 중 — 취소는 즉시 가능";
     case "blocked":
-      return `? ${lane.waiting_for ? `@${lane.waiting_for}의 답을 기다림` : "답을 기다림"}${lane.blocked_note ? ` — ${lane.blocked_note}` : ""}`;
+      return `? ${lane.waiting_for ? `${lane.waiting_for}의 답을 기다림` : "답을 기다림"}${lane.blocked_note ? ` — ${lane.blocked_note}` : ""}`;
     case "paused":
       return lane.paused_over_usd != null
         ? `예산 초과로 대기 중 — $${lane.paused_over_usd.toFixed(2)} 초과 · 계속 진행 승인 필요`

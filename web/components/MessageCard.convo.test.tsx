@@ -52,6 +52,25 @@ function renderTimeline(items: Message[], ctx: Partial<ConversationCtx> = {}) {
 
 const cardOf = (id: string) => document.querySelector(`[data-message-id="${id}"]`) as HTMLElement;
 
+describe("대화 배치 — 작성자 아바타(실사용 요청 2026-10-15, 각 페이지에서 사진을 아이덴티티로)", () => {
+  it("author.avatar_url 이 있으면 사진, 없으면 이니셜 글자", () => {
+    renderTimeline([
+      msg({ id: "p", author_type: "agent", author_id: "a1", author: { name: "Lead", avatar_url: "/avatars/avatar-01.svg" }, speech: "chat", content: "안녕하세요" }),
+    ]);
+    const img = cardOf("p").querySelector(".convo__avatar img") as HTMLImageElement | null;
+    expect(img?.getAttribute("src")).toBe("/avatars/avatar-01.svg");
+  });
+
+  it("사진이 없으면 이니셜 글자로 그대로 대신한다", () => {
+    renderTimeline([
+      msg({ id: "n", author_type: "agent", author_id: "a1", author: { name: "Lead" }, speech: "chat", content: "안녕하세요" }),
+    ]);
+    const avatar = cardOf("n").querySelector(".convo__avatar")!;
+    expect(avatar.querySelector("img")).toBeNull();
+    expect(avatar.textContent).toBe("L");
+  });
+});
+
 describe("대화 배치 — 좌우 · 가운데", () => {
   it("사람은 오른쪽, 에이전트는 왼쪽, 시스템은 가운데 줄(말풍선 아님)", () => {
     renderTimeline([
@@ -85,7 +104,7 @@ describe("대화 배치 — 머리 한 줄", () => {
       }),
     ]);
     const chips = [...cardOf("many").querySelectorAll('[data-testid="speech-to"] .convo__to-chip')];
-    expect(chips.map((c) => c.textContent)).toEqual(["@Lead", "@Researcher", "@Writer", "외 2명"]);
+    expect(chips.map((c) => c.textContent)).toEqual(["Lead", "Researcher", "Writer", "외 2명"]);
   });
 
   it("받는 쪽이 비면 「방 전체」, 메모는 「기록만」", () => {
@@ -123,7 +142,7 @@ describe("대화 배치 — 묶음(5분)", () => {
     expect(cardOf("a").dataset.grouped).toBeUndefined();
     expect(cardOf("b").dataset.grouped).toBe("true");
     // 묶여도 받는 쪽은 남는다(누구에게 한 말인지가 사라지면 안 된다).
-    expect(cardOf("b").querySelector('[data-testid="speech-to"]')!.textContent).toBe("@R");
+    expect(cardOf("b").querySelector('[data-testid="speech-to"]')!.textContent).toBe("R");
     // 아바타 자리는 비워 둔다 — 줄이 어긋나지 않게.
     expect(cardOf("b").querySelector(".convo__avatar")!.getAttribute("data-blank")).toBe("true");
   });
@@ -168,9 +187,9 @@ describe("대화 배치 — 스크린리더", () => {
       msg({ id: "x", author_type: "agent", author_id: "a1", author: { name: "Lead" }, speech: "delegate", addressees: [agent("Researcher", "a2")], content: "조사" }),
       msg({ id: "y", author_type: "agent", author_id: "a1", author: { name: "Lead" }, speech: "delegate", addressees: [agent("Researcher", "a2")], content: "하나 더", created_at: at(1) }),
     ]);
-    expect(cardOf("x").getAttribute("aria-label")).toBe("Lead: @Researcher에게 위임");
+    expect(cardOf("x").getAttribute("aria-label")).toBe("Lead: Researcher에게 위임");
     expect(cardOf("y").dataset.grouped).toBe("true");
-    expect(cardOf("y").getAttribute("aria-label")).toBe("Lead: @Researcher에게 위임");
+    expect(cardOf("y").getAttribute("aria-label")).toBe("Lead: Researcher에게 위임");
   });
 
   it("받는 쪽이 없으면 「방 전체에」, 메모는 「기록만」으로 읽는다", () => {

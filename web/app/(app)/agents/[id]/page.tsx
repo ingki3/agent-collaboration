@@ -170,7 +170,10 @@ export default function AgentEditPage() {
       <div className="page-head">
         <div className="row">
           <Link href="/agents" className="small muted-3">← 에이전트</Link>
-          <h1>@{agent.name}</h1>
+          <span className="avatar-picker__preview" aria-hidden="true" style={{ width: 32, height: 32, fontSize: "var(--fs-body)" }}>
+            {avatarUrl ? <img src={avatarUrl} alt="" /> : (name || agent.name).slice(0, 1).toUpperCase()}
+          </span>
+          <h1>{agent.name}</h1>
           <Badge kind="agent" value={agent.status} size="sm" />
         </div>
         <div className="row">
