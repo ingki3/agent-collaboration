@@ -195,7 +195,7 @@ export default function InboxPage() {
             ? INBOX_V19.room_resumed
             : item.type === "isolation_confirm"
               ? INBOX_V19.isolation_answered
-              : `${item.card?.agent_name ? `@${item.card.agent_name}가` : "에이전트가"} 재개됩니다`,
+              : `${item.card?.agent_name ? `${item.card.agent_name}가` : "에이전트가"} 재개됩니다`,
       );
     } finally {
       setBusy(false);

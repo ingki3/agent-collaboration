@@ -161,13 +161,13 @@ export function TestChatPanel({ agent, runtimes, workspaceId }: TestChatPanelPro
             {chat.turns.length === 0 && !state.streamText && <div className="tchat__empty">첫 메시지를 보내면 실행 경로와 토큰이 채워집니다.</div>}
             {chat.turns.map((t, i) => (
               <div key={i} className={`tchat__turn tchat__turn--${t.role}${t.error ? " tchat__turn--error" : ""}`} data-testid={`test-chat-turn-${t.role}`}>
-                <span className="tchat__meta">{t.role === "user" ? "나" : `@${agent.name}`} · {clockTime(t.at)}{t.usage ? ` · 입력 ${t.usage.input_tokens ?? 0} / 출력 ${t.usage.output_tokens ?? 0}` : ""}</span>
+                <span className="tchat__meta">{t.role === "user" ? "나" : agent.name} · {clockTime(t.at)}{t.usage ? ` · 입력 ${t.usage.input_tokens ?? 0} / 출력 ${t.usage.output_tokens ?? 0}` : ""}</span>
                 {t.error ? <span data-testid="test-chat-turn-error">{t.error}</span> : t.content}
               </div>
             ))}
             {state.phase === "streaming" && (
               <div className="tchat__turn tchat__turn--agent tchat__turn--stream" data-testid="test-chat-stream" aria-live="polite">
-                <span className="tchat__meta">@{agent.name} · 답하는 중…</span>
+                <span className="tchat__meta">{agent.name} · 답하는 중…</span>
                 {state.streamText || "…"}
               </div>
             )}

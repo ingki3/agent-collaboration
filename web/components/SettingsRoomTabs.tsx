@@ -128,7 +128,7 @@ export function SubscriptionsSection({ workspaceId }: { workspaceId: string }) {
       const detail = await Promise.all(open.map((w) => api.get("/works/{workId}", { path: { workId: w.id } }).catch(() => null)));
       setWorks(open.map((w, i) => ({ id: w.id, title: w.title, level: (detail[i]?.subscription as SubscriptionLevel | undefined) ?? null })));
       const ls = ((Array.isArray(lanePage) ? lanePage : ((lanePage as { items?: Lane[] } | null)?.items ?? [])) as Lane[]).filter((l) => l.status !== "done");
-      setLanes(ls.map((l) => ({ id: l.id, label: [l.agent_name ? `@${l.agent_name}` : null, l.work_title ?? l.brief].filter(Boolean).join(" · "), on: l.my_subscription ?? null })));
+      setLanes(ls.map((l) => ({ id: l.id, label: [l.agent_name, l.work_title ?? l.brief].filter(Boolean).join(" · "), on: l.my_subscription ?? null })));
     } catch (e) {
       setError(errorMessage(e));
     }

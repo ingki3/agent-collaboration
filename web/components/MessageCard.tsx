@@ -37,6 +37,11 @@ export function authorName(m: Message): string {
   return m.author_type === "agent" ? "agent" : "member";
 }
 
+/** 작성자 사진(실사용 요청 2026-10-15) — 없으면 null, 호출부가 이니셜로 대신한다. */
+export function authorAvatar(m: Message): string | null {
+  return m.author?.avatar_url ?? null;
+}
+
 /**
  * 본문 — 마크다운(PRD FR-3.1, `lib/markdown.tsx`). 멘션 링크는 렌더러 안에서 예전과 같은 칩(`.msg__mention`)이 된다.
  * 시스템 메시지·요약(W-12)·스레드 답글도 같은 경로다. (진행 메모 `message.delta` 는 본문이 아니다 — 「작업 중」 말풍선, v0.19.10.)
@@ -254,7 +259,7 @@ export function MessageCard(props: MessageCardProps) {
     >
       {side === "left" && (
         <span className="convo__avatar" aria-hidden="true" data-blank={conv.grouped ? "true" : undefined}>
-          {conv.grouped ? "" : authorName(m).slice(0, 1).toUpperCase()}
+          {conv.grouped ? "" : authorAvatar(m) ? <img src={authorAvatar(m)!} alt="" /> : authorName(m).slice(0, 1).toUpperCase()}
         </span>
       )}
       <div className="convo__col">

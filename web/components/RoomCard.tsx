@@ -76,7 +76,7 @@ export function RoomCard({ room, canManage, onArchive, onUnarchive, onDelete, on
               {shown.map((p, i) => (
                 <span key={`${p.kind}:${p.id}`} className={`room-card__person room-card__person--${p.kind}`}>
                   {i > 0 && <span aria-hidden="true"> · </span>}
-                  {p.kind === "agent" ? `@${p.name}` : p.name}
+                  {p.name}
                 </span>
               ))}
               {more > 0 && (

@@ -136,8 +136,8 @@ export function ProcessFold({ messageId, summary, open, onToggle, children }: {
  *  - 「진행 메모 전체 보기」: 조각마다 한 문단 → 그 아래 꼬리 조각의 활동 피드(`children`).
  * 펼침 상태는 부른 쪽이 들고 있다(실시간 갱신에도 유지). 턴이 끝나면 부른 쪽이 그리지 않는다.
  */
-export function WorkingBubble({ agentId, taskId, agentName, summary, memoLine, memoParas, open, onToggle, children, holdRef, focus, now }: {
-  agentId: string; taskId: string | null; agentName: string; summary: ProcessSummary | null; memoLine: string | null; memoParas: string[];
+export function WorkingBubble({ agentId, taskId, agentName, avatarUrl, summary, memoLine, memoParas, open, onToggle, children, holdRef, focus, now }: {
+  agentId: string; taskId: string | null; agentName: string; avatarUrl?: string | null; summary: ProcessSummary | null; memoLine: string | null; memoParas: string[];
   open: boolean; onToggle: () => void; children?: ReactNode; holdRef?: (el: HTMLElement | null) => void;
   /** 이 턴의 lane `focus`(PRD FR-3.1.5) — 없으면 「지금」 줄이 없다. */
   focus?: LaneFocus | null; now?: number;
@@ -152,7 +152,7 @@ export function WorkingBubble({ agentId, taskId, agentName, summary, memoLine, m
   }
   return (
     <article ref={holdRef} className="msg convo wbub" data-side="left" data-testid="working-bubble" data-agent-id={agentId} data-task-id={taskId ?? undefined}>
-      <span className="convo__avatar" aria-hidden="true">{agentName.slice(0, 1).toUpperCase()}</span>
+      <span className="convo__avatar" aria-hidden="true">{avatarUrl ? <img src={avatarUrl} alt="" /> : agentName.slice(0, 1).toUpperCase()}</span>
       <div className="convo__col">
         <div className="msg__head convo__head wbub__head" role="status" aria-live="polite" data-testid="working-head">
           <span className="msg__author msg__author--agent">{agentName}</span>

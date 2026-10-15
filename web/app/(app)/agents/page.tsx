@@ -9,6 +9,7 @@
  */
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import "@/components/agent-chip.css";
 import { PageHead } from "@/components/PageHead";
 import { Badge } from "@/components/Badge";
 import { badgeSpec } from "@/components/badge-map";
@@ -107,7 +108,7 @@ export default function AgentsPage() {
 
       {applied && (
         <div className="notice notice--info" data-testid="template-applied">
-          <b>{applied.names.length}명 생성됨</b> — {applied.names.map((n) => `@${n}`).join(", ")}
+          <b>{applied.names.length}명 생성됨</b> — {applied.names.join(", ")}
           {applied.unmapped.length > 0 && <div className="small">프로파일 미매핑 {applied.unmapped.length}건: {applied.unmapped.join(" · ")}</div>}
         </div>
       )}
@@ -182,7 +183,12 @@ export default function AgentsPage() {
               <div key={a.id} className="card" data-testid="agent-card" data-agent-id={a.id}>
               <Link href={`/agents/${a.id}`} style={{ textDecoration: "none", display: "block", color: "inherit" }} data-testid="agent-card-link">
                 <div className="row" style={{ justifyContent: "space-between" }}>
-                  <b>@{a.name}</b>
+                  <span className="row" style={{ gap: 8 }}>
+                    <span className="agent-chip__avatar" aria-hidden="true" style={{ width: 24, height: 24 }}>
+                      {a.avatar_url ? <img src={a.avatar_url} alt="" /> : a.name.slice(0, 1).toUpperCase()}
+                    </span>
+                    <b>{a.name}</b>
+                  </span>
                   <Badge kind="agent" value={a.status} size="sm" />
                 </div>
                 <div className="small muted-3">{a.role} · {a.role_description}</div>

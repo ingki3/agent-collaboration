@@ -47,7 +47,7 @@ describe("LaneCard — 7상태", () => {
   it("상태별 부가 정보 한 줄이 원인을 말한다", () => {
     expect(laneNote(lane("queued", { queue_position: 2 }))).toContain("대기 순번 2");
     expect(laneNote(lane("running", { current_activity: "src/app.ts 편집 중" }))).toContain("src/app.ts 편집 중");
-    expect(laneNote(lane("blocked", { waiting_for: "Lead", blocked_note: "국내만인가요?" }))).toContain("@Lead의 답을 기다림");
+    expect(laneNote(lane("blocked", { waiting_for: "Lead", blocked_note: "국내만인가요?" }))).toContain("Lead의 답을 기다림");
     expect(laneNote(lane("paused", { paused_over_usd: 1.4 }))).toContain("$1.40 초과");
     expect(laneNote(lane("waiting_human", { waiting_for: "Director 승인 대기" }))).toContain("받은 요청");
     expect(laneNote(lane("failed", { failure_kind: "cancelled" }))).toContain("사람이 중단했습니다");

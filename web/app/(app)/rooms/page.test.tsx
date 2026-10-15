@@ -110,7 +110,7 @@ describe("S5 카드", () => {
     expect(att).not.toHaveTextContent("막힘"); // 0 인 것은 그리지 않는다
     const people = a.getByTestId("room-people");
     expect(people).toHaveAttribute("aria-label", "참여자 7명");
-    expect(people).toHaveTextContent("민지 · 서연 · @Lead · @Writer · @Researcher · +2");
+    expect(people).toHaveTextContent("민지 · 서연 · Lead · Writer · Researcher · +2");
     expect(a.getByText("결제 관련 논의와 작업")).toBeInTheDocument();
     // 0 이면 안 읽음 배지·주의 배지가 없다
     expect(within(rowOf("b")).queryByTestId("room-unread")).toBeNull();

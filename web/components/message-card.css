@@ -59,8 +59,10 @@
 .convo__to-chip[data-to-kind="agent"] { color: var(--s-run-text); background: color-mix(in srgb, var(--s-run) var(--soft-alpha), transparent); border-radius: 4px; padding: 0 5px; }
 .convo__to-chip[data-to-kind="room"], .convo__to-chip[data-to-kind="all"], .convo__to-chip[data-to-kind="record"], .convo__to-chip[data-to-kind="more"] { color: var(--ink-2); font-weight: 400; }
 .convo__report { align-self: flex-start; text-align: left; font-size: var(--fs-meta); }
-.convo__avatar { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-meta); font-weight: 700; color: var(--s-run-text); background: color-mix(in srgb, var(--s-run) var(--soft-alpha), transparent); }
+.convo__avatar { flex: none; width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: var(--fs-meta); font-weight: 700; color: var(--s-run-text); background: color-mix(in srgb, var(--s-run) var(--soft-alpha), transparent); overflow: hidden; }
 .convo__avatar[data-blank] { background: none; }
+/* 실사용 요청 2026-10-15 — 작성자 아바타 사진. 없으면(이니셜 글자) 배경·글자색은 그대로 쓴다. */
+.convo__avatar img { width: 100%; height: 100%; object-fit: cover; }
 .convo__bubble { display: flex; flex-direction: column; gap: 6px; padding: 8px 12px; min-width: 0; }
 .convo__plain { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .convo[data-side="left"] .convo__bubble { background: var(--surface); border-radius: 4px 12px 12px 12px; max-width: 88%; align-self: flex-start; }

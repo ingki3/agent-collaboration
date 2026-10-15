@@ -75,7 +75,7 @@ function routes(path: string, opts?: { path?: Record<string, string>; query?: Re
     { id: "p-a1", room_id: "r1", kind: "agent", agent: { id: "a1", name: "Lead", role: "lead" }, status: "working", room_role: "member", joined_at: "", left_at: null },
     { id: "p-a2", room_id: "r1", kind: "agent", agent: { id: "a2", name: "Developer", role: "developer" }, status: "working", room_role: "member", joined_at: "", left_at: null },
   ] });
-  if (path === "/workspaces/{wsId}/agents" || path.endsWith("/agents")) return Promise.resolve({ items: [{ id: "a1", name: "Lead", role: "lead" }, { id: "a2", name: "Developer", role: "developer" }] });
+  if (path === "/workspaces/{wsId}/agents" || path.endsWith("/agents")) return Promise.resolve({ items: [{ id: "a1", name: "Lead", role: "lead", avatar_url: "/avatars/avatar-01.svg" }, { id: "a2", name: "Developer", role: "developer" }] });
   if (path === "/rooms/{roomId}/messages") return Promise.resolve({ items: opts?.query?.thread ? [] : MSGS, has_more_before: false, has_more_after: false });
   if (path === "/tasks/{taskId}/events") return Promise.resolve({ items: EVENTS[opts!.path!.taskId] ?? [], has_more: false, structured: true });
   if (path === "/tasks/{taskId}") return Promise.resolve(TASKS[opts!.path!.taskId]);
@@ -161,6 +161,9 @@ describe("「작업 중」 말풍선 — 하나로 합쳐진다", () => {
     expect(sum).toContain("파일 읽기 5회");
     expect(within(head).getByTestId("fold-fail")).toHaveTextContent("실패 2");
     expect(within(head).getByTestId("working-dots")).toHaveAttribute("aria-hidden", "true");
+    // 실사용 요청 2026-10-15 — 작업 중 말풍선도 참여자 사진을 아이덴티티로 쓴다.
+    const avatarImg = bubbleOf("a1").querySelector(".convo__avatar img") as HTMLImageElement | null;
+    expect(avatarImg?.getAttribute("src")).toBe("/avatars/avatar-01.svg");
     expect(bubbleOf("a1").querySelector(".convo__arrow, .convo__to, [data-testid=speech-kind]")).toBeNull();
     expect(head.textContent).not.toContain("→");
     // 실패 없는 Developer 는 꼬리가 없다.

@@ -76,7 +76,7 @@ export default function AuditPage() {
       setRooms(((r?.items ?? []) as RoomListItem[]));
       const people = ((m as { items?: Member[] } | null)?.items ?? []).map((x) => ({ id: x.user.id, name: x.user.display_name || x.user.email }));
       const agentList = (Array.isArray(a) ? a : ((a as { items?: Agent[] } | null)?.items ?? [])) as Agent[];
-      setActors([...people, ...agentList.map((x) => ({ id: x.id, name: `@${x.name}` }))]);
+      setActors([...people, ...agentList.map((x) => ({ id: x.id, name: x.name }))]);
     });
   }, [workspace, canManage]);
 
@@ -171,7 +171,7 @@ export default function AuditPage() {
                         <tr key={e.id} data-testid="audit-row" data-action={e.action} data-masked={String(p.masked)}>
                           <td className="audit__at" title={e.at}>{new Date(e.at).toLocaleDateString("ko-KR")} {clockTime(e.at).slice(0, 5)}</td>
                           <td data-testid="audit-actor">
-                            {e.actor.kind === "agent" ? `@${e.actor.name}` : e.actor.name}
+                            {e.actor.name}
                             <span className="audit__kind"> · {AUDIT.actor_kind[e.actor.kind]}</span>
                           </td>
                           <td data-testid="audit-action">{actionLabel(e.action)}</td>
