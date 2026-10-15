@@ -113,7 +113,8 @@ export const PARTICIPANTS = {
   all_agents_here: "초대할 수 있는 에이전트가 모두 이 방에 있습니다",
   no_match: "찾는 이름이 없습니다",
   me: "나",
-  status_working: "작업 중",
+  // v0.19.25 실사용 결함 — 참여자 칩·서브 미션 카드와 같은 말("실행 중")로 통일.
+  status_working: "실행 중",
 } as const;
 
 export interface RoomGateLike {

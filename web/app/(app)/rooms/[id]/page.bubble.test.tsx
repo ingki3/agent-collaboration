@@ -151,10 +151,10 @@ describe("「작업 중」 말풍선 — 하나로 합쳐진다", () => {
     expect(card.compareDocumentPosition(bubbles()[0]) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("머리 — 배지 작업 중 + 요약(시간 · 많은 동작 2개) + 실패 꼬리 + 「···」, 받는 쪽(→)·말의 종류 없음", async () => {
+  it("머리 — 배지 실행 중(v0.19.25 — 참여자 칩과 같은 말로 통일) + 요약(시간 · 많은 동작 2개) + 실패 꼬리 + 「···」, 받는 쪽(→)·말의 종류 없음", async () => {
     await ready();
     const head = within(bubbleOf("a1")).getByTestId("working-head");
-    expect(within(head).getByTestId("working-badge")).toHaveTextContent("작업 중");
+    expect(within(head).getByTestId("working-badge")).toHaveTextContent("실행 중");
     const sum = within(head).getByTestId("working-summary").textContent ?? "";
     expect(sum).toMatch(/^\d+분/);
     expect(sum).toContain("셸 명령 36회");

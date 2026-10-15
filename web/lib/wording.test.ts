@@ -947,8 +947,8 @@ describe("v0.19.10 「작업 중」 말풍선 — 말은 표(MESSAGE_LAYERS)에�
   const code = (f: string) => src(f).replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "").replace(/\s\/\/.*$/gm, "").replace(/\{\/\*[\s\S]*?\*\/\}/g, "");
   const inPool = (file: string, text: string) => POOL.some((v) => v.file === file && v.text.includes(text));
 
-  it("SCREEN §4.6 의 말 그대로 — 작업 중 · 진행 메모 전체 보기", () => {
-    expect(MESSAGE_LAYERS.working).toBe("작업 중");
+  it("SCREEN §4.6 의 말 그대로 — 실행 중(v0.19.25 실사용 결함으로 통일) · 진행 메모 전체 보기", () => {
+    expect(MESSAGE_LAYERS.working).toBe("실행 중");
     expect(MESSAGE_LAYERS.working_memo_all).toBe("진행 메모 전체 보기");
     expect(inPool("lib/wording.ts", MESSAGE_LAYERS.working_memo_all)).toBe(true);
   });

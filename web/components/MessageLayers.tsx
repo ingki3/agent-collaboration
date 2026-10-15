@@ -156,7 +156,12 @@ export function WorkingBubble({ agentId, taskId, agentName, summary, memoLine, m
       <div className="convo__col">
         <div className="msg__head convo__head wbub__head" role="status" aria-live="polite" data-testid="working-head">
           <span className="msg__author msg__author--agent">{agentName}</span>
-          <span className="badge badge--soft badge--sm wbub__badge" data-tone="run" data-testid="working-badge">{L.working}</span>
+          {/* 공용 Badge 와 같은 안쪽 구조(glyph+label) — 그래야 tone=run 펄스 애니메이션(badge.css)이 먹는다.
+              손으로 그린 배지라 <Badge> 컴포넌트를 그대로 쓰지 않는다(testid 전달 통로가 없다). */}
+          <span className="badge badge--soft badge--sm wbub__badge" data-tone="run" data-testid="working-badge">
+            <span className="badge__glyph" aria-hidden="true">●</span>
+            <span className="badge__label">{L.working}</span>
+          </span>
           {parts.length > 0 ? (
             <span className="wbub__sum" data-testid="working-summary"><Dots parts={parts} /></span>
           ) : summary?.state === "loading" ? (

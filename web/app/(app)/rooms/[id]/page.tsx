@@ -1492,6 +1492,10 @@ export default function RoomPage() {
         .s7__spacer { flex: 1; }
         .s7__cols { display: grid; grid-template-columns: 268px minmax(0, 1fr) 268px; gap: 16px; align-items: start; }
         .s7__left, .s7__right { position: sticky; top: 12px; max-height: calc(100vh - 140px); overflow: auto; display: flex; flex-direction: column; gap: 8px; }
+        /* 참여자 칩의 ⓘ 레이어(agent-chip.css)는 absolute 라 이 칸의 overflow:auto 에 잘릴 수 있다 — 레이어가
+           떠 있는 동안만 잠깐 넘침을 보이게 풀어 준다(실사용 리뷰 2026-10-15, 스크롤 목록 아래쪽 칩에서 잘림). */
+        .s7__left:has(.agent-chip__info:hover),
+        .s7__left:has(.agent-chip__info:focus-within) { overflow: visible; }
         .s7__center { display: flex; flex-direction: column; min-width: 0; }
         .s7__h { margin: 4px 0 2px; font-size: var(--fs-sub); font-weight: 600; color: var(--ink-2); }
         .s7__chips { display: flex; flex-direction: column; gap: 4px; }
