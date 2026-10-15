@@ -23,10 +23,19 @@ describe("deriveAgentStatus — PRD FR-1.3 파생 순서", () => {
   });
 });
 
+describe("AgentChip — 이름 앞에 @ 를 붙이지 않는다(실사용 리뷰 2026-10-15)", () => {
+  // 참여자 목록은 명단이지 멘션이 아니다 — `@` 는 메시지 본문에서 실제로 멘션할 때의
+  // 문법([@이름](mention://...))이고, 사람 칩(PersonChip)도 붙이지 않는다.
+  it("이름이 그대로 보인다, @ 없이", () => {
+    render(<AgentChip name="Lead" role="lead" status="idle" />);
+    expect(screen.getByTestId("agent-chip").querySelector(".agent-chip__name")!.textContent).toBe("Lead");
+  });
+});
+
 describe("AgentChip — 칩을 특정하는 수단", () => {
   // G4 2판 W7: e2e 가 참여자 칩을 하나로 집으려 했는데 셀렉터가 아무것도 못 잡았다.
-  // 이름은 화면에 `@` 가 붙어 나오고 워크스페이스 안에서만 유일하다 — id 만이
-  // 시나리오가 만든 에이전트와 화면의 칩을 잇는다.
+  // 이름은 워크스페이스 안에서만 유일하다 — id 만이 시나리오가 만든 에이전트와
+  // 화면의 칩을 잇는다.
   it("agentId 를 주면 data-agent-id 로 나간다", () => {
     const id = "b7d3f0a2-1c9e-4b55-9f11-2a6c8d4e0f31";
     render(<AgentChip agentId={id} name="Researcher" role="researcher" status="working" />);
@@ -58,7 +67,7 @@ describe("AgentChip — 파생 상태 표시", () => {
     const badge = chip.querySelector(".badge")!;
     expect(badge.getAttribute("data-value")).toBe("working");
     expect(badge.querySelector(".badge__glyph")!.textContent).toBe("●");
-    expect(chip.textContent).toContain("@Lead");
+    expect(chip.textContent).toContain("Lead");
   });
 
   it("offline 과 disabled 는 글리프가 다르다 (✕ solid vs ⊘ neutral)", () => {

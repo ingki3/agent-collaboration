@@ -46,10 +46,15 @@ export const AGENT_ROLE_LABEL: Record<AgentRole, string> = {
 export interface AgentChipProps {
   /**
    * 이 칩이 가리키는 에이전트의 id. `data-agent-id` 로 나가고, **e2e 가 칩을
-   * 하나로 특정하는 유일한 수단**이다 — 이름은 워크스페이스 안에서만 유일하고
-   * 화면에는 `@` 가 붙은 채로 나오며, 시나리오가 같은 이름의 에이전트를 둘
-   * 만들면 셀렉터가 조용히 둘을 잡는다(G4 2판 W7: 셀렉터가 아무것도 못 잡았다).
-   * 데모 화면처럼 진짜 id 가 없는 자리에서는 생략한다.
+   * 하나로 특정하는 유일한 수단**이다 — 이름은 워크스페이스 안에서만 유일하지만,
+   * 시나리오가 같은 이름의 에이전트를 둘 만들면 이름만으로는 셀렉터가 조용히
+   * 둘을 잡는다(G4 2판 W7: 셀렉터가 아무것도 못 잡았다). 데모 화면처럼 진짜
+   * id 가 없는 자리에서는 생략한다.
+   *
+   * 참여자 목록(이 칩)에서는 이름 앞에 `@` 를 붙이지 않는다(실사용 리뷰
+   * 2026-10-15) — 사람 칩(`PersonChip`)이 안 붙이는 것과 맞춘다. `@` 는
+   * 메시지 본문에서 실제로 멘션할 때의 문법(`[@이름](mention://...)`)이고,
+   * 참여자 목록은 멘션이 아니라 명단이다.
    */
   agentId?: string;
   name: string;
@@ -94,7 +99,7 @@ export function AgentChip(props: AgentChipProps) {
       </span>
       <span className="agent-chip__text">
         <span className="agent-chip__line1">
-          <span className="agent-chip__name">@{props.name}</span>
+          <span className="agent-chip__name">{props.name}</span>
           {props.isAssignee && <span className="agent-chip__assignee">담당</span>}
           {props.archived && (
             <span className="agent-chip__archived" data-testid="agent-chip-archived">보관됨</span>
