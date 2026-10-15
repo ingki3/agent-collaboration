@@ -289,6 +289,7 @@ export function InboxItemCard({ item, hitl: detail, onRespond, onAction, onMarkR
         <>
           <HitlCardHead
             type={hitl.hitl_type}
+            source={hitl.agent_name ? "agent" : "system"}
             status="open"
             author={hitl.agent_name ?? "시스템"}
             meta={hitlMetaLine({ source: hitl.agent_name ? "agent" : "system", purpose: hitl.purpose, created_at: item.created_at })}

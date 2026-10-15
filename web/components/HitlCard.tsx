@@ -39,9 +39,17 @@ export function hitlMetaLine(r: Pick<HitlRequest, "source" | "purpose" | "create
   return p ? `${p} 때문에 자동으로 올라온 요청` : "시스템이 올린 요청";
 }
 
-/** 카드 머리 라벨 — `question`·`approval` 은 계약 enum 이고 화면에는 사람의 말로 선다(§8.4). */
-export function hitlKindLabel(r: Pick<HitlRequest, "type">): string {
-  return r.type === "approval" ? "사람 확인 · 승인" : "사람 확인 · 질문";
+/**
+ * 카드 머리 라벨 — `question`·`approval` 은 계약 enum 이고 화면에는 사람의 말로 선다(§8.4).
+ *
+ * "사람 확인 · 승인"은 **미션을 실제로 닫는** 공식 완료 승인(`source: system`)에만 쓴다. 에이전트가
+ * 자기 질문으로 만든 승인형 HITL(`source: agent`)은 문구를 아무리 공식 승인과 비슷하게 써도(실사용
+ * 사고 2026-10-14 — "최종 보고서 ... 승인 요청"이라고 써서 Director 가 진짜 완료 승인으로 착각,
+ * 미션은 시스템상 `active`로 남음) **라벨 자체가** 다르게 선다 — 문구 내용과 무관하게 구분된다.
+ */
+export function hitlKindLabel(r: Pick<HitlRequest, "type" | "source">): string {
+  if (r.type !== "approval") return "사람 확인 · 질문";
+  return r.source === "system" ? "사람 확인 · 승인" : "에이전트 확인 요청";
 }
 
 export interface HitlCardProps {
@@ -71,12 +79,12 @@ export interface HitlCardProps {
  * 2026-10-14: 인박스의 `hitl_request` 항목에 요청자가 안 보였다). 인박스는 `HitlRequest` 전체를 들고
  * 있지 않으므로(`InboxItem.card` 가 더 얇다) 이 둘만 받는다 — `HitlCard` 는 `r`에서 뽑아 넘긴다.
  */
-export function HitlCardHead({ type, status, author, meta }: { type: HitlRequest["type"]; status: HitlRequest["status"]; author: string; meta: string }) {
+export function HitlCardHead({ type, source, status, author, meta }: { type: HitlRequest["type"]; source: HitlRequest["source"]; status: HitlRequest["status"]; author: string; meta: string }) {
   return (
     <div className="hitl__head">
       <span className="hitl__kind" data-testid="hitl-kind">
         <span aria-hidden="true">⏳︎</span>
-        {hitlKindLabel({ type })}
+        {hitlKindLabel({ type, source })}
       </span>
       <span className="hitl__author" data-testid="hitl-author">{author}</span>
       <span className="hitl__meta" data-testid="hitl-meta">{meta}</span>
@@ -101,7 +109,7 @@ export function HitlCard({ request: r, actions, onRespond, budget, busy, userNam
       data-purpose={r.purpose ?? ""}
       data-status={r.status}
     >
-      <HitlCardHead type={r.type} status={r.status} author={author} meta={hitlMetaLine(r)} />
+      <HitlCardHead type={r.type} source={r.source} status={r.status} author={author} meta={hitlMetaLine(r)} />
       <HitlBody
         type={r.type}
         status={r.status}

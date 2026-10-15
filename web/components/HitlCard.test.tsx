@@ -255,6 +255,31 @@ describe("시스템 발행 문구 — purpose 가 판정 기준이다(0012)", ()
   });
 });
 
+// 실사용 사고(2026-10-14): Lead 가 자기 질문용 HITL(source: agent)에 공식 완료 승인과 거의 같은 문장을
+// 썼다("최종 보고서 ... 승인 요청") — Director 가 진짜 완료 승인으로 착각해 "승인"했지만 미션은 시스템상
+// `active`로 남았다. 문구가 아니라 머리 배지 자체가 갈려야 재발하지 않는다.
+describe("승인형 머리 배지 — 공식 완료 승인과 에이전트 자체 질문은 글자가 다르다", () => {
+  it("source: system 은 '사람 확인 · 승인' 그대로", () => {
+    render(<HitlCard request={req({ source: "system", purpose: "user_approval", type: "approval", proposed_default: null })} />);
+    expect(screen.getByTestId("hitl-kind").textContent).toContain("사람 확인 · 승인");
+  });
+
+  it("source: agent 는 문장이 '승인 요청'을 흉내 내도 '에이전트 확인 요청'으로 다르게 선다", () => {
+    render(<HitlCard request={req({
+      source: "agent", purpose: "agent", type: "approval", proposed_default: null,
+      question: "최종 보고서 report.md v5 승인 요청: 종료 조건이 모두 충족되었습니다",
+    })} />);
+    const kind = screen.getByTestId("hitl-kind").textContent ?? "";
+    expect(kind).toContain("에이전트 확인 요청");
+    expect(kind).not.toContain("사람 확인 · 승인");
+  });
+
+  it("type: question 은 source 와 무관하게 '사람 확인 · 질문'", () => {
+    render(<HitlCard request={req({ source: "system", purpose: "loop", type: "question", proposed_default: null })} />);
+    expect(screen.getByTestId("hitl-kind").textContent).toContain("사람 확인 · 질문");
+  });
+});
+
 // 실사용 요청(2026-10-14): 완료 승인의 카드 요약 줄("작업 카드 N장 — 수락 n · 판정 대기 n · 진행 중 n ·
 // 부분/미충족 기준 n")이 숫자뿐이라 무슨 뜻인지 알 수 없었다 — 분담표로 가는 링크를 붙인다.
 describe("완료 승인 카드 — 분담표 링크(카드 요약 줄 상세)", () => {
