@@ -1,0 +1,22 @@
+.avatar-picker__row { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+.avatar-picker__preview {
+  width: 56px; height: 56px; border-radius: 50%; flex: none; overflow: hidden;
+  background: var(--surface); border: 1px solid var(--line);
+  display: grid; place-items: center; font-size: var(--fs-card); font-weight: 600; color: var(--ink-2);
+}
+.avatar-picker__preview img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-picker__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.avatar-picker__panel {
+  margin-top: 10px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface);
+}
+/* 고정 48px 원형 썸네일을 줄바꿈하며 늘어놓는다 — "카드 목록"(§8.5 --card-min)과는 다른 패턴이라
+   grid auto-fill/minmax(Npx) 를 쓰지 않는다(app/layout.test.ts 자물쇠가 그 문법을 "카드 열"로만 본다). */
+.avatar-picker__grid { display: flex; flex-wrap: wrap; gap: 8px; max-width: 420px; }
+.avatar-picker__opt {
+  width: 48px; height: 48px; border-radius: 50%; padding: 0; overflow: hidden; cursor: pointer;
+  border: 2px solid transparent; background: var(--bg); line-height: 0;
+}
+.avatar-picker__opt img { width: 100%; height: 100%; object-fit: cover; }
+.avatar-picker__opt:hover { border-color: var(--ink-3); }
+.avatar-picker__opt[data-selected="true"] { border-color: var(--s-run); box-shadow: 0 0 0 2px color-mix(in srgb, var(--s-run) var(--soft-alpha), transparent); }
+.avatar-picker__opt:disabled { cursor: default; opacity: 0.6; }

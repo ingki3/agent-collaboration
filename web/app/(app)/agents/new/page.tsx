@@ -11,6 +11,7 @@ import { capabilityIndex } from "@/lib/runtime-options";
 import { api, errorMessage, isApiError } from "@/lib/api/client";
 import { useAuth } from "@/lib/auth/AuthContext";
 import { RoleCommands } from "@/components/RoleCommands";
+import { AvatarPicker } from "@/components/AvatarPicker";
 import type { AgentRole, Runtime, RuntimeKind } from "@/lib/api/types";
 
 const ROLES: AgentRole[] = ["lead", "researcher", "writer", "engineer", "reviewer", "custom"];
@@ -25,6 +26,7 @@ export default function NewAgentPage() {
   const [instructions, setInstructions] = useState("");
   const [kind, setKind] = useState<RuntimeKind | "">("");
   const [model, setModel] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -61,6 +63,7 @@ export default function NewAgentPage() {
           role,
           role_description: roleDesc.trim(),
           instructions: instructions.trim(),
+          avatar_url: avatarUrl,
           profiles: [{ name: "default", runtime_kind: kind as RuntimeKind, model, is_default: true }],
         },
       });
@@ -88,6 +91,10 @@ export default function NewAgentPage() {
         </div>
       )}
       <form onSubmit={submit}>
+        <div className="field">
+          <span className="field__label">아바타 (선택)</span>
+          <AvatarPicker value={avatarUrl} onChange={setAvatarUrl} fallbackLetter={name.slice(0, 1).toUpperCase() || "?"} />
+        </div>
         <label className="field">
           <span className="field__label">이름 (멘션 라벨)</span>
           <input className="input" required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} placeholder="Researcher" data-testid="agent-name" />
