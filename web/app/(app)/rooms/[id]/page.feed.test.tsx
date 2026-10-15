@@ -110,12 +110,15 @@ async function ready() {
 }
 
 describe("메시지의 「작업 과정」 = 그 메시지까지의 조각", () => {
-  it("도는 턴 — A 는 셸 2회, B 는 셸 3회(꼬리 4회는 「@Lead 작업 중」 말풍선), 펼친 피드도 조각만", async () => {
+  it("도는 턴 — A 는 셸 2회, B 는 셸 3회(꼬리 4회는 「@Lead 실행 중」 말풍선), 펼친 피드도 조각만", async () => {
     await ready();
     expect(processText("mA")).toContain("셸 명령 2회");
     expect(processText("mB")).toContain("셸 명령 3회");
     const row = await screen.findByTestId("working-bubble");
-    expect(within(row).getByTestId("working-head").textContent).toContain("Lead작업 중");
+    const head = within(row).getByTestId("working-head").textContent ?? "";
+    // 배지 안에 glyph(●) 조각이 끼어 "Lead실행 중"처럼 바로 이어 붙지 않는다 — 둘을 따로 확인.
+    expect(head).toContain("Lead");
+    expect(head).toContain("실행 중");
     expect(within(row).getByTestId("working-summary").textContent).toContain("셸 명령 4회");
     // 타임라인 맨 아래 — 마지막 메시지 카드 뒤.
     expect(card("mB").compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

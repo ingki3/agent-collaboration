@@ -103,9 +103,12 @@ export function AgentChip(props: AgentChipProps) {
           {/* 상세 정보(역할·런타임·모델·부가 메모)는 더 이상 칩에 바로 안 보인다 — i 아이콘에 올리면 레이어로 뜬다
               (실사용 요청 2026-10-14: 참여자 목록이 너무 복잡하다). 레이어는 숨겨져 있을 뿐 DOM 에는 그대로 있다. */}
           {size === "md" && line2 && (
-            <span className="agent-chip__info" tabIndex={0} data-testid="agent-chip-info">
+            // 접근성 이름을 트리거에 바로 붙인다(실사용 리뷰 2026-10-15) — 레이어는 포커스·호버 때만
+            // 보이므로(CSS) 그 타이밍에 기대는 aria-describedby 대신, 포커스 즉시 읽히는 aria-label 로
+            // 내용을 전부 실어 보낸다. 시각 레이어는 aria-hidden 으로 중복 낭독을 막는다.
+            <span className="agent-chip__info" tabIndex={0} aria-label={`${props.name} 상세 정보: ${line2}`} data-testid="agent-chip-info">
               <span className="agent-chip__info-glyph" aria-hidden="true">ⓘ</span>
-              <span className="agent-chip__info-pop" role="tooltip" data-testid="agent-chip-line2">
+              <span className="agent-chip__info-pop" aria-hidden="true" data-testid="agent-chip-line2">
                 {line2}
               </span>
             </span>
