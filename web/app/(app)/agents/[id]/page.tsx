@@ -15,6 +15,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Badge } from "@/components/Badge";
+import { AvatarPicker } from "@/components/AvatarPicker";
 import { AgentProfileEditor } from "@/components/AgentProfileEditor";
 import { RoleCommands } from "@/components/RoleCommands";
 import { TestChatPanel } from "@/components/TestChatPanel";
@@ -53,6 +54,7 @@ export default function AgentEditPage() {
   const [tools, setTools] = useState("");
   const [maxConcurrent, setMaxConcurrent] = useState("3");
   const [budgetPerTask, setBudgetPerTask] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!workspace) return;
@@ -70,6 +72,7 @@ export default function AgentEditPage() {
       setTools(a.tools.join(", "));
       setMaxConcurrent(String(a.max_concurrent_tasks ?? 3));
       setBudgetPerTask(a.budget_per_task == null ? "" : String(a.budget_per_task));
+      setAvatarUrl(a.avatar_url ?? null);
       setError(null);
     } catch (e) {
       setError(errorMessage(e));
@@ -116,6 +119,12 @@ export default function AgentEditPage() {
   async function setRespondTo(v: RespondTo) {
     if (v === "nobody") { setConfirmKill(true); return; }
     await patch({ respond_to: v });
+  }
+
+  // 아바타는 고르는 즉시 반영한다(저장 버튼을 더 누를 필요 없이) — 킬 스위치의 respond_to 와 같은 패턴.
+  async function setAvatar(url: string | null) {
+    const a = await patch({ avatar_url: url });
+    if (a) setAvatarUrl(a.avatar_url ?? null);
   }
 
   async function createProfile(p: { name: string; runtime_kind: RuntimeKind; model: string; options: Record<string, unknown> }) {
@@ -174,6 +183,10 @@ export default function AgentEditPage() {
 
       <section className="card" style={{ marginBottom: 14 }} data-testid="agent-identity">
         <h2 style={{ fontSize: "var(--fs-card)", margin: "0 0 8px" }}>정체성</h2>
+        <div className="field">
+          <span className="field__label">아바타</span>
+          <AvatarPicker value={avatarUrl} onChange={(u) => void setAvatar(u)} disabled={!canEdit || busy} fallbackLetter={(name || agent.name).slice(0, 1).toUpperCase()} />
+        </div>
         <label className="field">
           <span className="field__label">이름 (멘션 라벨 · 워크스페이스 내 유일)</span>
           <input className="input" value={name} maxLength={40} disabled={!canEdit} onChange={(e) => setName(e.target.value)} data-testid="agent-name" />
