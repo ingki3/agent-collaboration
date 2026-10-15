@@ -135,6 +135,14 @@ func scheduler(ctx context.Context, srv *httpapi.Server, log interface {
 			} else if n > 0 {
 				log.Info("held completion approvals opened", "n", n)
 			}
+			// T-REVISION: a rejected mission whose AfterSettle hook never
+			// fires again because all later work happened outside it
+			// (work_id NULL) — see ReleaseStalledRevisions.
+			if n, err := srv.Sessions.ReleaseStalledRevisions(ctx); err != nil {
+				log.Warn("stalled revision sweep", "err", err)
+			} else if n > 0 {
+				log.Info("stalled revision missions re-asked", "n", n)
+			}
 			// FR-2A.3 (T-R1b2): a mission past its `limits.time_limit` is
 			// paused `time` and its Director asked whether to go on.
 			if n, err := srv.SweepWorkTimeLimits(ctx); err != nil {

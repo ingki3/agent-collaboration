@@ -88,6 +88,80 @@ func TestRevisionGateBlocksReaskUntilCardAccepted(t *testing.T) {
 	}
 }
 
+// ReleaseStalledRevisions is the scheduler's catch-all for the shape neither
+// ReleaseHeldApproval nor SettleQuiet nor NotifyMissionIdle ever reach: a
+// rejected mission where NOTHING afterward ends a task that still belongs to
+// THIS work_id (the real incident's "일 밖 task" follow-up). Nothing in this
+// test calls patchCond or otherwise explicitly re-reads the tree — only the
+// sweep may open the request.
+func TestReleaseStalledRevisionsSweep(t *testing.T) {
+	f := newP2Fixture(t)
+	tree := and(atom("artifact_submitted", "who", "assignee"), atom("user_approval"))
+	sess := f.artifactSession(t, tree)
+	leadTok, leadTask := f.agentToken(t, sess, f.leadUUID, "Lead")
+	f.runTask(t, leadTask)
+	if st, out := f.submit(t, sess, leadTok, "report.md", "doc", []byte("v1")); st != 201 {
+		t.Fatalf("submit = %d %v", st, out)
+	}
+	f.endTurn(t, leadTask)
+	var hitlID string
+	if err := f.pool.QueryRow(t.Context(), `
+		SELECT id::text FROM hitl_request WHERE session_id = $1 AND purpose = 'user_approval' AND status = 'open'`,
+		sess).Scan(&hitlID); err != nil {
+		t.Fatal(err)
+	}
+	f.api.must(200, "POST", f.p+"/hitl-requests/"+hitlID+"/response",
+		map[string]any{"approved": false, "reason": "더 보강해주세요"}, "Idempotency-Key", uuid.NewString())
+
+	// No accepted card yet — the sweep must stay a no-op (it must never
+	// re-ask over an unaddressed rejection, only give a stuck mission a
+	// chance to re-evaluate).
+	if n, err := f.srv.Sessions.ReleaseStalledRevisions(t.Context()); err != nil || n != 0 {
+		t.Fatalf("sweep with no accepted card = %d %v, want 0", n, err)
+	}
+	if n := f.openHitls(t, sess); n != 0 {
+		t.Fatalf("open after sweep with no card = %d, want 0", n)
+	}
+
+	// The revision happens and is accepted.
+	_, lead2 := f.agentToken(t, sess, f.leadUUID, "Lead")
+	f.runTask(t, lead2)
+	res, err := f.srv.Router.Delegate(t.Context(), lead2, testCard(f.wUUID, "근거 추가"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	childTask := uuid.UUID(res.Task.Id)
+	f.runTask(t, childTask)
+	f.report(t, childTask)
+	f.finishCompleted(t, childTask)
+	var dir uuid.UUID
+	if err := f.pool.QueryRow(t.Context(), `SELECT id FROM app_user WHERE email = 'dir@example.com'`).Scan(&dir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.srv.Router.Accept(t.Context(), res.Card.Id, router.Judgement{UserID: &dir}, "확인함"); err != nil {
+		t.Fatal(err)
+	}
+	f.endTurn(t, lead2)
+	f.settleWork(t, f.missionOf(t, sess))
+	if n := f.openHitls(t, sess); n != 0 {
+		t.Fatalf("open before the sweep runs = %d, want 0 — the ordinary per-task hooks must not have opened it "+
+			"(ReleaseHeldApproval/SettleQuiet/NotifyMissionIdle all no-op on a rejected, non-held, non-busy mission)", n)
+	}
+
+	if n, err := f.srv.Sessions.ReleaseStalledRevisions(t.Context()); err != nil || n != 1 {
+		t.Fatalf("sweep after the revision card was accepted = %d %v, want 1", n, err)
+	}
+	if n := f.openHitls(t, sess); n != 1 {
+		t.Fatalf("open after the sweep = %d, want 1 — the stuck mission should get its re-ask", n)
+	}
+
+	// A second sweep does not pile on a duplicate (mirrors
+	// TestTApprovalSweepReleasesSettledHold).
+	if n, _ := f.srv.Sessions.ReleaseStalledRevisions(t.Context()); n != 0 {
+		t.Fatalf("second sweep opened %d more", n)
+	}
+}
+
 // A mission that has never been rejected is not gated by T-REVISION at all —
 // the existing T-APPROVAL path (t_approval_test.go) is untouched.
 func TestRevisionGateNoOpWithoutPriorRejection(t *testing.T) {

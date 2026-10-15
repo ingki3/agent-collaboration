@@ -136,6 +136,69 @@ func (s *Service) ReleaseHeldApprovals(ctx context.Context) (int, error) {
 	return n, nil
 }
 
+// ReleaseStalledRevisions is T-REVISION's own catch-all, the companion to
+// ReleaseHeldApprovals: AfterSettle only fires for the WORK_ID of the task
+// that just ended, so a mission whose completion approval was rejected and
+// then only settled through follow-up work with NO mission selected
+// ("일 밖 task", work_id NULL) never gets its own hook called again — it can
+// sit `active` forever even once the revision is genuinely done.
+//
+// Real incident (실사용 「금융 에이전트 시장 규모 추정 방」, 2026-10-14): the
+// Director rejected completion, the actual revision happened as follow-up
+// chat work outside the mission, and Lead separately asked its own
+// agent-sourced approval HITL ("최종 보고서 ... 승인 요청") that LOOKED like
+// the mission-closing question. The Director approved that, both sides
+// believed the mission was done, but `work.status` stayed `active` and no
+// second formal `user_approval` request was ever raised.
+//
+// Scoped tightly — only missions with an answered, rejected user_approval
+// request in their history and no currently open one are candidates; a
+// mission that was never rejected never matches and this is a no-op for it.
+// revisionAddressed (inside ApplyWorkEvent) still decides whether a fresh
+// request actually opens, so this never re-asks over an unaddressed
+// rejection — it only gives a STUCK mission another chance to re-evaluate.
+func (s *Service) ReleaseStalledRevisions(ctx context.Context) (int, error) {
+	rows, err := s.DB.Query(ctx, `
+		SELECT w.id FROM work w
+		WHERE w.status = 'active'
+		  AND NOT EXISTS (SELECT 1 FROM hitl_request h WHERE h.work_id = w.id AND h.source = 'system'
+		                    AND h.purpose = $1 AND h.status = 'open')
+		  AND EXISTS (SELECT 1 FROM hitl_request h WHERE h.work_id = w.id
+		                AND h.purpose = $1 AND h.status = 'answered' AND h.approved = false)`,
+		CondUserApproval)
+	if err != nil {
+		return 0, fmt.Errorf("sessions: stalled revisions: %w", err)
+	}
+	var ids []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			rows.Close()
+			return 0, err
+		}
+		ids = append(ids, id)
+	}
+	rows.Close()
+	if err := rows.Err(); err != nil {
+		return 0, err
+	}
+	n := 0
+	for _, id := range ids {
+		out, err := s.ApplyWorkEvent(ctx, id, Event{Kind: EventTasksSettled})
+		if err != nil {
+			var p *apperr.Problem
+			if errors.As(err, &p) && p.Status == 409 {
+				continue // closed between the read and the lock
+			}
+			return n, err
+		}
+		if out.HitlIssued {
+			n++
+		}
+	}
+	return n, nil
+}
+
 // SettleQuiet is T-QUIET's re-entry (b) (Lead 판정 2026-09-28): a mission a
 // person re-opened (quiet.StateReleased) goes quiet again once its work has
 // settled while the platform's approval request is still open — the round
