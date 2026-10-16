@@ -85,6 +85,22 @@ func Severity(itemType string) string {
 	return Info
 }
 
+// ResolveByRefSQL is every hitl_request-backed resolution's second write (the
+// first answers the request itself): it takes the item out of action_required
+// — a request that has been decided no longer gates anything — and, like the
+// read_at-only write it replaces, marks it read so it also drops off the
+// unread count. Params: $1 ref_id (the hitl_request id), $2 now.
+//
+// Scoped to hitl_request-backed types (hitl_request · room_paused ·
+// isolation_confirm share ref_id = hitl_request.id): every write site used to
+// set only read_at, leaving severity 'action_required' forever — an answered
+// request stayed in the nav badge and the "조치 필요" filter indefinitely
+// even though the request itself was long decided (실사용 2026-10-16).
+const ResolveByRefSQL = `
+	UPDATE inbox_item SET read_at = COALESCE(read_at, $2),
+	       severity = CASE WHEN severity = 'action_required' THEN 'info'::inbox_severity ELSE severity END
+	WHERE ref_id = $1`
+
 // OfflineRoomActions is a room_paused card for a lost computer (FR-9.2 v0.19):
 // there is no request to approve — the way out is rebinding (the other one,
 // cancelling every open mission, is on the room screen).

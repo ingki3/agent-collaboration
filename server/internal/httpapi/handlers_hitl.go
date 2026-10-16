@@ -17,6 +17,7 @@ import (
 	"github.com/ingki3/agent-collabortion/server/internal/db"
 	"github.com/ingki3/agent-collabortion/server/internal/hitl"
 	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collabortion/server/internal/inbox"
 	"github.com/ingki3/agent-collabortion/server/internal/roomgate"
 	"github.com/ingki3/agent-collabortion/server/internal/sessions"
 	"github.com/ingki3/agent-collabortion/server/internal/tasks"
@@ -356,7 +357,7 @@ func (s *Server) answerAgentHitl(ctx context.Context, row *hitlRow, sess *hitlSe
 	}
 	// The inbox item is resolved by the response, not by reading it
 	// (openapi markInboxRead).
-	if _, err := tx.Exec(ctx, `UPDATE inbox_item SET read_at = COALESCE(read_at, $2) WHERE ref_id = $1`, row.ID, now); err != nil {
+	if _, err := tx.Exec(ctx, inbox.ResolveByRefSQL, row.ID, now); err != nil {
 		return 0, nil, apperr.Internal(err)
 	}
 	if override != nil && row.TaskID != nil {
@@ -606,7 +607,7 @@ func (s *Server) answerCompletionApproval(ctx context.Context, hitlID, userID uu
 	// The inbox item is resolved by the RESPONSE, not by reading it (openapi
 	// markInboxRead). Leaving it unread keeps an action_required row — and the
 	// nav badge — on a request that has already been decided (S-33).
-	if _, err := tx.Exec(ctx, `UPDATE inbox_item SET read_at = COALESCE(read_at, $2) WHERE ref_id = $1`, hitlID, now); err != nil {
+	if _, err := tx.Exec(ctx, inbox.ResolveByRefSQL, hitlID, now); err != nil {
 		return 0, nil, apperr.Internal(err)
 	}
 	if err := tx.Commit(ctx); err != nil {
