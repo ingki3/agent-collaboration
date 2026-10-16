@@ -5,7 +5,6 @@
 .msg[data-kind="system"] .msg__body { color: var(--ink-2); font-size: var(--fs-sub); }
 .msg__head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; min-width: 0; }
 .msg__author { font-weight: 600; font-size: var(--fs-body); }
-.msg__author--agent::before { content: "@"; color: var(--ink-2); }
 .msg__meta { font-size: var(--fs-meta); color: var(--ink-2); }
 .msg__body { font-size: var(--fs-body); line-height: 1.5; overflow-wrap: anywhere; }
 .msg__mention { color: var(--s-run-text); font-weight: 500; background: color-mix(in srgb, var(--s-run) var(--soft-alpha), transparent); border-radius: 4px; padding: 0 3px; }
