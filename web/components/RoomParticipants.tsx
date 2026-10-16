@@ -57,6 +57,7 @@ export function RoomParticipants({ participants, lanes, archivedAgent }: { parti
             key={p.id}
             agentId={p.agent!.id}
             name={p.agent!.name}
+            avatarUrl={p.agent!.avatar_url}
             role={p.agent!.role}
             status={p.status ?? "idle"}
             // 바꿔 넣는다 — 프로파일 자리에 「다른 방에서 작업 중」(더하면 268px 에서 세 줄이 된다).
