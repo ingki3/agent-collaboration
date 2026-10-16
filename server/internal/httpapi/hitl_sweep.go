@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/ingki3/agent-collabortion/server/internal/hitl"
+	"github.com/ingki3/agent-collabortion/server/internal/inbox"
 	"github.com/ingki3/agent-collabortion/server/internal/tasks"
 )
 
@@ -94,7 +95,7 @@ func (s *Server) SweepHitlDeadlines(ctx context.Context) (int, error) {
 				d.question+" → "+p.Answer, "기한 만료로 에이전트 제안대로 진행", "hitl", &d.id, true, now, d.work); err != nil {
 				return err
 			}
-			if _, err := tx.Exec(ctx, `UPDATE inbox_item SET read_at = COALESCE(read_at, $2) WHERE ref_id = $1`, d.id, now); err != nil {
+			if _, err := tx.Exec(ctx, inbox.ResolveByRefSQL, d.id, now); err != nil {
 				return err
 			}
 			// T-APPROVAL: 「자동 응답됨」 reaches the open card live.

@@ -78,12 +78,16 @@ func FileInbox(ctx context.Context, tx pgx.Tx, it Item) error {
 	return nil
 }
 
-// ResolveCards takes a lifted stop's cards out of the inbox (marks them read,
-// as closeSessionBudgetHitl does for an answered request): the room is moving
-// again, and a card still asking for a choice is one nobody can act on.
+// ResolveCards takes a lifted stop's cards out of the inbox (marks them read
+// and out of action_required, as inbox.ResolveByRefSQL does for an answered
+// request — this is the no-hitl-answer path: the room just started moving
+// again on its own, so there is no response to piggyback the same write on):
+// the room is moving again, and a card still asking for a choice is one
+// nobody can act on.
 func ResolveCards(ctx context.Context, tx pgx.Tx, itemType string, roomID, ref uuid.UUID, now time.Time) error {
 	_, err := tx.Exec(ctx, `
-		UPDATE inbox_item SET read_at = $4
+		UPDATE inbox_item SET read_at = $4,
+		       severity = CASE WHEN severity = 'action_required' THEN 'info'::inbox_severity ELSE severity END
 		WHERE session_id = $1 AND ref_id = $2 AND type = $3::inbox_item_type AND read_at IS NULL`,
 		roomID, ref, itemType, now)
 	if err != nil {
