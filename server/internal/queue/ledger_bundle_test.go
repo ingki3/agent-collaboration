@@ -205,13 +205,13 @@ func TestMissionLedgerIsWholeOnResumedTurn(t *testing.T) {
 	}
 }
 
-// Brief [2]'s ledger line (harness v0.9.18): the contract's shell sentence
+// Brief [2]'s ledger line (harness v0.9.20): the contract's shell sentence
 // word for word (backticks aside), the mcp one with the contract's tool
 // phrase and the same head and tail, once in each surface's [2].
 //
 // 회귀 주입: Section2 에서 s.LedgerRule 을 빼면 (brief2), LedgerRule 문장을 바꾸면
 // (contract), mcpSurface 에 셸 문장을 두면 (surface) FAIL.
-func TestLedgerRuleMatchesContractV0918(t *testing.T) {
+func TestLedgerRuleMatchesContractV0920(t *testing.T) {
 	c := harnessContract(t)
 	m := regexp.MustCompile("셸 `(Mission facts[^`]+)` / mcp `([^`]+)`").FindStringSubmatch(c)
 	if m == nil {
