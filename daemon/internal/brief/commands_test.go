@@ -188,8 +188,8 @@ func TestRestrictCommandsMCPSurfaceNamesTools(t *testing.T) {
 func TestLedgerLineFollowsMemoryNote(t *testing.T) {
 	question := []string{"room_get", "room_messages", "room_list", "room_read", "artifact_get", "card_get", "card_list", "memory_get", "message_post", "status_set", "hitl_ask"}
 	for _, tc := range []struct{ surface, brief, line string }{
-		{acp.ToolSurfaceMCP, serverBriefMCP, "- Mission facts, assignments and lessons live in <mission_ledger>. If something changed, record it with the `colab_memory_note` tool (or `colab_memory_supersede`) — saying it only in a message means the next person won't find it.\n"},
-		{shell, serverBrief, "- Mission facts, assignments and lessons live in <mission_ledger>. If something changed, record it: `colab memory note` (or supersede an existing item) — saying it only in a message means the next person won't find it.\n"},
+		{acp.ToolSurfaceMCP, serverBriefMCP, "- Mission facts, assignments and lessons live in <mission_ledger>. Before you end this turn, write what changed with the `colab_memory_note` tool (or `colab_memory_supersede`) — saying it only in a message means the next person won't find it.\n"},
+		{shell, serverBrief, "- Mission facts, assignments and lessons live in <mission_ledger>. Before you end this turn, write what changed: `colab memory note` (or supersede an existing item) — saying it only in a message means the next person won't find it.\n"},
 	} {
 		in := strings.Replace(tc.brief, "- Your COLAB_TASK_TOKEN", tc.line+"- Your COLAB_TASK_TOKEN", 1)
 		if !strings.Contains(in, tc.line) {

@@ -149,14 +149,20 @@ const (
 	AttachFetchMCP = "Download one into your folder with the `colab_artifact_get` tool (`artifact`: the id, `out`: a path in your folder)."
 )
 
-// LedgerRule / LedgerRuleMCP are harness v0.9.18's brief [2] line (PRD
+// LedgerRule / LedgerRuleMCP are harness v0.9.20's brief [2] line (PRD
 // FR-4.6 5) — the contract's words per surface, the command in backticks for
 // the wrapper rewrite (toolwrap.cliRe) and so that the daemon's role filter
 // (brief.RestrictCommands) drops the line for a task without memory_note —
 // a question task (colab-cli §2.5 질문 표 has memory_get only).
+//
+// v0.9.20 (실사용 관찰, Director 결정 2026-10-17): system-wide memory_item count
+// stayed at 10 rows / 1 mission after v0.9.18 shipped — this line landed every
+// turn and `colab memory note` worked, but no agent ever called it even once.
+// The conditional "if something changed, record it" is easy to read past;
+// reframed as an end-of-turn checklist item instead of a contingency.
 const (
-	LedgerRule    = "- Mission facts, assignments and lessons live in <mission_ledger>. If something changed, record it: `colab memory note` (or supersede an existing item) — saying it only in a message means the next person won't find it.\n"
-	LedgerRuleMCP = "- Mission facts, assignments and lessons live in <mission_ledger>. If something changed, record it with the `colab_memory_note` tool (or `colab_memory_supersede`) — saying it only in a message means the next person won't find it.\n"
+	LedgerRule    = "- Mission facts, assignments and lessons live in <mission_ledger>. Before you end this turn, write what changed: `colab memory note` (or supersede an existing item) — saying it only in a message means the next person won't find it.\n"
+	LedgerRuleMCP = "- Mission facts, assignments and lessons live in <mission_ledger>. Before you end this turn, write what changed with the `colab_memory_note` tool (or `colab_memory_supersede`) — saying it only in a message means the next person won't find it.\n"
 )
 
 // QuietRule is harness v0.9.15's brief [2] line (PRD FR-2A.2.3): the
