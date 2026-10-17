@@ -61,7 +61,16 @@ preview() { api_ok POST "/rooms/$1/messages/preview" "$2"; }
 msg_work() { psqlq "select coalesce(work_id::text,'-') from message where id='$1'"; }
 mk_agent() { api_ok POST "/workspaces/$WS/agents" "$(jq -nc --arg n "$1" '{name:$n,role:"lead",role_description:"d",instructions:"짧게",
   profiles:[{name:"default",runtime_kind:"claude_code",model:"claude-sonnet-5",is_default:true}]}')" | jq -r .id; }
-open_work() { api_ok POST "/rooms/$1/works" "$2" | jq -r .id; }
+# FR-2A.1b(v0.19.31): deputy 필수화 — $ROOM 엔 Mem 도 있어 deputy 가 필수다
+# (호출부가 director_user_id 나 deputy_user_id 를 이미 주면 그대로 두고 건드리지 않는다
+# — 섹션 J 는 Mem 을 워크스페이스에서 내보낸 뒤라 Dir 를 직접 지정해야 한다).
+open_work() {
+  local body dep="$MEM_ID"
+  [ "$(jq -r '.director_user_id // ""' <<<"$2")" = "$MEM_ID" ] && dep="$DIR_ID"
+  if [ "$(jq -r 'has("deputy_user_id")' <<<"$2")" = "true" ]; then body="$2"
+  else body="$(jq -c --arg d "$dep" '. + {deputy_user_id:$d}' <<<"$2")"; fi
+  api_ok POST "/rooms/$1/works" "$body" | jq -r .id
+}
 wget_() { api_ok GET "/works/$1"; }
 conds() { jq -r '[.completion_condition|..|objects|select(has("type"))|.type]|join("+")'; }
 
@@ -171,7 +180,7 @@ chk F.1 "-/-/-" "$(msg_work "$MF")/$(msg_work "$MFR")/$(psqlq "select coalesce(w
 W3="$(open_work "$ROOM" "$(jq -nc --arg m "$MFR" --arg a "$R" '{goal:"버그 고치기",from_message_id:$m,assignee_agent_id:$a}')")"
 chk F.2 "$W3/$W3/$W3/$W3" "$(msg_work "$MF")/$(msg_work "$MFR")/$(psqlq "select t.work_id||'/'||l.work_id from task t join lane l on l.id=t.lane_id where t.id='$TF'")" "원 메시지·스레드·그 task·lane 이 한 번에 W3"
 chk F.3 "$MFR" "$(wget_ "$W3" | jq -r '.opened_from_message_id // "-"')" "opened_from_message_id"
-call POST "/rooms/$ROOM/works" "$(jq -nc --arg m "$MF" '{goal:"또",from_message_id:$m}')"
+call POST "/rooms/$ROOM/works" "$(jq -nc --arg m "$MF" --arg d "$MEM_ID" '{goal:"또",from_message_id:$m,deputy_user_id:$d}')"
 chk F.4 "409/message_has_work" "$CODE/$(jq -r .code <<<"$BODY")" "이미 미션에 속한 메시지 → 409 message_has_work"
 
 # ───────────────────────────── G ─────────────────────────────────────────────
@@ -188,7 +197,8 @@ P2="$(curl -sS -X POST "$API/rooms/$ROOM/work-proposals" -H "Authorization: Bear
   -d '{"goal":"문서 정리","rationale":"중복이 많다"}' | jq -r .id)"
 chk G.2 "open/$AG" "$(api_ok GET "/work-proposals/$P1" | jq -r '.status+"/"+.agent.id')" "제안(TaskToken) — 제안한 에이전트 · open"
 chk G.3 1 "$(psqlq "select count(*) from inbox_item i join member m on m.id=i.member_id where i.type='work_proposed' and i.ref_id='$P1' and m.user_id='$MEM_ID'")" "받은 요청 work_proposed(방 참여자)"
-RES="$(as "$C_MEM" POST "/work-proposals/$P1/resolution" '{"action":"accept"}')"
+# FR-2A.1b(v0.19.31): 이 방엔 Dir 도 있다 — Mem 이 director 가 되니 deputy = Dir.
+RES="$(as "$C_MEM" POST "/work-proposals/$P1/resolution" "$(jq -nc --arg d "$DIR_ID" '{action:"accept",work:{deputy_user_id:$d}}')")"
 W4="$(jq -r .work.id <<<"$RES")"
 chk G.4 "accepted/$MEM_ID/성능 회귀 추적" "$(jq -r '.proposal.status+"/"+.work.director_user_id+"/"+.work.goal' <<<"$RES")" "Mem 이 연다 → 연 사람이 Director"
 call POST "/work-proposals/$P1/resolution" '{"action":"reject","reason":"늦었다"}'
@@ -202,7 +212,7 @@ api_ok PATCH "/rooms/$ROOM" '{"limits":{"max_concurrent_works":2}}' >/dev/null
 call POST "/rooms/$ROOM/works" '{"goal":"세 번째로 열려는 미션"}'
 chk H.1 "409/max_concurrent_works" "$CODE/$(jq -r .code <<<"$BODY")" "열린 미션 2(W3·W4) = 상한 2 → 409"
 chk H.2 "2" "$(jq '.open_works|length' <<<"$BODY")" "  … Problem.open_works[] 에 열린 미션"
-call POST "/rooms/$ROOM/works" '{"goal":"초안은 세지 않는다","draft":true}'
+call POST "/rooms/$ROOM/works" "$(jq -nc --arg d "$MEM_ID" '{goal:"초안은 세지 않는다",draft:true,deputy_user_id:$d}')"
 chk H.3 "201/draft" "$CODE/$(jq -r .status <<<"$BODY")" "draft 는 실행 중이 아니라 상한에 걸리지 않는다"
 
 # ───────────────────────────── I ─────────────────────────────────────────────
@@ -219,7 +229,8 @@ step "J. 방(createRoom→createWork)에 둘째 미션 — R4: 옛 /sessions 와
 # 호환 규칙」을 쟀다 — 이제 그런 방은 0025 이관 방뿐이고 API 로 만들 수 없다. 같은 자리를 새 경로로 잰다.
 SID="$(create_room_work "$WS" "$(jq -nc --arg l "$LEAD" --arg rt "$RID" '{title:"옛 세션",goal:"옛 목표",isolation:{kind:"none"},participants:[{agent_id:$l}],assignee_agent_id:$l,runtime_id:$rt}')")"
 LW="$(work_of "$SID")"
-W5="$(open_work "$SID" '{"goal":"옛 방의 새 미션"}')"
+# Mem 은 위 I 에서 워크스페이스를 나갔다 — deputy 는 Dir 로.
+W5="$(open_work "$SID" "$(jq -nc --arg d "$DIR_ID" '{goal:"옛 방의 새 미션",deputy_user_id:$d}')")"
 chk J.1 "2/-" "$(api_ok GET "/rooms/$SID/works" | jq -r '.items|length')/$(psqlq "select coalesce(legacy_work_id::text,'-') from room where id='$SID'")" "listRoomWorks 두 미션 · createRoom 방은 legacy_work_id 없음(옛 getSession 고정 판정 자리)"
 M5="$(post "$SID" '{"content":"옛 화면에서 한 줄"}' | jq -r .message.id)"
 chk J.2 "-" "$(msg_work "$M5")" "work_id 키 없는 게시 → 미션 없음(R4: 옛 세션 호환 규칙은 legacy 방만 — 옛 판정은 그 세션의 미션)"
@@ -234,7 +245,7 @@ chk J.5 "409/works_active" "$CODE/$(jq -r .code <<<"$BODY")" "deleteRoom — 다
 # ───────────────────────────── K ─────────────────────────────────────────────
 step "K. 미션 시간 상한 (FR-2A.3 — 새 경로)"
 api_ok POST "/works/$W5/cancel" >/dev/null
-W6="$(open_work "$SID" '{"goal":"짧은 일","limits":{"time_limit":"PT1H"}}')"
+W6="$(open_work "$SID" "$(jq -nc --arg d "$DIR_ID" '{goal:"짧은 일",limits:{time_limit:"PT1H"},deputy_user_id:$d}')")"
 psqlq "update work set started_at = now() - interval '61 minutes' where id='$W6'" >/dev/null
 KD=$(( $(date +%s) + 90 ))
 while [ "$(date +%s)" -lt "$KD" ] && [ "$(psqlq "select status from work where id='$W6'")" != "paused" ]; do sleep 3; done
