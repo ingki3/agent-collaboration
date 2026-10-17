@@ -157,7 +157,7 @@ func TestR3bBriefRoomContext(t *testing.T) {
 	}
 
 	// Another mission of the same room: [4] differs, the rest of the prefix does not.
-	wB := str(f.api.must(201, "POST", f.p+"/rooms/"+f.sessionID+"/works", map[string]any{"title": "둘째", "goal": "둘째 미션", "assignee_agent_id": f.r}), "id")
+	wB := str(f.api.must(201, "POST", f.p+"/rooms/"+f.sessionID+"/works", map[string]any{"title": "둘째", "goal": "둘째 미션", "assignee_agent_id": f.r, "deputy_waived": true}), "id")
 	b3 := f.claimBundle(t, f.mentionTask(t, f.rUUID, "R", wB))
 	if b3.Task.WorkID != wB {
 		t.Fatalf("task ran for %q, want mission %s", b3.Task.WorkID, wB)
@@ -285,7 +285,7 @@ func TestR3cBriefMissionOfAnotherRoom(t *testing.T) {
 	f := newP2Fixture(t)
 	ctx := t.Context()
 	other := str(f.api.must(201, "POST", f.p+"/workspaces/"+f.wsID+"/rooms", map[string]any{"name": "남의 방"}), "id")
-	foreign := str(f.api.must(201, "POST", f.p+"/rooms/"+other+"/works", map[string]any{"title": "남의미션제목", "goal": "남의미션목표"}), "id")
+	foreign := str(f.api.must(201, "POST", f.p+"/rooms/"+other+"/works", map[string]any{"title": "남의미션제목", "goal": "남의미션목표", "deputy_waived": true}), "id")
 
 	task := f.mentionTask(t, f.rUUID, "R", legacyWork(t, f))
 	if _, err := f.pool.Exec(ctx, `UPDATE task SET work_id = $2 WHERE id = $1`, task, foreign); err != nil {

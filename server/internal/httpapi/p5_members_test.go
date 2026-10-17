@@ -19,6 +19,7 @@ type membersFixture struct {
 	admin, member, other *client
 	adminID, memberID    string // member ids (not user ids)
 	otherID              string
+	adminUserID          string
 	memberUserID         string
 	otherUserID          string
 }
@@ -34,7 +35,7 @@ func newMembersFixture(t *testing.T) *membersFixture {
 		m := c.must(200, "POST", f.p+"/invites/"+str(inv, "token")+"/accept", nil)
 		return c, str(m, "id"), str(m["user"].(map[string]any), "id")
 	}
-	f.admin, f.adminID, _ = join("Adm", "adm@example.com", "admin")
+	f.admin, f.adminID, f.adminUserID = join("Adm", "adm@example.com", "admin")
 	f.member, f.memberID, f.memberUserID = join("Mem", "mem@example.com", "member")
 	f.other, f.otherID, f.otherUserID = join("Oth", "oth@example.com", "member")
 	return f

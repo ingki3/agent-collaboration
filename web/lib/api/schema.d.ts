@@ -5177,6 +5177,11 @@ export interface components {
             director_user_id?: string;
             /** Format: uuid */
             deputy_user_id?: string | null;
+            /**
+             * @description v0.19.31(Director 결정 2026-10-17) — 승인형·정보형 HITL 은 자동 승인·거절이 없어, deputy 없이는 Director 한 명이 유일한 해소 경로이고 대체 경로가 없다. 방에 Director 가 아닌 다른 사람이 있으면 `deputy_user_id` 가 필수(없으면 `422 deputy_required`). 다른 사람이 없으면(1인 운영) 대신 이 칸을 `true` 로 보내 "대체 경로가 없음을 안다"는 명시적 동의로 연다 — 비우면 `409 deputy_waiver_required`.
+             * @default false
+             */
+            deputy_waived?: boolean;
             /** @description `limits.budget_usd` 를 **빼면**(키 없음·`limits` 없음·`{}`·`null`) 워크스페이스 `budget_policy.default_session_budget_usd` 를 채운다(그 값도 없으면 상한 없음). **명시적 `budget_usd: null`** 은 「이 미션은 상한 없음」 — 기본값을 채우지 않는다. 어느 쪽이든 방 한도가 따로 걸린다(작은 쪽이 이긴다). */
             limits?: components["schemas"]["WorkLimits"];
             autonomy?: components["schemas"]["AutonomyLevel"];

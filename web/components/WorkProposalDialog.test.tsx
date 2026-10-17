@@ -44,6 +44,9 @@ afterEach(() => {
   bridge.restore();
 });
 const today = () => new Date().toISOString().slice(0, 10);
+// v0.19.31 — this room has no other human participant in the mock fixture, so opening a
+// mission needs the explicit "no deputy" waiver checked.
+const waiveDeputy = () => fireEvent.click(screen.getByTestId("rd-create-work-deputy-waive"));
 
 describe("S26 미션 제안 확인", () => {
   it("제안의 모양 — 에이전트 · 목표 · 근거 · 여는 사람이 Director · 「이대로 열기」는 goal 고정 S21 → 열면 연 사람이 Director", async () => {
@@ -57,6 +60,7 @@ describe("S26 미션 제안 확인", () => {
     expect(await screen.findByTestId("rd-create-work-title")).toHaveTextContent(CREATE_WORK.title_proposal);
     expect(screen.getByTestId("rd-create-work-goal")).toHaveAttribute("readonly");
     expect(screen.getByTestId("rd-create-work-goal")).toHaveValue("주간 결제 보고 자동화");
+    waiveDeputy();
     fireEvent.click(screen.getByTestId("rd-create-work-open"));
     await waitFor(() => expect(onOpened).toHaveBeenCalled());
     expect((onOpened.mock.calls[0][0] as Work).director_user_id).toBe(uid("demo@colab.dev"));
@@ -70,6 +74,7 @@ describe("S26 미션 제안 확인", () => {
     const goal = await screen.findByTestId("rd-create-work-goal");
     expect(goal).not.toHaveAttribute("readonly");
     fireEvent.change(goal, { target: { value: "월간 결제 보고 자동화" } });
+    waiveDeputy();
     fireEvent.click(screen.getByTestId("rd-create-work-open"));
     await waitFor(() => expect(onOpened).toHaveBeenCalled());
     expect((onOpened.mock.calls[0][0] as Work).goal).toBe("월간 결제 보고 자동화");
@@ -125,6 +130,7 @@ describe("쿼리 라우팅 — S7 이 마운트 한 줄로 쓴다", () => {
     nav.search = new URLSearchParams("work=new&tab=board");
     render(<RoomQueryDialogs roomId={roomId} />);
     fireEvent.change(await screen.findByTestId("rd-create-work-goal"), { target: { value: "보고서" } });
+    waiveDeputy();
     fireEvent.click(screen.getByTestId("rd-create-work-open"));
     await waitFor(() => expect(nav.replace).toHaveBeenCalled());
     expect(nav.replace.mock.calls[0][0]).toMatch(/^\/rooms\/r1\?tab=board&work=[0-9a-f-]{36}$/);

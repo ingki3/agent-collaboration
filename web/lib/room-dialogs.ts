@@ -447,9 +447,14 @@ export const CREATE_WORK = {
   director_me: "나(연 사람)",
   director_room_default: "방 기본 Director",
   director_note: "Director 가 확인 요청에 답하고 미션을 끝냅니다",
-  deputy: "deputy(선택)",
+  deputy: "deputy",
   deputy_none: "없음",
   deputy_note: "취소는 즉시, 승인은 기한 절반 후 가능합니다",
+  /** v0.19.31 — 이 방에 Director 가 아닌 다른 사람 참여자가 있으면 deputy 가 필수다: 승인형·정보형 요청은 자동 승인·거절이 없어, deputy 없이는 Director 혼자가 유일한 해소 경로이고 대체 경로가 없다. */
+  deputy_required: "이 방에는 다른 사람이 있습니다 — deputy를 지정해 주세요",
+  /** 다른 사람이 없을 때(1인 운영) deputy 대신 받는 명시적 동의. */
+  deputy_waive_label: "이 방엔 다른 사람이 없어 deputy를 정할 수 없습니다",
+  deputy_waive_checkbox: "당신이 응답하지 못하면 이 미션의 승인형·정보형 요청에는 대체 경로가 없다는 것에 동의합니다",
   budget: "예산 상한(USD, 선택)",
   budget_placeholder: "비우면 방 상한을 따릅니다",
   /** 새 미션 칸을 비웠는데 워크스페이스 기본 상한(S14)이 있으면 — 서버가 그 값을 채운다. */

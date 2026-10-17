@@ -63,6 +63,7 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
   const { me, workspace } = useAuth();
   const [room, setRoom] = useState<Room | null>(null);
   const [agents, setAgents] = useState<RoomParticipant[]>([]);
+  const [humanParticipants, setHumanParticipants] = useState<RoomParticipant[]>([]);
   const [works, setWorks] = useState<WorkListItem[]>([]);
   const [members, setMembers] = useState<Member[]>([]);
   const [message, setMessage] = useState<Message | null>(given ?? null);
@@ -79,6 +80,8 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
   const [editCond, setEditCond] = useState(false);
   const [director, setDirector] = useState("");
   const [deputy, setDeputy] = useState(editing?.deputy_user_id ?? "");
+  // v0.19.31 — 다른 사람이 없을 때(1인 운영) deputy 대신 받는 명시적 동의.
+  const [deputyWaived, setDeputyWaived] = useState(false);
   const [budget, setBudget] = useState(editing?.limits?.budget_usd != null ? String(editing.limits.budget_usd) : "");
   const [time, setTime] = useState(editing?.limits?.time_limit ?? "");
   const [wsDefault, setWsDefault] = useState<number | null>(null);
@@ -103,6 +106,7 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
       ]);
       setRoom(r);
       setAgents(parts.items.filter((p) => p.kind === "agent" && p.agent));
+      setHumanParticipants(parts.items.filter((p) => p.kind === "user" && p.user && !p.left_at));
       setWorks(pageItems<WorkListItem>(ws));
       setLoadError(null);
     } catch (e) {
@@ -172,7 +176,12 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
   const openList = serverOpen ?? works.filter((w) => RUNNING_WORK.includes(w.status)).map((w) => ({ id: w.id, title: w.title }));
   const condReason = draft.conds.length === 0 ? CREATE_WORK.need_condition : draft.conds.includes("agent_approval") && !draft.reviewer ? CREATE_WORK.reviewer_required : null;
   const goalEmpty = !goal.trim();
-  const blockedReason = !gate.ok ? gate.reason : goalEmpty ? CREATE_WORK.goal_required : condReason;
+  // v0.19.31 — deputy 필수화: 열 때만(편집 모드는 FR-2A.1b 범위 밖). 효과 director
+  // = 고른 값 → 방 기본값 → 연 사람(서버와 같은 순서, FR-2A.1).
+  const effectiveDirector = director || room?.default_director_user_id || me?.user.id || "";
+  const otherHumanParticipant = !edit && humanParticipants.some((p) => p.user?.id && p.user.id !== effectiveDirector);
+  const deputyReason = !edit && !deputy ? (otherHumanParticipant ? CREATE_WORK.deputy_required : !deputyWaived ? CREATE_WORK.deputy_waive_label : null) : null;
+  const blockedReason = !gate.ok ? gate.reason : goalEmpty ? CREATE_WORK.goal_required : condReason ?? deputyReason;
   const canOpen = !blockedReason && !atCap;
   const gateHint = `${base}-gate`;
   const openHint = gate.ok ? `${base}-open-hint` : gateHint;
@@ -220,7 +229,7 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
       assignee_agent_id: assignee || null,
       ...(condTouched ? { completion_condition: toCompletionCondition(draft) } : {}),
       ...(director ? { director_user_id: director } : {}),
-      ...(deputy ? { deputy_user_id: deputy } : {}),
+      ...(deputy ? { deputy_user_id: deputy } : deputyWaived ? { deputy_waived: true } : {}),
       ...(budget.trim() || time.trim() ? { limits: { ...(budget.trim() ? { budget_usd: Number(budget) } : {}), ...(time.trim() ? { time_limit: time.trim() } : {}) } } : {}),
       ...(autonomy ? { autonomy } : {}),
       ...(planConfirmRequired ? { plan_confirm_required: true } : {}),
@@ -399,13 +408,25 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
                 )}
                 <label className="rd-field">
                   <span className="rd-field__label">{CREATE_WORK.deputy}</span>
-                  <select className="select" value={deputy} onChange={(e) => setDeputy(e.target.value)} data-testid="rd-create-work-deputy">
+                  <select className="select" value={deputy} onChange={(e) => { setDeputy(e.target.value); if (e.target.value) setDeputyWaived(false); }} data-testid="rd-create-work-deputy">
                     <option value="">{CREATE_WORK.deputy_none}</option>
                     {members.map((m) => (
                       <option key={m.user.id} value={m.user.id}>{personName(m.user)}</option>
                     ))}
                   </select>
                   <span className="rd-hint">{CREATE_WORK.deputy_note}</span>
+                  {!edit && !deputy && (otherHumanParticipant ? (
+                    <span className="rd-err" data-testid="rd-create-work-deputy-required">{CREATE_WORK.deputy_required}</span>
+                  ) : (
+                    <label className="rd-choice">
+                      <input type="checkbox" checked={deputyWaived} onChange={(e) => setDeputyWaived(e.target.checked)} data-testid="rd-create-work-deputy-waive" />
+                      <span className="rd-choice__text">
+                        <span className="rd-choice__label">{CREATE_WORK.deputy_waive_label}</span>
+                        <span className="rd-choice__note">{CREATE_WORK.deputy_waive_checkbox}</span>
+                      </span>
+                    </label>
+                  ))}
+                  {fieldErr("deputy_user_id") && <span className="rd-err">{fieldErr("deputy_user_id")}</span>}
                 </label>
                 <label className="rd-field">
                   <span className="rd-field__label">{CREATE_WORK.time}</span>

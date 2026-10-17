@@ -36,7 +36,7 @@ func TestPlanConfirmGate(t *testing.T) {
 	// A mission the Director opened WITH plan confirmation required.
 	wB := str(f.api.must(201, "POST", f.p+"/rooms/"+f.sessionID+"/works", map[string]any{
 		"title": "계획 확인 미션", "goal": "계획 확인이 필요한 미션", "assignee_agent_id": f.lead,
-		"plan_confirm_required": true,
+		"plan_confirm_required": true, "deputy_waived": true,
 	}), "id")
 	var required bool
 	var confirmedAt *time.Time

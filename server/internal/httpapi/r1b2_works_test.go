@@ -29,6 +29,18 @@ func (f *roomsFixture) worksRoom(t *testing.T) string {
 func (f *roomsFixture) openWork(t *testing.T, c *client, rid string, body map[string]any) map[string]any {
 	t.Helper()
 	f.fake.Advance(time.Minute)
+	// FR-2A.1b(v0.19.31): default to a real deputy rather than waiving —
+	// safe either way (a deputy need not already be a room participant;
+	// opening the work adds one, same as it already does for director).
+	// director_user_id can collide with this default (same user); fall
+	// back to a different member then.
+	if _, ok := body["deputy_user_id"]; !ok {
+		if d, ok := body["director_user_id"]; ok && d == f.memberUserID {
+			body["deputy_user_id"] = f.otherUserID
+		} else {
+			body["deputy_user_id"] = f.memberUserID
+		}
+	}
 	return c.must(201, "POST", f.roomPath(rid)+"/works", body)
 }
 
@@ -98,7 +110,7 @@ func TestR1b2WorkLifecycle(t *testing.T) {
 		t.Fatalf("open_works = %v, want the 3 open missions", out["open_works"])
 	}
 	// A draft does not run, so it is not counted.
-	f.api.must(201, "POST", f.roomPath(rid)+"/works", map[string]any{"goal": "초안", "draft": true})
+	f.api.must(201, "POST", f.roomPath(rid)+"/works", map[string]any{"goal": "초안", "draft": true, "deputy_user_id": f.memberUserID})
 
 	list := items(f.api.must(200, "GET", f.roomPath(rid)+"/works", nil))
 	if len(list) != 4 {
@@ -220,7 +232,7 @@ func TestR1b2FromMessage(t *testing.T) {
 	if n := f.count(t, `SELECT count(*) FROM lane WHERE work_id = $1 AND agent_id = $2`, wid, f.r); n != 1 {
 		t.Fatalf("assignee lanes in the adopted mission = %d, want 1 (no duplicate kick-off)", n)
 	}
-	st, out, _ := f.api.do("POST", f.roomPath(rid)+"/works", map[string]any{"goal": "또", "from_message_id": rootID})
+	st, out, _ := f.api.do("POST", f.roomPath(rid)+"/works", map[string]any{"goal": "또", "from_message_id": rootID, "deputy_user_id": f.memberUserID})
 	if st != 409 || str(out, "code") != "message_has_work" {
 		t.Fatalf("second 이걸 미션으로 = %d %v, want 409 message_has_work", st, out)
 	}
@@ -256,7 +268,10 @@ func TestR1b2Proposals(t *testing.T) {
 		t.Fatalf("open proposals = %d, want 2", len(l))
 	}
 	// The member opens it: THEY direct it (not the agent, not the room default).
-	res := f.member.must(200, "POST", f.p+"/work-proposals/"+str(p1, "id")+"/resolution", map[string]any{"action": "accept"})
+	// deputy = admin, not f.otherUserID — f.other must stay an outsider for
+	// the isolation check at the end of this test (accepting a proposal
+	// makes its deputy a room participant).
+	res := f.member.must(200, "POST", f.p+"/work-proposals/"+str(p1, "id")+"/resolution", map[string]any{"action": "accept", "work": map[string]any{"deputy_user_id": f.adminUserID}})
 	wk := res["work"].(map[string]any)
 	if str(wk, "director_user_id") != f.memberUserID || str(wk, "goal") != "성능 회귀 추적" ||
 		str(res["proposal"].(map[string]any), "status") != "accepted" || str(res["proposal"].(map[string]any), "work_id") != str(wk, "id") {
