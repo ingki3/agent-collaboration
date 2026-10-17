@@ -357,7 +357,7 @@ func (s *Server) answerAgentHitl(ctx context.Context, row *hitlRow, sess *hitlSe
 	}
 	// The inbox item is resolved by the response, not by reading it
 	// (openapi markInboxRead).
-	if _, err := tx.Exec(ctx, inbox.ResolveByRefSQL, row.ID, now); err != nil {
+	if err := inbox.Resolve(ctx, s.Hub, tx, row.ID, now); err != nil {
 		return 0, nil, apperr.Internal(err)
 	}
 	if override != nil && row.TaskID != nil {
@@ -607,7 +607,7 @@ func (s *Server) answerCompletionApproval(ctx context.Context, hitlID, userID uu
 	// The inbox item is resolved by the RESPONSE, not by reading it (openapi
 	// markInboxRead). Leaving it unread keeps an action_required row — and the
 	// nav badge — on a request that has already been decided (S-33).
-	if _, err := tx.Exec(ctx, inbox.ResolveByRefSQL, hitlID, now); err != nil {
+	if err := inbox.Resolve(ctx, s.Hub, tx, hitlID, now); err != nil {
 		return 0, nil, apperr.Internal(err)
 	}
 	if err := tx.Commit(ctx); err != nil {

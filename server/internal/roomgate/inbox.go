@@ -13,6 +13,7 @@ import (
 
 	"github.com/ingki3/agent-collabortion/server/internal/db"
 	"github.com/ingki3/agent-collabortion/server/internal/inbox"
+	"github.com/ingki3/agent-collabortion/server/internal/realtime"
 )
 
 // Item is one room-owner approval's inbox card (room_paused ·
@@ -49,7 +50,7 @@ type Item struct {
 // ref two rooms on the same computer share, and the same room can lose the
 // same computer twice (rebound away and back) — the first outage's card is
 // read by then (ResolveCards), so the second one is filed.
-func FileInbox(ctx context.Context, tx pgx.Tx, it Item) error {
+func FileInbox(ctx context.Context, hub *realtime.Hub, tx pgx.Tx, it Item) error {
 	ap, err := LoadApprovers(ctx, tx, it.RoomID)
 	if err != nil {
 		return err
@@ -74,6 +75,7 @@ func FileInbox(ctx context.Context, tx pgx.Tx, it Item) error {
 			it.Actor, it.QuoteMessage); err != nil {
 			return fmt.Errorf("roomgate: %s inbox: %w", it.Type, err)
 		}
+		inbox.NotifySummary(ctx, hub, tx, it.WorkspaceID, t.user, it.Created)
 	}
 	return nil
 }
@@ -84,14 +86,25 @@ func FileInbox(ctx context.Context, tx pgx.Tx, it Item) error {
 // again on its own, so there is no response to piggyback the same write on):
 // the room is moving again, and a card still asking for a choice is one
 // nobody can act on.
-func ResolveCards(ctx context.Context, tx pgx.Tx, itemType string, roomID, ref uuid.UUID, now time.Time) error {
-	_, err := tx.Exec(ctx, `
-		UPDATE inbox_item SET read_at = $4,
-		       severity = CASE WHEN severity = 'action_required' THEN 'info'::inbox_severity ELSE severity END
-		WHERE session_id = $1 AND ref_id = $2 AND type = $3::inbox_item_type AND read_at IS NULL`,
+func ResolveCards(ctx context.Context, hub *realtime.Hub, tx pgx.Tx, itemType string, roomID, ref uuid.UUID, now time.Time) error {
+	rows, err := tx.Query(ctx, `
+		WITH updated AS (
+		  UPDATE inbox_item SET read_at = $4,
+		         severity = CASE WHEN severity = 'action_required' THEN 'info'::inbox_severity ELSE severity END
+		  WHERE session_id = $1 AND ref_id = $2 AND type = $3::inbox_item_type AND read_at IS NULL
+		  RETURNING member_id)
+		SELECT m.workspace_id, m.user_id FROM updated u JOIN member m ON m.id = u.member_id`,
 		roomID, ref, itemType, now)
 	if err != nil {
 		return fmt.Errorf("roomgate: resolve %s cards: %w", itemType, err)
+	}
+	type target struct{ Ws, User uuid.UUID }
+	targets, err := pgx.CollectRows(rows, pgx.RowToStructByPos[target])
+	if err != nil {
+		return fmt.Errorf("roomgate: resolve %s cards: %w", itemType, err)
+	}
+	for _, t := range targets {
+		inbox.NotifySummary(ctx, hub, tx, t.Ws, t.User, now)
 	}
 	return nil
 }

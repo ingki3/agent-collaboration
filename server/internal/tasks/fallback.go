@@ -11,6 +11,7 @@ import (
 
 	"github.com/ingki3/agent-collabortion/contracts"
 	"github.com/ingki3/agent-collabortion/server/internal/inbox"
+	"github.com/ingki3/agent-collabortion/server/internal/realtime"
 )
 
 // Profile fallback (daemon-protocol.md v0.4 §4.4). The DAEMON reports a
@@ -111,8 +112,16 @@ func (s *Service) ApplyProfileFallback(ctx context.Context, tx pgx.Tx, t *Row, r
 // The Director is the task's OWN mission's (V19_R1B_HANDOFF (d) — the old
 // room join picked one of the room's missions); a task outside any mission
 // tells the room's owner (FR-2A.1).
-func noteNoFallback(ctx context.Context, tx pgx.Tx, t *Row, now time.Time) error {
-	_, err := tx.Exec(ctx, `
+func noteNoFallback(ctx context.Context, hub *realtime.Hub, tx pgx.Tx, t *Row, now time.Time) error {
+	var wsID, recipient uuid.UUID
+	if err := tx.QueryRow(ctx, `
+		SELECT s.workspace_id, COALESCE(wk.director_user_id, s.owner_user_id)
+		FROM task t JOIN lane l ON l.id = t.lane_id JOIN room s ON s.id = t.session_id
+		LEFT JOIN work wk ON wk.id = COALESCE(l.work_id, t.work_id)
+		WHERE t.id = $1 AND s.id = $2`, t.ID, t.SessionID).Scan(&wsID, &recipient); err != nil {
+		return err
+	}
+	tag, err := tx.Exec(ctx, `
 		INSERT INTO inbox_item (member_id, type, severity, session_id, ref_id, created_at, work_id, recipient_basis)
 		SELECT m.id, $4::inbox_item_type, $5::inbox_severity, s.id, $1, $2, wk.id,
 		       CASE WHEN wk.id IS NULL THEN 'room_owner' ELSE 'director' END
@@ -122,5 +131,11 @@ func noteNoFallback(ctx context.Context, tx pgx.Tx, t *Row, now time.Time) error
 		WHERE t.id = $1 AND s.id = $3
 		  AND NOT EXISTS (SELECT 1 FROM inbox_item i WHERE i.ref_id = $1 AND i.type = $4::inbox_item_type)`,
 		t.ID, now, t.SessionID, inbox.TypeRunFailed, inbox.Severity(inbox.TypeRunFailed))
-	return err
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() > 0 {
+		inbox.NotifySummary(ctx, hub, tx, wsID, recipient, now)
+	}
+	return nil
 }

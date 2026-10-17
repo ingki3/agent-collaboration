@@ -168,7 +168,7 @@ func (s *Service) SetAgentStatus(ctx context.Context, taskID uuid.UUID, attempt 
 		} else if director != nil {
 			// 리뷰#04-3: a lane the Director created by mentioning an agent has
 			// no delegator to wake, so the question goes to the inbox.
-			if err := insertInbox(ctx, tx, wsID, *director, inbox.TypeLaneBlocked, inbox.Severity(inbox.TypeLaneBlocked), sessionID, qid, now); err != nil {
+			if err := s.insertInbox(ctx, tx, wsID, *director, inbox.TypeLaneBlocked, inbox.Severity(inbox.TypeLaneBlocked), sessionID, qid, now); err != nil {
 				return nil, err
 			}
 		}
@@ -639,9 +639,9 @@ func (s *Service) notifyReentry(ctx context.Context, tx pgx.Tx, sessionID, wsID,
 		}
 		return attachResultCards(ctx, tx, woken, resultCards)
 	case authorType == "user" && authorID != nil:
-		return insertInbox(ctx, tx, wsID, *authorID, inbox.TypeMention, inbox.Severity(inbox.TypeMention), sessionID, *triggerMsg, now)
+		return s.insertInbox(ctx, tx, wsID, *authorID, inbox.TypeMention, inbox.Severity(inbox.TypeMention), sessionID, *triggerMsg, now)
 	case director != nil:
-		return insertInbox(ctx, tx, wsID, *director, inbox.TypeMention, inbox.Severity(inbox.TypeMention), sessionID, *triggerMsg, now)
+		return s.insertInbox(ctx, tx, wsID, *director, inbox.TypeMention, inbox.Severity(inbox.TypeMention), sessionID, *triggerMsg, now)
 	}
 	return nil
 }
@@ -860,13 +860,17 @@ func agentDisplayName(ctx context.Context, q pgx.Tx, agentID uuid.UUID) (string,
 	return name, nil
 }
 
-func insertInbox(ctx context.Context, q pgx.Tx, wsID, userID uuid.UUID, typ, severity string, sessionID, refID uuid.UUID, now time.Time) error {
+func (s *Service) insertInbox(ctx context.Context, q pgx.Tx, wsID, userID uuid.UUID, typ, severity string, sessionID, refID uuid.UUID, now time.Time) error {
 	_, err := q.Exec(ctx, `
 		INSERT INTO inbox_item (member_id, type, severity, session_id, ref_id, created_at)
 		SELECT m.id, $1::inbox_item_type, $2::inbox_severity, $3, $4, $5
 		FROM member m WHERE m.workspace_id = $6 AND m.user_id = $7`,
 		typ, severity, sessionID, refID, now, wsID, userID)
-	return err
+	if err != nil {
+		return err
+	}
+	inbox.NotifySummary(ctx, s.Hub, q, wsID, userID, now)
+	return nil
 }
 
 // recordStatusEvent is colab-cli.md §4: every CLI call shows up in the feed.

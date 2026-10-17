@@ -324,25 +324,39 @@ func (s *Service) SweepGC(ctx context.Context) (SweepResult, error) {
 // rule E14-10 pins for the offline sweep holds here too. Returns how many
 // items this pass wrote.
 func (s *Service) notifyQuota(ctx context.Context, now time.Time) (int, error) {
-	tag, err := s.DB.Exec(ctx, `
+	rows, err := s.DB.Query(ctx, `
 		WITH used AS (
 		  SELECT r.workspace_id, sum(w.disk_bytes) AS bytes
 		  FROM workdir w JOIN room r ON r.id = w.session_id
 		  WHERE w.status <> 'deleted' GROUP BY r.workspace_id)
-		INSERT INTO inbox_item (member_id, type, severity, session_id, ref_id, recipient_basis, created_at)
-		SELECT m.id, 'workdir_quota'::inbox_item_type, $1::inbox_severity, NULL, NULL, 'workspace_owner', $2
+		SELECT ws.workspace_id, m.user_id
 		FROM workspace_settings ws
 		JOIN used u ON u.workspace_id = ws.workspace_id
 		JOIN member m ON m.workspace_id = ws.workspace_id AND m.role = 'owner'
 		WHERE ws.workdir_disk_quota_gb IS NOT NULL AND ws.workdir_disk_quota_gb > 0
-		  AND u.bytes >= ws.workdir_disk_quota_gb::bigint * $3
+		  AND u.bytes >= ws.workdir_disk_quota_gb::bigint * $1
 		  AND NOT EXISTS (SELECT 1 FROM inbox_item i
 		                  WHERE i.member_id = m.id AND i.type = 'workdir_quota' AND i.read_at IS NULL)`,
-		inbox.Severity(inbox.TypeWorkdirQuota), now, gib)
+		gib)
 	if err != nil {
 		return 0, err
 	}
-	return int(tag.RowsAffected()), nil
+	type target struct{ Ws, User uuid.UUID }
+	targets, err := pgx.CollectRows(rows, pgx.RowToStructByPos[target])
+	if err != nil {
+		return 0, err
+	}
+	for _, t := range targets {
+		if _, err := s.DB.Exec(ctx, `
+			INSERT INTO inbox_item (member_id, type, severity, session_id, ref_id, recipient_basis, created_at)
+			SELECT m.id, 'workdir_quota'::inbox_item_type, $1::inbox_severity, NULL, NULL, 'workspace_owner', $2
+			FROM member m WHERE m.workspace_id = $3 AND m.user_id = $4 AND m.role = 'owner'`,
+			inbox.Severity(inbox.TypeWorkdirQuota), now, t.Ws, t.User); err != nil {
+			return 0, err
+		}
+		inbox.NotifySummary(ctx, s.Hub, s.DB, t.Ws, t.User, now)
+	}
+	return len(targets), nil
 }
 
 // recordBlocked writes FR-6.4's "삭제하지 않고 알린다" and returns whether this
@@ -411,6 +425,7 @@ func (s *Service) notifyBlocked(ctx context.Context, q db.DBTX, c gcRow, reason 
 			c.WorkspaceID, *c.Director); err != nil {
 			return fmt.Errorf("workdirs: gc blocked inbox: %w", err)
 		}
+		inbox.NotifySummary(ctx, s.Hub, q, c.WorkspaceID, *c.Director, now)
 	}
 	var taskID uuid.UUID
 	var attempt int

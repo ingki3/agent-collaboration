@@ -242,7 +242,7 @@ func (s *Service) pauseForOffline(ctx context.Context, roomID, wsID, runtimeID u
 		// room owner's chain (FileInbox), ref = the lost computer. There is no
 		// approval request behind it: the two ways out are rebindSession and
 		// cancelling the open missions, and the card offers `rebind`.
-		if err := roomgate.FileInbox(ctx, tx, roomgate.Item{
+		if err := roomgate.FileInbox(ctx, s.Hub, tx, roomgate.Item{
 			Type: inbox.TypeRoomPaused, WorkspaceID: wsID, RoomID: roomID, HitlID: runtimeID,
 			Created: now, Due: OfflineDue(now),
 		}); err != nil {
@@ -591,7 +591,7 @@ func (s *Service) Rebind(ctx context.Context, wsID, sessionID, targetRuntime uui
 			return plan, err
 		}
 		if oldRuntime != nil {
-			if err := roomgate.ResolveCards(ctx, tx, inbox.TypeRoomPaused, sessionID, *oldRuntime, now); err != nil {
+			if err := roomgate.ResolveCards(ctx, s.Hub, tx, inbox.TypeRoomPaused, sessionID, *oldRuntime, now); err != nil {
 				return plan, err
 			}
 		}

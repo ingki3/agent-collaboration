@@ -370,6 +370,7 @@ func (s *Server) hitlInbox(ctx context.Context, tx pgx.Tx, sess *hitlSession, se
 			sessionID, hitlID, now, sess.WorkspaceID, u, inbox.TypeHitlRequest, inbox.Severity(inbox.TypeHitlRequest)); err != nil {
 			return err
 		}
+		inbox.NotifySummary(ctx, s.Hub, tx, sess.WorkspaceID, u, now)
 	}
 	return nil
 }

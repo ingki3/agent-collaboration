@@ -143,6 +143,7 @@ func (s *Server) directorHandedOver(ctx context.Context, tx pgx.Tx, wsID, roomID
 			roomID, id, now, inbox.TypeHitlRequest, inbox.Severity(inbox.TypeHitlRequest), wsID, to, workID); err != nil {
 			return err
 		}
+		inbox.NotifySummary(ctx, s.Hub, tx, wsID, to, now)
 	}
 	if err := s.systemPostWork(ctx, tx, roomID, workID, line); err != nil {
 		return err
@@ -1491,7 +1492,8 @@ func (s *Server) pauseWorkForTime(ctx context.Context, workID uuid.UUID, limit, 
 			wk.RoomId, hitlID, now, inbox.TypeHitlRequest, inbox.Severity(inbox.TypeHitlRequest), wk.WorkspaceID, wk.DirectorUserId, workID); err != nil {
 			return err
 		}
-		if err := sessions.WorkInboxItem(ctx, tx, wk.WorkspaceID, wk.DirectorUserId, inbox.TypeWorkPaused, wk.RoomId, workID, now); err != nil {
+		inbox.NotifySummary(ctx, s.Hub, tx, wk.WorkspaceID, wk.DirectorUserId, now)
+		if err := sessions.WorkInboxItem(ctx, s.Hub, tx, wk.WorkspaceID, wk.DirectorUserId, inbox.TypeWorkPaused, wk.RoomId, workID, now); err != nil {
 			return err
 		}
 		paused = true

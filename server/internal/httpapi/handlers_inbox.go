@@ -15,6 +15,7 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
 	"github.com/ingki3/agent-collabortion/server/internal/apperr"
+	"github.com/ingki3/agent-collabortion/server/internal/db"
 	"github.com/ingki3/agent-collabortion/server/internal/hitl"
 	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
 	"github.com/ingki3/agent-collabortion/server/internal/inbox"
@@ -468,6 +469,12 @@ func nullableTime(t *time.Time) nullable.Nullable[time.Time] {
 	return nullable.NewNullableWithValue(t.UTC())
 }
 
+// notifyInboxSummary is inbox.NotifySummary bound to this server's Hub — see
+// that function for why every inbox_item writer calls it (v0.19.31 2단계).
+func (s *Server) notifyInboxSummary(ctx context.Context, q db.DBTX, wsID, userID uuid.UUID, now time.Time) {
+	inbox.NotifySummary(ctx, s.Hub, q, wsID, userID, now)
+}
+
 func (s *Server) GetInboxSummary(w http.ResponseWriter, r *http.Request, params gen.GetInboxSummaryParams) {
 	u, p := s.user(r)
 	if p != nil {
@@ -528,6 +535,7 @@ func (s *Server) MarkInboxRead(w http.ResponseWriter, r *http.Request, inboxItem
 		writeProblem(w, apperr.NotFound("inbox_item"))
 		return
 	}
+	inbox.NotifySummary(r.Context(), s.Hub, s.DB, list[0].WorkspaceID, u.Id, now)
 	writeJSON(w, http.StatusOK, s.inboxAPI(r.Context(), &list[0], u.Id, now))
 }
 
@@ -537,7 +545,8 @@ func (s *Server) MarkAllInboxRead(w http.ResponseWriter, r *http.Request, params
 		writeProblem(w, p)
 		return
 	}
-	args := []any{u.Id, s.Clock.Now()}
+	now := s.Clock.Now()
+	args := []any{u.Id, now}
 	where := "m.user_id = $1 AND i.read_at IS NULL AND i.severity <> 'action_required'"
 	if params.WorkspaceId != nil {
 		args = append(args, *params.WorkspaceId)
@@ -545,13 +554,26 @@ func (s *Server) MarkAllInboxRead(w http.ResponseWriter, r *http.Request, params
 	}
 	// action_required is untouched (openapi markAllInboxRead): "전부 읽음" must
 	// not clear the things that are still waiting for this person.
-	tag, err := s.DB.Exec(r.Context(), `
-		UPDATE inbox_item i SET read_at = $2 FROM member m WHERE m.id = i.member_id AND `+where, args...)
+	rows, err := s.DB.Query(r.Context(), `
+		UPDATE inbox_item i SET read_at = $2 FROM member m WHERE m.id = i.member_id AND `+where+`
+		RETURNING m.workspace_id`, args...)
 	if err != nil {
 		writeErr(w, err)
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"updated": int(tag.RowsAffected())})
+	touched, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+	if err != nil {
+		writeErr(w, err)
+		return
+	}
+	seen := map[uuid.UUID]bool{}
+	for _, ws := range touched {
+		if !seen[ws] {
+			seen[ws] = true
+			inbox.NotifySummary(r.Context(), s.Hub, s.DB, ws, u.Id, now)
+		}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"updated": len(touched)})
 }
 
 func boolp(b *bool) bool { return b != nil && *b }

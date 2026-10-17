@@ -128,6 +128,14 @@ func scheduler(ctx context.Context, srv *httpapi.Server, log interface {
 			} else if n > 0 {
 				log.Info("hitl deadlines handled", "n", n)
 			}
+			// FR-2A.1b 2단계: the half-deadline boundary that lets a mission's
+			// deputy answer a director-only request passes unannounced unless
+			// this catches the moment it is actually crossed.
+			if n, err := srv.SweepDeputyPings(ctx); err != nil {
+				log.Warn("deputy ping sweep", "err", err)
+			} else if n > 0 {
+				log.Info("deputy pings sent", "n", n)
+			}
 			// T-APPROVAL: a held completion approval whose mission's work
 			// ended inside another transaction (room block, kill switch).
 			if n, err := srv.Sessions.ReleaseHeldApprovals(ctx); err != nil {

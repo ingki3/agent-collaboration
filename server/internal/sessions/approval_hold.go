@@ -303,7 +303,7 @@ func (s *Service) NotifyMissionIdle(ctx context.Context, workID uuid.UUID) (bool
 			return false, fmt.Errorf("sessions: mission idle notice: %w", err)
 		}
 	}
-	if err := WorkInboxItem(ctx, tx, wsID, director, TypeWorkIdle, sessionID, workID, s.Clock.Now()); err != nil {
+	if err := WorkInboxItem(ctx, s.Hub, tx, wsID, director, TypeWorkIdle, sessionID, workID, s.Clock.Now()); err != nil {
 		return false, err
 	}
 	if err := tx.Commit(ctx); err != nil {

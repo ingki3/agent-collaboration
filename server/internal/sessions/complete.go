@@ -18,6 +18,7 @@ import (
 	"github.com/ingki3/agent-collabortion/server/internal/inbox"
 	"github.com/ingki3/agent-collabortion/server/internal/messages"
 	"github.com/ingki3/agent-collabortion/server/internal/quiet"
+	"github.com/ingki3/agent-collabortion/server/internal/realtime"
 	"github.com/ingki3/agent-collabortion/server/internal/tasks"
 	"github.com/ingki3/agent-collabortion/server/internal/tokens"
 	"github.com/ingki3/agent-collabortion/server/internal/workdirs"
@@ -718,7 +719,11 @@ func (s *Service) inbox(ctx context.Context, tx pgx.Tx, wsID, userID uuid.UUID, 
 		SELECT m.id, $1::inbox_item_type, $2::inbox_severity, $3, $4, $5, $8, $9
 		FROM member m WHERE m.workspace_id = $6 AND m.user_id = $7`,
 		typ, severity, sessionID, refID, now, wsID, userID, workID, basisFor(workID))
-	return err
+	if err != nil {
+		return err
+	}
+	inbox.NotifySummary(ctx, s.Hub, tx, wsID, userID, now)
+	return nil
 }
 
 // The v0.2.0 mission item types (openapi InboxItemType, PRD v0.19 FR-8).
@@ -732,11 +737,11 @@ const (
 // Director's inbox: ref_id is the mission, so the card opens
 // /rooms/:id?work=:workId (PRD §9 미션 행).
 func (s *Service) WorkInbox(ctx context.Context, tx pgx.Tx, wsID, userID uuid.UUID, typ string, roomID, workID uuid.UUID, now time.Time) error {
-	return WorkInboxItem(ctx, tx, wsID, userID, typ, roomID, workID, now)
+	return WorkInboxItem(ctx, s.Hub, tx, wsID, userID, typ, roomID, workID, now)
 }
 
 // WorkInboxItem is WorkInbox for callers outside the package.
-func WorkInboxItem(ctx context.Context, q db.DBTX, wsID, userID uuid.UUID, typ string, roomID, workID uuid.UUID, now time.Time) error {
+func WorkInboxItem(ctx context.Context, hub *realtime.Hub, q db.DBTX, wsID, userID uuid.UUID, typ string, roomID, workID uuid.UUID, now time.Time) error {
 	_, err := q.Exec(ctx, `
 		INSERT INTO inbox_item (member_id, type, severity, session_id, ref_id, created_at, work_id, recipient_basis)
 		SELECT m.id, $1::inbox_item_type, $2::inbox_severity, $3, $4, $5, $4, 'director'
@@ -745,6 +750,7 @@ func WorkInboxItem(ctx context.Context, q db.DBTX, wsID, userID uuid.UUID, typ s
 	if err != nil {
 		return fmt.Errorf("sessions: %s inbox: %w", typ, err)
 	}
+	inbox.NotifySummary(ctx, hub, q, wsID, userID, now)
 	return nil
 }
 

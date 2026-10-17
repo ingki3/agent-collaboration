@@ -125,8 +125,7 @@ func (s *Server) acceptProposal(ctx context.Context, tx pgx.Tx, id, workID, by u
 		id, by, now, workID); err != nil {
 		return fmt.Errorf("work proposal accept: %w", err)
 	}
-	_, err := tx.Exec(ctx, `UPDATE inbox_item SET read_at = COALESCE(read_at, $2) WHERE ref_id = $1`, id, now)
-	return err
+	return inbox.Resolve(ctx, s.Hub, tx, id, now)
 }
 
 // ---------------------------------------------------------------------------
@@ -200,6 +199,16 @@ func (s *Server) CreateWorkProposal(w http.ResponseWriter, r *http.Request, room
 			}
 			// FR-8 받은 요청 work_proposed: every person in the room may open it
 			// (openapi resolveWorkProposal "방 참여자(사람) 누구나").
+			rows, err := tx.Query(r.Context(), `
+				SELECT p.user_id FROM room_participant p
+				WHERE p.room_id = $1 AND p.user_id IS NOT NULL AND p.left_at IS NULL`, roomId)
+			if err != nil {
+				return fmt.Errorf("work proposal inbox: %w", err)
+			}
+			notified, err := pgx.CollectRows(rows, pgx.RowTo[uuid.UUID])
+			if err != nil {
+				return fmt.Errorf("work proposal inbox: %w", err)
+			}
 			if _, err := tx.Exec(r.Context(), `
 				INSERT INTO inbox_item (member_id, type, severity, session_id, ref_id, created_at)
 				SELECT m.id, $3::inbox_item_type, $4::inbox_severity, $1, $2, $5
@@ -208,6 +217,9 @@ func (s *Server) CreateWorkProposal(w http.ResponseWriter, r *http.Request, room
 				WHERE p.room_id = $1 AND p.user_id IS NOT NULL AND p.left_at IS NULL`,
 				roomId, id, inbox.TypeWorkProposed, inbox.Severity(inbox.TypeWorkProposed), now); err != nil {
 				return fmt.Errorf("work proposal inbox: %w", err)
+			}
+			for _, uid := range notified {
+				inbox.NotifySummary(r.Context(), s.Hub, tx, wsID, uid, now)
 			}
 			if s.Hub != nil {
 				out, err := loadProposal(r.Context(), tx, id)
@@ -410,7 +422,7 @@ func (s *Server) ResolveWorkProposal(w http.ResponseWriter, r *http.Request, wor
 					workProposalId, u.Id, now, rr); err != nil {
 					return err
 				}
-				if _, err := tx.Exec(r.Context(), `UPDATE inbox_item SET read_at = COALESCE(read_at, $2) WHERE ref_id = $1`, workProposalId, now); err != nil {
+				if err := inbox.Resolve(r.Context(), s.Hub, tx, workProposalId, now); err != nil {
 					return err
 				}
 				line := displayName(r.Context(), tx, u.Id) + " 님이 " + prop.Agent.Name + " 의 미션 제안 「" + firstLineOf(prop.Goal) + "」을 거절했습니다."
