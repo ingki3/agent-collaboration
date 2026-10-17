@@ -34,6 +34,9 @@ afterEach(() => {
 const agent = () => [...store().agents.values()][0];
 const invite = () => bridge.call("POST", `/rooms/${roomId}/participants`, { agent_id: agent().id });
 const hintOf = (el: HTMLElement) => document.getElementById(el.getAttribute("aria-describedby") ?? "");
+// v0.19.31 — this room has no other human participant in the mock fixture, so opening a
+// mission needs the explicit "no deputy" waiver checked (fieldErr required otherwise).
+const waiveDeputy = () => fireEvent.click(screen.getByTestId("rd-create-work-deputy-waive"));
 
 describe("S21 미션 열기", () => {
   it("새 미션 — 정의 한 줄 · goal 이 비면 「열기」 비활성 + 사유 · 담당이 없으면 Director 승인 단독 + 이유 · 열면 onOpened", async () => {
@@ -47,6 +50,7 @@ describe("S21 미션 열기", () => {
     expect(screen.getByTestId("rd-create-work-condition-sentence")).toHaveTextContent("Director 승인");
     expect(screen.getByTestId("rd-create-work-condition-why")).toHaveTextContent(CREATE_WORK.condition_default_hint);
     fireEvent.change(screen.getByTestId("rd-create-work-goal"), { target: { value: "결제 실패율 보고서\n표 3개" } });
+    waiveDeputy();
     expect(open).not.toHaveAttribute("aria-disabled");
     fireEvent.click(open);
     await waitFor(() => expect(onOpened).toHaveBeenCalled());
@@ -70,6 +74,7 @@ describe("S21 미션 열기", () => {
     expect(screen.getByTestId("rd-create-work-condition-sentence")).toHaveTextContent(`아티팩트 제출 (${agent().name}) 그리고 Director 승인`);
     expect(screen.queryByTestId("rd-create-work-condition-why")).toBeNull();
     fireEvent.change(screen.getByTestId("rd-create-work-goal"), { target: { value: "번역" } });
+    waiveDeputy();
     fireEvent.click(screen.getByTestId("rd-create-work-open"));
     await waitFor(() => expect(onOpened).toHaveBeenCalled());
     expect((onOpened.mock.calls[0][0] as Work).completion_condition).toEqual({ op: "and", conditions: [{ type: "artifact_submitted", who: "assignee" }, { type: "user_approval" }] });
@@ -127,6 +132,7 @@ describe("S21 미션 열기", () => {
     await waitFor(() => expect(screen.getByTestId("rd-create-work-budget-line")).toHaveTextContent(CREATE_WORK.budget_ws_default.join("$5")));
     expect(screen.getByTestId("rd-create-work-budget")).toHaveAttribute("placeholder", "$5");
     fireEvent.change(screen.getByTestId("rd-create-work-goal"), { target: { value: "기본 상한 미션" } });
+    waiveDeputy();
     fireEvent.click(screen.getByTestId("rd-create-work-open"));
     await waitFor(() => expect(onOpened).toHaveBeenCalled());
     expect((onOpened.mock.calls[0][0] as Work).limits).toMatchObject({ budget_usd: 5 });
@@ -147,6 +153,7 @@ describe("S21 미션 열기", () => {
     expect(screen.getByTestId("rd-create-work-goal")).toHaveValue("@Lead 결제 실패율을 정리해 줘");
     await waitFor(() => expect(screen.getByTestId("rd-create-work-assignee")).toHaveValue(agent().id));
     expect(screen.getByTestId("rd-create-work-suggested")).toHaveTextContent(CREATE_WORK.assignee_suggested);
+    waiveDeputy();
     fireEvent.click(screen.getByTestId("rd-create-work-open"));
     await waitFor(() => expect(onOpened).toHaveBeenCalled());
     expect((onOpened.mock.calls[0][0] as Work).opened_from_message_id).toBe(m.id);
@@ -157,6 +164,7 @@ describe("S21 미션 열기", () => {
     const onOpened = vi.fn();
     render(<CreateWorkDialog roomId={roomId} mode="new" onOpened={onOpened} onClose={() => {}} />);
     fireEvent.change(screen.getByTestId("rd-create-work-goal"), { target: { value: "계획 확인 미션" } });
+    waiveDeputy();
     fireEvent.click(screen.getByTestId("rd-create-work-open"));
     await waitFor(() => expect(onOpened).toHaveBeenCalled());
     expect((onOpened.mock.calls[0][0] as Work).plan_confirm_required).toBe(false);
@@ -166,6 +174,7 @@ describe("S21 미션 열기", () => {
     render(<CreateWorkDialog roomId={roomId} mode="new" onOpened={onOpened2} onClose={() => {}} />);
     fireEvent.change(screen.getByTestId("rd-create-work-goal"), { target: { value: "계획 확인 미션 2" } });
     fireEvent.click(screen.getByTestId("rd-create-work-plan-confirm"));
+    waiveDeputy();
     fireEvent.click(screen.getByTestId("rd-create-work-open"));
     await waitFor(() => expect(onOpened2).toHaveBeenCalled());
     expect((onOpened2.mock.calls[0][0] as Work).plan_confirm_required).toBe(true);

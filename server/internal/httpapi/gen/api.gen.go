@@ -5242,6 +5242,9 @@ type WorkCreate struct {
 	CompletionCondition *CompletionCondition                  `json:"completion_condition,omitempty"`
 	DeputyUserId        nullable.Nullable[openapi_types.UUID] `json:"deputy_user_id,omitempty"`
 
+	// DeputyWaived v0.19.31(Director 결정 2026-10-17) — 승인형·정보형 HITL 은 자동 승인·거절이 없어, deputy 없이는 Director 한 명이 유일한 해소 경로이고 대체 경로가 없다. 방에 Director 가 아닌 다른 사람이 있으면 `deputy_user_id` 가 필수(없으면 `422 deputy_required`). 다른 사람이 없으면(1인 운영) 대신 이 칸을 `true` 로 보내 "대체 경로가 없음을 안다"는 명시적 동의로 연다 — 비우면 `409 deputy_waiver_required`.
+	DeputyWaived *bool `json:"deputy_waived,omitempty"`
+
 	// DirectorUserId 비우면 방 `default_director_user_id`, 그것도 없으면 연 사람.
 	DirectorUserId *openapi_types.UUID `json:"director_user_id,omitempty"`
 	Draft          *bool               `json:"draft,omitempty"`

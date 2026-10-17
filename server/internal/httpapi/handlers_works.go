@@ -518,6 +518,31 @@ func (s *Server) openWork(ctx context.Context, tx pgx.Tx, a *rooms.Access, u *ge
 		d := uuid.UUID(in.DeputyUserId.MustGet())
 		deputy = &d
 	}
+	// FR-2A.1b(v0.19.31, Director 결정 2026-10-17): approval·info HITL은 자동
+	// 승인·거절이 없어(FR-5.4) deputy 없이는 director 한 명이 유일한 해소
+	// 경로이고 대체 경로가 없다 — 실측(13시간 방치)으로 확인된 데드락 위험.
+	// 이 방에 director 가 아닌 다른 사람 참여자가 있으면 deputy를 필수로
+	// 요구하고, 없으면(1인 운영) 명시적 동의(deputy_waived)로 대신한다.
+	// 워크스페이스 전체가 아니라 **이 방의** 참여자다 — 워크스페이스 멤버가
+	// 이 방을 아예 모른다면 "응답할 사람"이 아니다.
+	if deputy == nil {
+		var otherMember bool
+		if err := tx.QueryRow(ctx, `
+			SELECT EXISTS (SELECT 1 FROM room_participant
+			               WHERE room_id = $1 AND user_id IS NOT NULL AND user_id != $2 AND left_at IS NULL)`,
+			roomID, director).Scan(&otherMember); err != nil {
+			return uuid.Nil, err
+		}
+		if otherMember {
+			return uuid.Nil, apperr.Validation(apperr.Field("deputy_user_id", "required",
+				"이 방에는 다른 사람이 있습니다 — deputy를 지정해야 미션을 열 수 있습니다"))
+		}
+		waived := in.DeputyWaived != nil && *in.DeputyWaived
+		if !waived {
+			return uuid.Nil, apperr.Conflict("deputy_waiver_required",
+				"이 방엔 다른 사람이 없어 deputy를 정할 수 없습니다 — 당신이 응답하지 못하면 이 미션의 승인형·정보형 요청에는 대체 경로가 없습니다")
+		}
+	}
 	for _, id := range []*uuid.UUID{&director, deputy} {
 		if id == nil {
 			continue

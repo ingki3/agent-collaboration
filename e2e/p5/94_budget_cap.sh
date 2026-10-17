@@ -46,7 +46,7 @@ export DTOK RID
 R="$(api_ok POST "/workspaces/$WS/agents" '{"name":"R","role":"researcher","role_description":"d","instructions":"짧게","profiles":[{"name":"default","runtime_kind":"claude_code","model":"claude-sonnet-5","is_default":true}]}' | jq -r .id)"
 ROOMA="$(mk_room "94 방 상한")"; join_r "$ROOMA"
 chk 0.1 "-" "$(api_ok GET "/rooms/$ROOMA" | budget_of)" "새 방 — 상한 없음(기본값 그대로)"
-W0="$(api_ok POST "/rooms/$ROOMA/works" '{"goal":"기본 미션"}')"
+W0="$(api_ok POST "/rooms/$ROOMA/works" '{"goal":"기본 미션","deputy_waived":true}')"
 chk 0.2 "-" "$(budget_of <<<"$W0")" "새 미션 — 상한 없음(워크스페이스 기본 없음)"
 api_ok POST "/works/$(jq -r .id <<<"$W0")/cancel" '{}' >/dev/null
 
@@ -66,7 +66,7 @@ chk A.5 "200/-/1" "$CODE/$(psqlq "select coalesce(blocked_reason::text,'-') from
 
 step "B. 미션 비용 줄 [상한 걸기] → updateWork → 초과 → 그 미션만 paused(budget) + 예산 HITL"
 ROOMB="$(mk_room "94 미션 상한")"; join_r "$ROOMB"
-WB="$(api_ok POST "/rooms/$ROOMB/works" '{"goal":"미션 상한 시험"}' | jq -r .id)"
+WB="$(api_ok POST "/rooms/$ROOMB/works" '{"goal":"미션 상한 시험","deputy_waived":true}' | jq -r .id)"
 chk B.1 "-" "$(api_ok GET "/works/$WB" | budget_of)" "열 때는 상한 없음"
 call PATCH "/works/$WB" '{"limits":{"budget_usd":0.01}}'
 chk B.2 "200/0.01" "$CODE/$(budget_of <<<"$BODY")" "updateWork limits.budget_usd = 0.01(미션 칸의 「상한 걸기」)"
@@ -85,9 +85,9 @@ chk C.1 200 "$CODE" "S14 저장(두 기본값)"
 ROOMC="$(mk_room "94 기본값")"; join_r "$ROOMC"
 chk C.2 30 "$(api_ok GET "/rooms/$ROOMC" | budget_of)" "새 방은 room_defaults.limits.budget_usd 를 상속"
 chk C.3 "-" "$(api_ok GET "/rooms/$ROOMB" | budget_of)" "  … 이미 있는 방은 그대로"
-WC="$(api_ok POST "/rooms/$ROOMC/works" '{"goal":"기본 상한 미션"}' | jq -r .id)"
+WC="$(api_ok POST "/rooms/$ROOMC/works" '{"goal":"기본 상한 미션","deputy_waived":true}' | jq -r .id)"
 chk C.4 0.01 "$(api_ok GET "/works/$WC" | budget_of)" "예산 칸을 비운 새 미션 → 서버가 워크스페이스 기본 \$0.01 을 채운다"
-WN="$(api_ok POST "/rooms/$ROOMC/works" '{"goal":"명시적 없음","limits":{"budget_usd":null}}' | jq -r .id)"
+WN="$(api_ok POST "/rooms/$ROOMC/works" '{"goal":"명시적 없음","limits":{"budget_usd":null},"deputy_waived":true}' | jq -r .id)"
 chk C.5 "-" "$(api_ok GET "/works/$WN" | budget_of)" "명시적 null → 상한 없음(방을 따름) 그대로"
 api_ok POST "/works/$WN/cancel" '{}' >/dev/null
 post "$ROOMC" "$(jq -nc --arg c "$(mention R "$R") 기본 상한 시험" --arg w "$WC" '{content:$c,work_id:$w}')" >/dev/null

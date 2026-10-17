@@ -137,12 +137,15 @@ create_room_work_api() {
     out="$(api POST "/rooms/$room/participants" "$p")"; code="$(api_code <<<"$out")"
     case "$code" in 2*) ;; *) printf '%s\n' "$out"; return 0;; esac
   done <<<"$(jq -c '.participants[]? | {agent_id} + (if (.profile_id // "") != "" then {profile_id} else {} end)' <<<"$in")"
+  # FR-2A.1b(v0.19.31): deputy 는 이제 이 방에 director 가 아닌 다른 사람 참여자가
+  # 있으면 필수다. e2e 시나리오는 거의 전부 사람 하나(Director)뿐이라 기본은 명시
+  # 동의(deputy_waived) — deputy_director_user_id 를 주는 시나리오만 그걸 쓴다.
   work="$(jq -c '{goal, title, assignee_agent_id:(.assignee_agent_id // .participants[0].agent_id)}
      + (if .completion_condition then {completion_condition} else {} end)
      + (if .acceptance_criteria then {acceptance_criteria} else {} end)
      + (if .draft then {draft} else {} end)
      + (if .director_user_id then {director_user_id} else {} end)
-     + (if .deputy_director_user_id then {deputy_user_id:.deputy_director_user_id} else {} end)
+     + (if .deputy_director_user_id then {deputy_user_id:.deputy_director_user_id} else {deputy_waived:true} end)
      + (if .limits then ((.limits|with_entries(select(.key|IN("budget_tokens","max_tasks"))))
          | if length>0 then {limits:.} else {} end) else {} end)
      | with_entries(select(.value != null))' <<<"$in")"

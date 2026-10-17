@@ -92,7 +92,7 @@ LOAD_START="$(now_ms)"
 for i in $(seq 1 "$N_LOAD"); do
   r="${LOAD_ROOMS[$((i-1))]}"
   w="$(api_ok POST "/rooms/$r/works" "$(jq -nc --arg t "perf load $i" --arg g "부하 $i" --arg a "$LOAD" \
-        '{title:$t,goal:$g,assignee_agent_id:$a,completion_condition:{op:"and",conditions:[{type:"manual"}]}}')" | jq -r .id)"
+        '{title:$t,goal:$g,assignee_agent_id:$a,completion_condition:{op:"and",conditions:[{type:"manual"}]},deputy_waived:true}')" | jq -r .id)"
   [ -n "$w" ] && [ "$w" != null ] || bad "부하 미션 $i 생성 실패"
   printf '%s' "$w" > "$ROOM_WORK_DIR/$r"
   SESS+=("$r")

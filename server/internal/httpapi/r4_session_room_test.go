@@ -52,10 +52,17 @@ func sessionRoom(t *testing.T, c *client, q db.DBTX, p, wsID string, body map[st
 		}
 	}
 	wk := map[string]any{}
-	for _, k := range []string{"goal", "title", "assignee_agent_id", "completion_condition", "acceptance_criteria", "draft"} {
+	for _, k := range []string{"goal", "title", "assignee_agent_id", "completion_condition", "acceptance_criteria", "draft", "deputy_user_id"} {
 		if v, ok := body[k]; ok {
 			wk[k] = v
 		}
+	}
+	// FR-2A.1b(v0.19.31): this fixture's workspace has one member (the
+	// signed-up Director) — waive deputy by default so every caller doesn't
+	// need to say so. A test that cares about the deputy path sets
+	// deputy_user_id itself (loop above picks it up and this is skipped).
+	if _, ok := wk["deputy_user_id"]; !ok {
+		wk["deputy_waived"] = true
 	}
 	if _, ok := body["assignee_agent_id"]; !ok {
 		// createSession's default: the first participant is the assignee.
@@ -118,6 +125,11 @@ func tryWork(t *testing.T, c *client, p, wsID string, agents []string, work map[
 	}
 	if _, ok := work["goal"]; !ok {
 		work["goal"] = "g"
+	}
+	// FR-2A.1b(v0.19.31): same default as sessionRoom — this fixture's
+	// workspace has one member unless the caller names a deputy itself.
+	if _, ok := work["deputy_user_id"]; !ok {
+		work["deputy_waived"] = true
 	}
 	st, out, _ := c.do("POST", p+"/rooms/"+str(room, "id")+"/works", work)
 	return st, out
