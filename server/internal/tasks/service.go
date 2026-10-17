@@ -527,7 +527,7 @@ func (s *Service) requeueLocked(ctx context.Context, tx pgx.Tx, t *Row, reason c
 			return err
 		}
 		if fb.NotifyDirector {
-			if err := noteNoFallback(ctx, tx, t, now); err != nil {
+			if err := noteNoFallback(ctx, s.Hub, tx, t, now); err != nil {
 				return err
 			}
 		}

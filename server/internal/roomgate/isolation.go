@@ -75,18 +75,18 @@ func AskIsolation(ctx context.Context, tx pgx.Tx, hub *realtime.Hub, roomID, run
 	if _, err := messages.AttachHitlCard(ctx, hub, tx, wsID, roomID, hitlID, messages.HitlCard{Type: hitl.KindApproval, Question: question}, now); err != nil {
 		return err
 	}
-	return fileIsolation(ctx, tx, wsID, roomID, hitlID, now)
+	return fileIsolation(ctx, hub, tx, wsID, roomID, hitlID, now)
 }
 
 // fileIsolation files the isolation_confirm card (both forms — approve/reject
 // and the repository choice): the owner's chain (FileInbox), quoting the
 // person and the message whose turn the question holds (openapi 0.2.10).
-func fileIsolation(ctx context.Context, tx pgx.Tx, wsID, roomID, hitlID uuid.UUID, now time.Time) error {
+func fileIsolation(ctx context.Context, hub *realtime.Hub, tx pgx.Tx, wsID, roomID, hitlID uuid.UUID, now time.Time) error {
 	actor, msg, err := firstTurn(ctx, tx, roomID)
 	if err != nil {
 		return err
 	}
-	return FileInbox(ctx, tx, Item{
+	return FileInbox(ctx, hub, tx, Item{
 		Type: inbox.TypeIsolationConfirm, WorkspaceID: wsID, RoomID: roomID, HitlID: hitlID,
 		Created: now, Due: now.Add(hitl.DefaultDueIn), Actor: actor, QuoteMessage: msg,
 	})
@@ -330,7 +330,7 @@ func AskRepo(ctx context.Context, tx pgx.Tx, hub *realtime.Hub, roomID, runtimeI
 	if _, err := messages.AttachHitlCard(ctx, hub, tx, wsID, roomID, hitlID, messages.HitlCard{Type: hitl.KindChoice, Question: question, Options: repos, ProposedDefault: repos[0]}, now); err != nil {
 		return err
 	}
-	return fileIsolation(ctx, tx, wsID, roomID, hitlID, now)
+	return fileIsolation(ctx, hub, tx, wsID, roomID, hitlID, now)
 }
 
 // RepoQuestion is the choice the room owner reads when the first computer has

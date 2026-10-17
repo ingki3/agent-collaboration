@@ -199,6 +199,7 @@ func (s *Server) invitePerson(ctx context.Context, tx pgx.Tx, a *rooms.Access, i
 			memberID, inbox.Severity(inbox.TypeRoomInvited), a.RoomID, row.ID, now, inviter); err != nil {
 			return nil, err
 		}
+		inbox.NotifySummary(ctx, s.Hub, tx, a.WorkspaceID, userID, now)
 	}
 	return row, nil
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
 	"github.com/ingki3/agent-collabortion/server/internal/inbox"
+	"github.com/ingki3/agent-collabortion/server/internal/realtime"
 )
 
 // notifyMentionedPeople files a `mention` inbox item (info) for each person a
@@ -24,7 +25,7 @@ import (
 //
 // It wakes nobody: routing (Decide rule 3) never triggers for a person
 // (T-HUMANMENTION, colab-cli v0.9.4).
-func notifyMentionedPeople(ctx context.Context, tx pgx.Tx, wsID, roomID, msgID uuid.UUID, work *uuid.UUID, author Author, mentions []gen.Mention, now time.Time) error {
+func notifyMentionedPeople(ctx context.Context, hub *realtime.Hub, tx pgx.Tx, wsID, roomID, msgID uuid.UUID, work *uuid.UUID, author Author, mentions []gen.Mention, now time.Time) error {
 	seen := map[uuid.UUID]bool{}
 	for _, m := range mentions {
 		if m.Kind != gen.MentionKindUser {
@@ -47,6 +48,7 @@ func notifyMentionedPeople(ctx context.Context, tx pgx.Tx, wsID, roomID, msgID u
 			inbox.TypeMention, inbox.Severity(inbox.TypeMention), roomID, msgID, now, work, wsID, id); err != nil {
 			return fmt.Errorf("router: mention inbox: %w", err)
 		}
+		inbox.NotifySummary(ctx, hub, tx, wsID, id, now)
 	}
 	return nil
 }

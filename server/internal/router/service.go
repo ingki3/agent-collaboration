@@ -291,7 +291,7 @@ func (s *Service) postRow(ctx context.Context, tx pgx.Tx, sessionID, wsID uuid.U
 	// never wakes anyone for it (rule 3) — this is the only thing a person's
 	// mention does besides addressing them (T-HUMANMENTION).
 	if !isNote(in.Content) {
-		if err := notifyMentionedPeople(ctx, tx, wsID, sessionID, msgID, attr.WorkID, author, dec.Mentions, now); err != nil {
+		if err := notifyMentionedPeople(ctx, s.Hub, tx, wsID, sessionID, msgID, attr.WorkID, author, dec.Mentions, now); err != nil {
 			return nil, uuid.Nil, err
 		}
 	}
@@ -981,7 +981,7 @@ func (s *Service) pauseForLoop(ctx context.Context, tx pgx.Tx, sessionID, wsID u
 	}
 	// FR-8 v0.19: the whole room stopped — `room_paused` (action_required)
 	// for the room owner's chain, whose answer lifts the gate.
-	if err := roomgate.FileInbox(ctx, tx, roomgate.Item{
+	if err := roomgate.FileInbox(ctx, s.Hub, tx, roomgate.Item{
 		Type: inbox.TypeRoomPaused, WorkspaceID: wsID, RoomID: sessionID, HitlID: hitlID,
 		Created: now, Due: due,
 	}); err != nil {

@@ -282,7 +282,7 @@ func (s *Server) applyBudgetPause(ctx context.Context, tx pgx.Tx, b *budgetState
 		if tag.RowsAffected() > 0 {
 			// FR-8 받은 요청 work_paused (T-R1b2): the mission stopped, and its
 			// Director is the one who can let it go on.
-			if err := sessions.WorkInboxItem(ctx, tx, b.WorkspaceID, b.Director, inbox.TypeWorkPaused, b.SessionID, *b.WorkID, now); err != nil {
+			if err := sessions.WorkInboxItem(ctx, s.Hub, tx, b.WorkspaceID, b.Director, inbox.TypeWorkPaused, b.SessionID, *b.WorkID, now); err != nil {
 				return err
 			}
 			s.publishWork(ctx, tx, b.WorkspaceID, *b.WorkID, "work.updated")
@@ -442,17 +442,20 @@ func (s *Server) applyBudgetPause(ctx context.Context, tx pgx.Tx, b *budgetState
 		// room owner's chain, the approval being that card's action (the same
 		// card a loop stop files, router.pauseForLoop). A `hitl_request` card
 		// here was a second kind of card for the same stop (#311 ①).
-		return roomgate.FileInbox(ctx, tx, roomgate.Item{
+		return roomgate.FileInbox(ctx, s.Hub, tx, roomgate.Item{
 			Type: inbox.TypeRoomPaused, WorkspaceID: b.WorkspaceID, RoomID: b.SessionID, HitlID: hitlID,
 			Created: now, Due: now.Add(hitl.DefaultDueIn),
 		})
 	}
-	_, err = tx.Exec(ctx, `
+	if _, err = tx.Exec(ctx, `
 		INSERT INTO inbox_item (member_id, type, severity, session_id, ref_id, created_at, work_id)
 		SELECT m.id, $4::inbox_item_type, $5::inbox_severity, $1, $2, $3, $8
 		FROM member m WHERE m.workspace_id = $6 AND m.user_id = $7`,
-		b.SessionID, hitlID, now, inbox.TypeHitlRequest, inbox.Severity(inbox.TypeHitlRequest), b.WorkspaceID, approver, workRef)
-	return err
+		b.SessionID, hitlID, now, inbox.TypeHitlRequest, inbox.Severity(inbox.TypeHitlRequest), b.WorkspaceID, approver, workRef); err != nil {
+		return err
+	}
+	inbox.NotifySummary(ctx, s.Hub, tx, b.WorkspaceID, approver, now)
+	return nil
 }
 
 func derefFloat(p *float64) float64 {

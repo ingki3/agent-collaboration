@@ -64,7 +64,7 @@ func (s *Server) closeSessionBudgetHitl(ctx context.Context, tx pgx.Tx, scope ta
 		if _, err := insertDecision(ctx, tx, o.room, "미션 재개 승인: "+o.q, "", "hitl", &o.id, false, now, o.work); err != nil {
 			return err
 		}
-		if _, err := tx.Exec(ctx, inbox.ResolveByRefSQL, o.id, now); err != nil {
+		if err := inbox.Resolve(ctx, s.Hub, tx, o.id, now); err != nil {
 			return err
 		}
 		// T-APPROVAL: resuming from the mission panel answers the card too.
@@ -164,7 +164,7 @@ func (s *Server) liftOfflineGate(ctx context.Context, tx pgx.Tx, roomID uuid.UUI
 		return err
 	}
 	if runtimeID != nil {
-		if err := roomgate.ResolveCards(ctx, tx, inbox.TypeRoomPaused, roomID, *runtimeID, now); err != nil {
+		if err := roomgate.ResolveCards(ctx, s.Hub, tx, inbox.TypeRoomPaused, roomID, *runtimeID, now); err != nil {
 			return err
 		}
 	}

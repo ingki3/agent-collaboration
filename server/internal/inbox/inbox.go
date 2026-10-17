@@ -7,6 +7,60 @@
 // either useless or alarming.
 package inbox
 
+import (
+	"context"
+	"log/slog"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+
+	"github.com/ingki3/agent-collabortion/server/internal/db"
+	"github.com/ingki3/agent-collabortion/server/internal/realtime"
+)
+
+// NotifySummary pushes one person's fresh action_required/overdue/unread
+// counts over SSE (`inbox.summary`, PublishTo — targeted, not broadcast: the
+// counts are per-person). Same query GetInboxSummary answers on a GET,
+// scoped here to the one user an insert/resolve/read-mark just touched.
+//
+// v0.19.31 2단계(2026-10-17 실사용 관찰): the contract has carried this event
+// type since D1 and the web mock emits it, but the real server never
+// published it — the badge only ever moved on reload/resync. Every writer of
+// inbox_item (insert, ResolveByRefSQL, mark-read, roomgate's own inserts/
+// resolves) calls this for whoever it just touched so the badge moves live.
+// hub may be nil (tests without a Hub wired) — a no-op then, like every
+// other optional-SSE call site in this codebase.
+func NotifySummary(ctx context.Context, hub *realtime.Hub, q db.DBTX, ws, user uuid.UUID, now time.Time) {
+	if hub == nil {
+		return
+	}
+	var actionRequired, overdue, unread int
+	err := q.QueryRow(ctx, `
+		SELECT count(*) FILTER (WHERE i.severity = 'action_required'),
+		       count(*) FILTER (WHERE h.id IS NOT NULL AND h.status = 'open' AND h.due_at < $3),
+		       count(*) FILTER (WHERE i.read_at IS NULL)
+		FROM inbox_item i
+		JOIN member m ON m.id = i.member_id
+		LEFT JOIN hitl_request h ON h.id = i.ref_id AND i.type = 'hitl_request'
+		WHERE m.user_id = $1 AND m.workspace_id = $2`, user, ws, now).Scan(&actionRequired, &overdue, &unread)
+	if err != nil {
+		slog.Warn("inbox: summary frame", "err", err, "user", user)
+		return
+	}
+	_ = hub.PublishTo(ctx, q, ws, nil, &user, "inbox.summary",
+		summaryPayload{ActionRequired: actionRequired, Overdue: overdue, Unread: &unread})
+}
+
+// summaryPayload mirrors gen.InboxSummary's wire shape without importing
+// internal/httpapi/gen — that package already imports internal/inbox for the
+// type/severity/action tables, so the reverse import would cycle.
+type summaryPayload struct {
+	ActionRequired int  `json:"action_required"`
+	Overdue        int  `json:"overdue"`
+	Unread         *int `json:"unread,omitempty"`
+}
+
 // The seven item types (inbox_item_type, FR-8).
 const (
 	TypeHitlRequest    = "hitl_request"
@@ -100,6 +154,31 @@ const ResolveByRefSQL = `
 	UPDATE inbox_item SET read_at = COALESCE(read_at, $2),
 	       severity = CASE WHEN severity = 'action_required' THEN 'info'::inbox_severity ELSE severity END
 	WHERE ref_id = $1`
+
+// Resolve runs ResolveByRefSQL and notifies everyone it just touched —
+// director and deputy both have a card for the same hitl_request (O5), so
+// one answer moves two badges.
+func Resolve(ctx context.Context, hub *realtime.Hub, q db.DBTX, refID uuid.UUID, now time.Time) error {
+	rows, err := q.Query(ctx, `
+		WITH updated AS (
+		  UPDATE inbox_item SET read_at = COALESCE(read_at, $2),
+		         severity = CASE WHEN severity = 'action_required' THEN 'info'::inbox_severity ELSE severity END
+		  WHERE ref_id = $1
+		  RETURNING member_id)
+		SELECT m.workspace_id, m.user_id FROM updated u JOIN member m ON m.id = u.member_id`, refID, now)
+	if err != nil {
+		return err
+	}
+	type target struct{ Ws, User uuid.UUID }
+	targets, err := pgx.CollectRows(rows, pgx.RowToStructByPos[target])
+	if err != nil {
+		return err
+	}
+	for _, t := range targets {
+		NotifySummary(ctx, hub, q, t.Ws, t.User, now)
+	}
+	return nil
+}
 
 // OfflineRoomActions is a room_paused card for a lost computer (FR-9.2 v0.19):
 // there is no request to approve — the way out is rebinding (the other one,
