@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
 )
 
 // TestWriteProblemLogs5xxCause — the Go error behind a 500 is in the body as

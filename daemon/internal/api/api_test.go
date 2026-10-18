@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // fakeServer is an httptest daemon API: pairing, one claimable task, and an

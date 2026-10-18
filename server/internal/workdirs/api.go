@@ -11,9 +11,9 @@ import (
 	"github.com/oapi-codegen/nullable"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/db"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 const workdirCols = `w.id, w.session_id, w.agent_id, w.lane_id, w.kind::text, w.path_or_ref,

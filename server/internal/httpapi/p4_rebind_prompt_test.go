@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/router"
-	"github.com/ingki3/agent-collabortion/server/internal/runtimes"
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/runtimes"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
 )
 
 // TestP4RebindPromptReachesTheBundle is S-53 (found reviewing #162's NN5).

@@ -7,8 +7,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/server/internal/tokens"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/server/internal/tokens"
 )
 
 // Cancellation, the kill switch and the FR-1.9 permission gate (PRD FR-3.4,

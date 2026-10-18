@@ -12,8 +12,8 @@ import (
 	"github.com/oapi-codegen/nullable"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 // FR-1.4 팀 템플릿 3종 — 리서치 팀 · 개발 팀 · 콘텐츠 팀. "프리셋은 역할·

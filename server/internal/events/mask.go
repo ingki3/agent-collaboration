@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/server/internal/db"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
 )
 
 // Masking is PRD §9's workspace switch (`workspace_settings.task_event_masking`,

@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
 )
 
 // S-80 (PR #216 리뷰 (7)): resumeSession used to DELETE session_hop, which

@@ -8,12 +8,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/oapi-codegen/nullable"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/messages"
-	"github.com/ingki3/agent-collabortion/server/internal/rooms"
-	"github.com/ingki3/agent-collabortion/server/internal/sessions"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/messages"
+	"github.com/ingki3/agent-collaboration/server/internal/rooms"
+	"github.com/ingki3/agent-collaboration/server/internal/sessions"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 // PRD v0.19 FR-4.5 — another room read on request (T-R1c). The permission,

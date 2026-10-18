@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 // TestActiveTaskStatusesTable is #299 review NN1: the SET behind

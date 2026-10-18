@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/contracts/clock"
-	"github.com/ingki3/agent-collabortion/server/internal/realtime"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/contracts/clock"
+	"github.com/ingki3/agent-collaboration/server/internal/realtime"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
 )
 
 // G3 re-check defects (plan/G3_DECISION.md §2):

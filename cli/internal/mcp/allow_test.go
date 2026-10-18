@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
-	"github.com/ingki3/agent-collabortion/cli/internal/client/clienttest"
-	"github.com/ingki3/agent-collabortion/cli/internal/mcp"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client/clienttest"
+	"github.com/ingki3/agent-collaboration/cli/internal/mcp"
 )
 
 // dialWith is dial with Options (--allow).

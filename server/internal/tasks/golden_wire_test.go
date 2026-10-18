@@ -25,7 +25,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/lanestate"
+	"github.com/ingki3/agent-collaboration/server/internal/lanestate"
 )
 
 func init() {

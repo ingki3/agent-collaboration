@@ -14,8 +14,8 @@ import (
 	"slices"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
 )
 
 // Closed sets from task_event.schema.json v0.2. events_test.go asserts they

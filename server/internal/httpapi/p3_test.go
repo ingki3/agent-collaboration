@@ -9,10 +9,10 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/server/internal/hitl"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/server/internal/hitl"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 // The P3 server slice over the real transaction (T-S5). The golden tables pin

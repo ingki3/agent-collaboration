@@ -3,7 +3,7 @@ package realtime
 import (
 	"sync"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 // The frame type is the contract's closed enum (openapi StreamEvent.type). A

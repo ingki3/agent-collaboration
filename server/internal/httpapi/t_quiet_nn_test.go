@@ -22,9 +22,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/quiet"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
-	"github.com/ingki3/agent-collabortion/server/internal/tokens"
+	"github.com/ingki3/agent-collaboration/server/internal/quiet"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/tokens"
 )
 
 // dirUUID is the fixture's Director (the only person in the room).

@@ -10,7 +10,7 @@ package main
 import (
 	"os"
 
-	"github.com/ingki3/agent-collabortion/daemon/acpfake"
+	"github.com/ingki3/agent-collaboration/daemon/acpfake"
 )
 
 func main() {

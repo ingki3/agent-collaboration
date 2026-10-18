@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // The enum lists must equal contracts/task_event.schema.json.

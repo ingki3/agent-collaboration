@@ -12,17 +12,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/contracts/clock"
-	"github.com/ingki3/agent-collabortion/daemon/internal/api"
-	"github.com/ingki3/agent-collabortion/daemon/internal/brief"
-	"github.com/ingki3/agent-collabortion/daemon/internal/commands"
-	"github.com/ingki3/agent-collabortion/daemon/internal/config"
-	"github.com/ingki3/agent-collabortion/daemon/internal/harness/acp"
-	"github.com/ingki3/agent-collabortion/daemon/internal/orphan"
-	"github.com/ingki3/agent-collabortion/daemon/internal/probe"
-	"github.com/ingki3/agent-collabortion/daemon/internal/toolwrap"
-	"github.com/ingki3/agent-collabortion/daemon/internal/workdir"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/contracts/clock"
+	"github.com/ingki3/agent-collaboration/daemon/internal/api"
+	"github.com/ingki3/agent-collaboration/daemon/internal/brief"
+	"github.com/ingki3/agent-collaboration/daemon/internal/commands"
+	"github.com/ingki3/agent-collaboration/daemon/internal/config"
+	"github.com/ingki3/agent-collaboration/daemon/internal/harness/acp"
+	"github.com/ingki3/agent-collaboration/daemon/internal/orphan"
+	"github.com/ingki3/agent-collaboration/daemon/internal/probe"
+	"github.com/ingki3/agent-collaboration/daemon/internal/toolwrap"
+	"github.com/ingki3/agent-collaboration/daemon/internal/workdir"
 )
 
 // Daemon holds the loop state. Everything time- or server-related is

@@ -1,9 +1,9 @@
-module github.com/ingki3/agent-collabortion/server
+module github.com/ingki3/agent-collaboration/server
 
 go 1.25.0
 
 require (
-	github.com/ingki3/agent-collabortion/contracts v0.0.0
+	github.com/ingki3/agent-collaboration/contracts v0.0.0
 	github.com/jackc/pgx/v5 v5.10.0
 	github.com/oapi-codegen/nullable v1.2.0
 	github.com/oapi-codegen/runtime v1.7.0
@@ -22,4 +22,4 @@ require (
 	golang.org/x/text v0.32.0 // indirect
 )
 
-replace github.com/ingki3/agent-collabortion/contracts => ../contracts
+replace github.com/ingki3/agent-collaboration/contracts => ../contracts

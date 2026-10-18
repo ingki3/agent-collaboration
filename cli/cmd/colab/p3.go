@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
-	"github.com/ingki3/agent-collabortion/cli/internal/colab"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/colab"
 )
 
 // P3 commands — contracts/colab-cli.md v0.5.1 §2.4 HITL: ask ·

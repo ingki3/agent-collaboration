@@ -8,9 +8,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
-	"github.com/ingki3/agent-collabortion/server/internal/tokens"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/server/internal/tokens"
 )
 
 func laneStatus(t *testing.T, s *Service, laneID uuid.UUID) string {

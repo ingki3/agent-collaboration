@@ -21,12 +21,12 @@ import (
 	"github.com/oapi-codegen/nullable"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/artifacts"
-	"github.com/ingki3/agent-collabortion/server/internal/cards"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
-	"github.com/ingki3/agent-collabortion/server/internal/sessions"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/artifacts"
+	"github.com/ingki3/agent-collaboration/server/internal/cards"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/sessions"
 )
 
 // multipartSlack is how much bigger than the file the whole body may be:

@@ -11,15 +11,15 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/oapi-codegen/nullable"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/auth"
-	"github.com/ingki3/agent-collabortion/server/internal/db"
-	"github.com/ingki3/agent-collabortion/server/internal/hitl"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/roomgate"
-	"github.com/ingki3/agent-collabortion/server/internal/rooms"
-	"github.com/ingki3/agent-collabortion/server/internal/sessions"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/auth"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/hitl"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/roomgate"
+	"github.com/ingki3/agent-collaboration/server/internal/rooms"
+	"github.com/ingki3/agent-collaboration/server/internal/sessions"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 // The room gate's HTTP side (PRD v0.19 FR-2.4 · FR-2A.3 · §12.1-9, T-R1b1).

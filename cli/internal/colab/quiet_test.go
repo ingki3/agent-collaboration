@@ -13,7 +13,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
 )
 
 const quietWant = "This mission is waiting for the Director's approval, so @Writer was not woken. If work remains after approval, tell the Director."

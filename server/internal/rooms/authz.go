@@ -11,7 +11,7 @@
 package rooms
 
 import (
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
 )
 
 // Action is one row of SCREEN §2.3 「방 층」.

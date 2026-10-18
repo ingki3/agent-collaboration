@@ -15,11 +15,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/acpfake"
-	"github.com/ingki3/agent-collabortion/daemon/internal/api"
-	"github.com/ingki3/agent-collabortion/daemon/internal/harness/acp"
-	"github.com/ingki3/agent-collabortion/daemon/internal/toolwrap"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/acpfake"
+	"github.com/ingki3/agent-collaboration/daemon/internal/api"
+	"github.com/ingki3/agent-collaboration/daemon/internal/harness/acp"
+	"github.com/ingki3/agent-collaboration/daemon/internal/toolwrap"
 )
 
 const threadRoot = "44444444-4444-4444-8444-444444444444"

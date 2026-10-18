@@ -15,8 +15,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/db"
-	"github.com/ingki3/agent-collabortion/server/internal/realtime"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/realtime"
 )
 
 // NotifySummary pushes one person's fresh action_required/overdue/unread

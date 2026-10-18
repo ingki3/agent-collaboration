@@ -7,10 +7,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/hitl"
-	"github.com/ingki3/agent-collabortion/server/internal/inbox"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/hitl"
+	"github.com/ingki3/agent-collaboration/server/internal/inbox"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 // SweepHitlDeadlines is FR-5.4's "기한 만료 시 동작", run by the scheduler.

@@ -30,7 +30,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/text/unicode/norm"
 
-	"github.com/ingki3/agent-collabortion/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
 )
 
 // Reserved pieces of §6.1. None of them ends in `-<id>`, so no name piece

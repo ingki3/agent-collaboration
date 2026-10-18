@@ -9,14 +9,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/auth"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/install"
-	"github.com/ingki3/agent-collabortion/server/internal/rooms"
-	"github.com/ingki3/agent-collabortion/server/internal/runtimes"
-	"github.com/ingki3/agent-collabortion/server/internal/sessions"
-	"github.com/ingki3/agent-collabortion/server/internal/tokens"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/auth"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/install"
+	"github.com/ingki3/agent-collaboration/server/internal/rooms"
+	"github.com/ingki3/agent-collaboration/server/internal/runtimes"
+	"github.com/ingki3/agent-collaboration/server/internal/sessions"
+	"github.com/ingki3/agent-collaboration/server/internal/tokens"
 )
 
 // Principal is who is calling: a person (UserSession), an agent attempt

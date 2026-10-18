@@ -9,16 +9,16 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/cards"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/inbox"
-	"github.com/ingki3/agent-collabortion/server/internal/lanedone"
-	"github.com/ingki3/agent-collabortion/server/internal/lanefocus"
-	"github.com/ingki3/agent-collabortion/server/internal/lanestate"
-	"github.com/ingki3/agent-collabortion/server/internal/messages"
-	"github.com/ingki3/agent-collabortion/server/internal/quiet"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/cards"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/inbox"
+	"github.com/ingki3/agent-collaboration/server/internal/lanedone"
+	"github.com/ingki3/agent-collaboration/server/internal/lanefocus"
+	"github.com/ingki3/agent-collaboration/server/internal/lanestate"
+	"github.com/ingki3/agent-collaboration/server/internal/messages"
+	"github.com/ingki3/agent-collaboration/server/internal/quiet"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 // StatusResult is `colab status set …`'s answer (contracts/openapi.yaml

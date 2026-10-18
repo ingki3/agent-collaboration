@@ -12,7 +12,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
 )
 
 // daemon-protocol v0.10.0 §6.1 — the path rule table, one assertion per row.

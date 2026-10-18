@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/contracts/clock"
-	"github.com/ingki3/agent-collabortion/server/internal/install"
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/contracts/clock"
+	"github.com/ingki3/agent-collaboration/server/internal/install"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
 )
 
 // ---------------------------------------------------------------------------

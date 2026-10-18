@@ -38,10 +38,10 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/cards"
-	"github.com/ingki3/agent-collabortion/server/internal/lanestate"
-	"github.com/ingki3/agent-collabortion/server/internal/messages"
-	"github.com/ingki3/agent-collabortion/server/internal/realtime"
+	"github.com/ingki3/agent-collaboration/server/internal/cards"
+	"github.com/ingki3/agent-collaboration/server/internal/lanestate"
+	"github.com/ingki3/agent-collaboration/server/internal/messages"
+	"github.com/ingki3/agent-collaboration/server/internal/realtime"
 )
 
 // Cause is which path is ending the lane's work.

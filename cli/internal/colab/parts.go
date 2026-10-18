@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
 )
 
 // PartArg is one part of a part message (colab-cli v0.9.5): the `--parts-file`

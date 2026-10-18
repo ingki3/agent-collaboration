@@ -3,7 +3,7 @@ package acp
 import (
 	"strconv"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // The CLI fallback argv (PRD §8.2.4, EVAL E9-06).

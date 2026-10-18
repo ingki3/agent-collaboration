@@ -5,10 +5,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/contracts/clock"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/contracts/clock"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
 )
 
 // G3 integration defects (plan/G3_REPORT.md §4 S-2·S-4·S-5) over HTTP:

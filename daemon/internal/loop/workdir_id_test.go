@@ -11,14 +11,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/acpfake"
-	"github.com/ingki3/agent-collabortion/daemon/internal/api"
-	"github.com/ingki3/agent-collabortion/daemon/internal/config"
-	"github.com/ingki3/agent-collabortion/daemon/internal/gitrepo"
-	"github.com/ingki3/agent-collabortion/daemon/internal/harness/acp"
-	"github.com/ingki3/agent-collabortion/daemon/internal/orphan"
-	"github.com/ingki3/agent-collabortion/daemon/internal/workdir"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/acpfake"
+	"github.com/ingki3/agent-collaboration/daemon/internal/api"
+	"github.com/ingki3/agent-collaboration/daemon/internal/config"
+	"github.com/ingki3/agent-collaboration/daemon/internal/gitrepo"
+	"github.com/ingki3/agent-collaboration/daemon/internal/harness/acp"
+	"github.com/ingki3/agent-collaboration/daemon/internal/orphan"
+	"github.com/ingki3/agent-collaboration/daemon/internal/workdir"
 )
 
 const bundleWorkdirID = "7c1d2e3f-0000-4000-8000-0000000000d2"

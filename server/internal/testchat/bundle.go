@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // FirstTurnPreamble is the one line §4.5 puts in front of the first user turn:

@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
 )
 
 // TestLaneBriefSurvivesDelegate — 결함 1. 계약 Lane.brief 는 "위임 요약"이고

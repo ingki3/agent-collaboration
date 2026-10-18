@@ -4,8 +4,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ingki3/agent-collabortion/daemon/internal/commands"
-	"github.com/ingki3/agent-collabortion/daemon/internal/harness/acp"
+	"github.com/ingki3/agent-collaboration/daemon/internal/commands"
+	"github.com/ingki3/agent-collaboration/daemon/internal/harness/acp"
 )
 
 // sectionRe matches a section header line of the server's brief ("[2]

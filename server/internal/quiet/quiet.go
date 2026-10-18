@@ -30,8 +30,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/db"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 // ReasonApprovalPending is the `task.queued_reason` of a held trigger

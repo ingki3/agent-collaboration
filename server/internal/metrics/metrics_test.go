@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
 )
 
 // PRD §11 · openapi getWorkspaceMetrics (T-S12). A few seeded rows per metric,

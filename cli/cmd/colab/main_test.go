@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
-	"github.com/ingki3/agent-collabortion/cli/internal/client/clienttest"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client/clienttest"
 )
 
 func exec(t *testing.T, env map[string]string, args ...string) (int, map[string]any, string) {

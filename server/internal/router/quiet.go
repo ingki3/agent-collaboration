@@ -7,9 +7,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/db"
-	"github.com/ingki3/agent-collabortion/server/internal/messages"
-	"github.com/ingki3/agent-collabortion/server/internal/quiet"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/messages"
+	"github.com/ingki3/agent-collaboration/server/internal/quiet"
 )
 
 // T-QUIET (PRD v0.19.13 FR-2A.2.3): what one message does to its mission's

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
-	"github.com/ingki3/agent-collabortion/cli/internal/client/clienttest"
-	"github.com/ingki3/agent-collabortion/cli/internal/colab"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client/clienttest"
+	"github.com/ingki3/agent-collaboration/cli/internal/colab"
 )
 
 // `colab artifact submit --type diff` (PRD FR-4.3, §3 scenario B step 4,

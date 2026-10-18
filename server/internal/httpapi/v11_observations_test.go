@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/observations"
+	"github.com/ingki3/agent-collaboration/server/internal/observations"
 )
 
 // TestV11WorkspaceObservationsOverHTTP is getWorkspaceObservations' wire

@@ -10,9 +10,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/server/internal/llm"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/server/internal/llm"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 // contextMetric is one attempt's turn-prompt shape (T-CTX0, plan/research/

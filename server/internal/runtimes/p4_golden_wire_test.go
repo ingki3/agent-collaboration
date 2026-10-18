@@ -26,7 +26,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 func init() {

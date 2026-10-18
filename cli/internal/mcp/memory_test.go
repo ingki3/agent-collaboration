@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
-	"github.com/ingki3/agent-collabortion/cli/internal/client/clienttest"
-	"github.com/ingki3/agent-collabortion/cli/internal/mcp"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client/clienttest"
+	"github.com/ingki3/agent-collaboration/cli/internal/mcp"
 )
 
 var memoryTools = []string{"colab_memory_note", "colab_memory_supersede", "colab_memory_retire", "colab_memory_get"}

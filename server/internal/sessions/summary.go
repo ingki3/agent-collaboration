@@ -10,7 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/llm"
+	"github.com/ingki3/agent-collaboration/server/internal/llm"
 )
 
 // ---------------------------------------------------------------------------

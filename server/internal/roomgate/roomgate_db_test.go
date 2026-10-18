@@ -8,9 +8,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
 )
 
 func block(t *testing.T, pool *pgxpool.Pool, room uuid.UUID, reason string, now time.Time) (int, error) {

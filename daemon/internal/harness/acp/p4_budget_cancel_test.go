@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/contracts/clock"
-	"github.com/ingki3/agent-collabortion/daemon/acpfake"
-	"github.com/ingki3/agent-collabortion/daemon/internal/harness/acp"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/contracts/clock"
+	"github.com/ingki3/agent-collaboration/daemon/acpfake"
+	"github.com/ingki3/agent-collaboration/daemon/internal/harness/acp"
 )
 
 // D-19 — a cancel the SERVER issued because of budget is `paused_budget`,

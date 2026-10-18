@@ -6,8 +6,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/cards"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/cards"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
 )
 
 // testCard is a minimal valid delegation card (PRD FR-3.8 1) — what the old

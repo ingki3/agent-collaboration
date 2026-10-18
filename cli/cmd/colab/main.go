@@ -29,10 +29,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
-	"github.com/ingki3/agent-collabortion/cli/internal/colab"
-	"github.com/ingki3/agent-collabortion/cli/internal/mcp"
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/colab"
+	"github.com/ingki3/agent-collaboration/cli/internal/mcp"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // version is the colab CLI's own version. Release builds set it with

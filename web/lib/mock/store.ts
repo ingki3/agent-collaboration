@@ -252,7 +252,7 @@ export function makeRuntime(workspaceId: string, name: string): Runtime {
     ],
     // probe 최상위(머신 속성) — 런타임이 둘이어도 바이너리는 하나다(daemon-protocol §3)
     colab_cli: { present: true, version: "0.4.0" },
-    repos: [{ path: "~/dev/colab", remote_url: "git@github.com:ingki3/agent-collabortion.git", branch: "main", clean: true }],
+    repos: [{ path: "~/dev/colab", remote_url: "git@github.com:ingki3/agent-collaboration.git", branch: "main", clean: true }],
     max_concurrent_tasks: null, running_task_count: 0, workdir_disk_bytes: 0, offline_since: null, grace_ends_at: null,
     paused_session_count: 0, created_at: t, updated_at: t,
   };

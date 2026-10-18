@@ -8,9 +8,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/ingki3/agent-collabortion/contracts/clock"
-	"github.com/ingki3/agent-collabortion/server/internal/roomgate"
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/contracts/clock"
+	"github.com/ingki3/agent-collaboration/server/internal/roomgate"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
 )
 
 // TestSweepOfflineIsIdempotent is E14-10 on the DB path — #162 review NN2.

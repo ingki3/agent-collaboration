@@ -24,7 +24,7 @@ COLAB_HOME="${COLAB_HOME:-$HOME/.colab}"
 BIN_DIR="$COLAB_HOME/bin"
 DAEMON_NAME="colab-daemon"
 CLI_NAME="colab"
-REPO_URL="${COLAB_INSTALL_REPO:-https://github.com/ingki3/agent-collabortion.git}"
+REPO_URL="${COLAB_INSTALL_REPO:-https://github.com/ingki3/agent-collaboration.git}"
 # 서버가 자기 빌드 커밋(또는 태그)을 심는다(S-64). 참가자 전원이 **서버와 같은 커밋**을 받아야
 # 하므로 기본값은 main 이 아니라 이 값이다. 비어 있으면 서버가 자기 커밋을 모르는 빌드다 —
 # 아래에서 그 사실을 말하고 저장소 기본 브랜치로 떨어진다.

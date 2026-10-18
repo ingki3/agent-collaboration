@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/ingki3/agent-collabortion/server/internal/cards"
+	"github.com/ingki3/agent-collaboration/server/internal/cards"
 
 	"context"
 	"errors"
@@ -13,8 +13,8 @@ import (
 	"github.com/oapi-codegen/nullable"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	"github.com/ingki3/agent-collabortion/server/internal/lanestate"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/lanestate"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 // T-RF1: names for the shapes postRow · Preview · Delegate · wake used to

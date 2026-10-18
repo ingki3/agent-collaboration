@@ -15,7 +15,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
 )
 
 // ResultCardRequiredSentence is colab-cli v0.9.10 §2's exit 3 sentence for

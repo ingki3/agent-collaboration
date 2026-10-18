@@ -12,17 +12,17 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/server/internal/cards"
-	"github.com/ingki3/agent-collabortion/server/internal/hitl"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/llm"
-	"github.com/ingki3/agent-collabortion/server/internal/memory"
-	"github.com/ingki3/agent-collabortion/server/internal/messages"
-	"github.com/ingki3/agent-collabortion/server/internal/roles"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
-	"github.com/ingki3/agent-collabortion/server/internal/sessions"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/server/internal/cards"
+	"github.com/ingki3/agent-collaboration/server/internal/hitl"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/llm"
+	"github.com/ingki3/agent-collaboration/server/internal/memory"
+	"github.com/ingki3/agent-collaboration/server/internal/messages"
+	"github.com/ingki3/agent-collaboration/server/internal/roles"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/sessions"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 // historyLimit is §8.4's history cap. It is tasks.DefaultHistoryLimit and not

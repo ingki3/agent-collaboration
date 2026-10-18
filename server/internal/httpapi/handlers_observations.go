@@ -3,10 +3,10 @@ package httpapi
 import (
 	"net/http"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/metrics"
-	"github.com/ingki3/agent-collabortion/server/internal/observations"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/metrics"
+	"github.com/ingki3/agent-collaboration/server/internal/observations"
 )
 
 // GetWorkspaceObservations is PRD §11's 관찰 table (openapi

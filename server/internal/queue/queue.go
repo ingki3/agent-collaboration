@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // Queue is the contract interface (§7). `now` is always passed in so tests

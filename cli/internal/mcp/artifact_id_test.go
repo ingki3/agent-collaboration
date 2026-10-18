@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client/clienttest"
+	"github.com/ingki3/agent-collaboration/cli/internal/client/clienttest"
 )
 
 func TestArtifactToolsRefuseANameBeforeAnyRequest(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 // TestResumedSectionCarriesTheWorkdirCheck pins E8-04's only mechanism.

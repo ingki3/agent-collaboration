@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
 )
 
 // sessionRoom is what createSession did, built through the room and mission

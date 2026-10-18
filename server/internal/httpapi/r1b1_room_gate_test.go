@@ -8,8 +8,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/roomgate"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/roomgate"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
 )
 
 // T-R1b1 — the room gate (PRD v0.19 FR-2.4 · FR-2A.3 · FR-2.1.1 · FR-3.1.1 ·

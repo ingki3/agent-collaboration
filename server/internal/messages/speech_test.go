@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 // PRD FR-3.1.3's table, row by row. Classify is the one place the rules live,

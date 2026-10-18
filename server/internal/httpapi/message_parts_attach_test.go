@@ -3,7 +3,7 @@ package httpapi
 import (
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
 )
 
 // A part's files are the part's own (openapi v0.3.7 MessagePartCreate.attachment_ids,

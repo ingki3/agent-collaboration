@@ -9,9 +9,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/server/internal/cost"
-	"github.com/ingki3/agent-collabortion/server/internal/db"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/server/internal/cost"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
 )
 
 // ---------------------------------------------------------------------------

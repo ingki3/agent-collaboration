@@ -15,8 +15,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/queue"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/queue"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
 )
 
 // detailMarker is a string that appears only in detail, so a leak is a

@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/contracts/clock"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/contracts/clock"
 )
 
 // Sink receives normalised task_events (seq assigned by the runner) and

@@ -8,7 +8,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/mcp/cardschema"
+	"github.com/ingki3/agent-collaboration/cli/internal/mcp/cardschema"
 )
 
 func main() {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 // The turn prompt's <mission_ledger> (harness v0.9.18): grouped by kind,

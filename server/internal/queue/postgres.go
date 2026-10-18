@@ -10,13 +10,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/contracts/clock"
-	"github.com/ingki3/agent-collabortion/server/internal/hitl"
-	"github.com/ingki3/agent-collabortion/server/internal/realtime"
-	"github.com/ingki3/agent-collabortion/server/internal/roomgate"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
-	"github.com/ingki3/agent-collabortion/server/internal/testchat"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/contracts/clock"
+	"github.com/ingki3/agent-collaboration/server/internal/hitl"
+	"github.com/ingki3/agent-collaboration/server/internal/realtime"
+	"github.com/ingki3/agent-collaboration/server/internal/roomgate"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/testchat"
 )
 
 // Postgres implements Queue on the task table (daemon-protocol §4.1 rules).

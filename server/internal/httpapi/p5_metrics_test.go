@@ -3,7 +3,7 @@ package httpapi
 import (
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/metrics"
+	"github.com/ingki3/agent-collaboration/server/internal/metrics"
 )
 
 // TestP5WorkspaceMetricsOverHTTP is getWorkspaceMetrics' wire shape (openapi

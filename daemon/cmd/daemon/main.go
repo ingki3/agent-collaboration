@@ -23,14 +23,14 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/internal/api"
-	"github.com/ingki3/agent-collabortion/daemon/internal/config"
-	"github.com/ingki3/agent-collabortion/daemon/internal/dlog"
-	"github.com/ingki3/agent-collabortion/daemon/internal/gitrepo"
-	"github.com/ingki3/agent-collabortion/daemon/internal/loop"
-	"github.com/ingki3/agent-collabortion/daemon/internal/orphan"
-	"github.com/ingki3/agent-collabortion/daemon/internal/probe"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/internal/api"
+	"github.com/ingki3/agent-collaboration/daemon/internal/config"
+	"github.com/ingki3/agent-collaboration/daemon/internal/dlog"
+	"github.com/ingki3/agent-collaboration/daemon/internal/gitrepo"
+	"github.com/ingki3/agent-collaboration/daemon/internal/loop"
+	"github.com/ingki3/agent-collaboration/daemon/internal/orphan"
+	"github.com/ingki3/agent-collaboration/daemon/internal/probe"
 )
 
 var version = "dev"

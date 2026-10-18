@@ -17,8 +17,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/internal/workdir"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/internal/workdir"
 )
 
 // PairRequest — POST /v1/daemon/pair (§2).

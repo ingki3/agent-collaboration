@@ -45,10 +45,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/internal/gitrepo"
-	"github.com/ingki3/agent-collabortion/daemon/internal/orphan"
-	"github.com/ingki3/agent-collabortion/daemon/internal/workdir"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/internal/gitrepo"
+	"github.com/ingki3/agent-collaboration/daemon/internal/orphan"
+	"github.com/ingki3/agent-collaboration/daemon/internal/workdir"
 )
 
 // Lane is one lane running under `worktree` isolation.

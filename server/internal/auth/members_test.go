@@ -3,7 +3,7 @@ package auth
 import (
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 // TestPlanRoleChange is the updateMemberRole permission table — SCREEN §2.3

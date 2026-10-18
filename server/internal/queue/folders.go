@@ -11,8 +11,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
-	"github.com/ingki3/agent-collabortion/server/internal/workdirs"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/workdirs"
 )
 
 // bundleWorkdir is the bundle's `workdir` block as planned by the server

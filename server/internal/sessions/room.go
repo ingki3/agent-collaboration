@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
 )
 
 // Since 0025 (PRD v0.19 §7) a v0.18 session is stored as a `room` plus a

@@ -14,8 +14,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/lanes"
-	"github.com/ingki3/agent-collabortion/server/internal/realtime"
+	"github.com/ingki3/agent-collaboration/server/internal/lanes"
+	"github.com/ingki3/agent-collaboration/server/internal/realtime"
 )
 
 // frame returns the `typ` frame whose payload id is `id`, marshalled the way

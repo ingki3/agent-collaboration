@@ -15,7 +15,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
 )
 
 func (f *p2Fixture) groupPost(t *testing.T, tok string, body map[string]any, key string) (int, map[string]any, http.Header) {

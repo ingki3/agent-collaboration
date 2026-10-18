@@ -14,7 +14,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/memory"
+	"github.com/ingki3/agent-collaboration/server/internal/memory"
 )
 
 // ledgerItem inserts one memory_item of the fixture's mission.

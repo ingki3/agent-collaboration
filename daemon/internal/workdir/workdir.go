@@ -18,8 +18,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/internal/gitrepo"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/internal/gitrepo"
 )
 
 // ErrUnsupported is returned for isolation kinds this daemon cannot prepare.

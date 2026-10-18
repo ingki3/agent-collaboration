@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/lanedone"
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/server/internal/lanedone"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
 )
 
 // TestMarkDoneTable pins MarkDone's decision per cause and starting state,

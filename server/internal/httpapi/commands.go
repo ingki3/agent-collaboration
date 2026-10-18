@@ -7,8 +7,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
-	"github.com/ingki3/agent-collabortion/server/internal/tokens"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/tokens"
 )
 
 // ExpireCommands is the scheduler sweep for daemon commands (daemon-protocol
