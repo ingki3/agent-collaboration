@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -411,12 +412,30 @@ func (s *Service) ApplyWorkEvent(ctx context.Context, workID uuid.UUID, ev Event
 		// summary (수락 n · 판정 대기 n · 부분/미충족 기준 n) in its context.
 		var hitlContext *string
 		if purpose == CondUserApproval {
+			var lines []string
 			sum, err := cards.Summary(ctx, tx, workID)
 			if err != nil {
 				return nil, err
 			}
 			if sum != nil {
-				line := sum.Line()
+				lines = append(lines, sum.Line())
+			}
+			// FR-2A.2.1f 1단계 (v0.19.30): visibility only, timing unchanged —
+			// this counts whatever is ALREADY open on the mission at the same
+			// instant the completion approval itself opens, so Director sees
+			// a duplicate-looking agent-issued question (실측 「게임 기획」
+			// 방) before answering "승인하시겠습니까?". It does not change
+			// FR-2A.2.1's hold condition or missionBusy — a HITL being open
+			// is not "busy" (that is 2단계's backlogged, narrower scope).
+			var otherOpen int
+			if err := tx.QueryRow(ctx, `SELECT count(*) FROM hitl_request WHERE work_id = $1 AND status = 'open'`, workID).Scan(&otherOpen); err != nil {
+				return nil, fmt.Errorf("sessions: open questions: %w", err)
+			}
+			if otherOpen > 0 {
+				lines = append(lines, fmt.Sprintf("이 미션에 아직 답 안 한 질문이 %d개 있습니다", otherOpen))
+			}
+			if len(lines) > 0 {
+				line := strings.Join(lines, "\n")
 				hitlContext = &line
 			}
 		}
