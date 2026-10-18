@@ -39,7 +39,7 @@ func TestLoadHopsIsCapped(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
-	hops, err := s.loadHops(ctx, tx, seed.SessionID, now)
+	hops, err := s.loadHops(ctx, tx, seed.SessionID, now, HopWindow)
 	if err != nil {
 		t.Fatal(err)
 	}

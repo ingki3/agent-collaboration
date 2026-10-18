@@ -5,8 +5,9 @@
  * **사유 5종마다 할 일이 다르므로 버튼도 다르다.** 계약 `PausedDetail` 은 객체이고(`{reason, paused_at, loop{limit,count,agents},
  * budget, time, runtime}`), 배너는 그 안을 읽어 "무엇을 올려야 하는지"를 말한다.
  *
- * 루프 상한은 승인만 하면 같은 핑퐁이 반복되므로 **어느 상한**(chain_depth·hops_per_hour·pair_roundtrips)에
- * **몇 번**(count) 걸렸는지, pair_roundtrips 면 **어느 두 에이전트**인지를 함께 보여 사람이 원인을 판단하게 한다.
+ * 루프 상한은 승인만 하면 같은 핑퐁이 반복되므로 **어느 상한**(chain_depth·hops_per_hour·pair_roundtrips·
+ * pair_roundtrips_window[v0.19.32])에 **몇 번**(count) 걸렸는지, 짝 상한 둘 중 하나면 **어느 두 에이전트**인지를
+ * 함께 보여 사람이 원인을 판단하게 한다.
  *
  * 동작 가능 여부는 계약이 준 `resolve_actions` 로만 정한다(권한은 서버 판정). 비활성은 숨기지 않고 사유를 툴팁으로(원칙 4).
  * `can_resolve_from` 은 deputy 가 언제부터 할 수 있는지다 — "22:31부터 승인 가능".
@@ -26,6 +27,8 @@ export const LOOP_LIMIT_LABEL = {
   chain_depth: "주고받기 연쇄가 상한까지 깊어졌습니다",
   hops_per_hour: "한 시간에 오간 횟수가 상한에 닿았습니다",
   pair_roundtrips: "두 에이전트가 상한까지 주고받았습니다",
+  // v0.19.32 — 끼어들기·사람 개입과 무관한 시간창 누적(위 pair_roundtrips 와는 다른 상한).
+  pair_roundtrips_window: "두 에이전트가 일정 시간 동안 상한까지 주고받았습니다",
 } as const;
 
 export const PAUSE_TITLE: Record<PauseReason, string> = {
@@ -53,7 +56,7 @@ export function pausedSummary(d: PausedDetail, agentName?: (id: string) => strin
       const l = d.loop;
       if (!l?.limit) return "에이전트끼리 주고받기가 상한에 닿았습니다.";
       const who = (l.agents ?? []).map((id) => agentName?.(id) ?? id.slice(0, 8)).join(" ↔ ");
-      const pair = l.limit === "pair_roundtrips" && who ? `${who} ` : "";
+      const pair = (l.limit === "pair_roundtrips" || l.limit === "pair_roundtrips_window") && who ? `${who} ` : "";
       return `${LOOP_LIMIT_LABEL[l.limit]} — ${pair}${l.count ?? 0}회`;
     }
     case "runtime_offline": {

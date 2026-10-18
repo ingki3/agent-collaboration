@@ -155,6 +155,26 @@ describe("S14 — 워크스페이스 탭 · 권한 · 저장 payload", () => {
     await waitFor(() => expect(screen.queryByTestId("settings-saved")).toBeNull(), { timeout: 2500 });
   });
 
+  // v0.19.32 — pair_roundtrips_window·_minutes 는 한 행에 두 입력, 바뀐 쪽만 PATCH.
+  it("루프 상한 탭: 시간창 누적 왕복 상한(v0.19.32) — 기본값 20/30분, 분만 바꿔도 그 칸만 PATCH", async () => {
+    tabParam = "loop";
+    patch.mockImplementation(async (_p: string, opts: { body: unknown }) => ({ ...settings(), ...(opts.body as object) }));
+    render(<SettingsPage />);
+    const row = await screen.findByTestId("row-pair-roundtrips-window");
+    expect(row.textContent).toContain("기본값 20 / 30분");
+    expect(screen.getByTestId("row-pair-roundtrips-window-impact").textContent).toBe(
+      "끼어들기나 사람 개입과 무관하게, 아래 시간 동안 둘이 주고받은 총 횟수가 넘으면 멈춥니다 — 위 상한의 틈을 막는 보강",
+    );
+    fireEvent.change(screen.getByLabelText("시간창(분)"), { target: { value: "45" } });
+    const save = screen.getByTestId("settings-save") as HTMLButtonElement;
+    expect(save.disabled).toBe(false);
+    fireEvent.click(save);
+    await waitFor(() => expect(patch).toHaveBeenCalledTimes(1));
+    expect(patch.mock.calls[0][1]).toEqual({ path: { workspaceId: "w1" }, body: { loop_limits: { max_pair_roundtrips_window_minutes: 45 } } });
+    await screen.findByTestId("settings-saved");
+    await waitFor(() => expect(screen.queryByTestId("settings-saved")).toBeNull(), { timeout: 2500 });
+  });
+
   it("작업 폴더 탭: 보존 일수를 바꾸면 영향 문장이 그 값으로(U14-2) · 유예는 일수로 편집돼 ISO 로 나간다", async () => {
     tabParam = "workdir";
     patch.mockImplementation(async () => settings());

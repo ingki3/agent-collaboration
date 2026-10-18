@@ -47,7 +47,7 @@ export function saveRight(tab: SettingsTab, role: MemberRole | null | undefined)
 // ── 기본값(PRD §7 · openapi default) ──────────────────────────────────────────
 /** 화면의 "기본값 표시"(U14) 와 목 시드(`lib/mock/store.ts defaultSettings`)가 같은 값이어야 한다 — 테스트가 대조한다. */
 export const SETTINGS_DEFAULTS = {
-  loop_limits: { max_chain_depth: 8, max_hops_per_hour: 60, max_pair_roundtrips: 5 },
+  loop_limits: { max_chain_depth: 8, max_hops_per_hour: 60, max_pair_roundtrips: 5, max_pair_roundtrips_window: 20, max_pair_roundtrips_window_minutes: 30 },
   context_reuse: { max_summary_tokens: 2000, include_artifacts: "links" as const },
   runtime_policy: { max_concurrent_tasks: 10 },
   default_isolation: "none" as IsolationKind,
@@ -71,6 +71,7 @@ export const IMPACT = {
   max_chain_depth: "낮추면 깊은 위임 사슬(Lead → 팀원 → 팀원)이 도중에 막힐 수 있습니다",
   max_hops_per_hour: "낮추면 활발한 방이 한 시간 안에 멈춰 방장의 재개를 기다립니다",
   max_pair_roundtrips: "낮추면 정상적인 리뷰 왕복이 막힐 수 있습니다",
+  max_pair_roundtrips_window: "끼어들기나 사람 개입과 무관하게, 아래 시간 동안 둘이 주고받은 총 횟수가 넘으면 멈춥니다 — 위 상한의 틈을 막는 보강",
   max_concurrent_tasks: "낮추면 그 이상의 할 일은 컴퓨터마다 줄을 서고, 높이면 컴퓨터가 느려질 수 있습니다",
   per_kind: "종류별 상한은 전체 상한 안에서만 적용됩니다 — 비우면 전체 상한을 따릅니다",
   default_session_budget_usd: "새 미션을 열 때 예산 칸을 비우면 이 값이 걸립니다 — 넘으면 그 미션이 일시정지되고 Director 에게 계속할지 묻습니다. 비우면 상한 없음(방 상한만)",

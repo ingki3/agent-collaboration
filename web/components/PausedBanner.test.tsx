@@ -41,6 +41,17 @@ describe("PausedBanner — 루프 상한(U15-8)", () => {
     expect(pausedSummary({ ...loop, loop: { limit: "hops_per_hour", count: 40 } }, name)).toContain("한 시간에 오간 횟수가 상한에 닿았습니다");
   });
 
+  // v0.19.32 — 시간창 누적(끼어들기·사람 개입과 무관), pair_roundtrips 와는 다른 상한이지만 agents 는 같은 모양으로 쓴다.
+  it("pair_roundtrips_window 도 두 에이전트를 이름으로 보여준다 — pair_roundtrips 와 다른 상한", () => {
+    const windowed: PausedDetail = { ...loop, loop: { limit: "pair_roundtrips_window", count: 20, agents: ["ag-1", "ag-2"] } };
+    const sum = pausedSummary(windowed, name);
+    expect(sum).toContain("두 에이전트가 일정 시간 동안 상한까지 주고받았습니다");
+    expect(sum).toContain("Backend ↔ QA");
+    expect(sum).toContain("20회");
+    render(<PausedBanner detail={windowed} agentName={name} onResume={vi.fn()} />);
+    expect(screen.getByTestId("paused-loop-limit").getAttribute("data-limit")).toBe("pair_roundtrips_window");
+  });
+
   it("계속 진행 승인은 루프 카운터를 리셋해 재개한다", async () => {
     const onResume = vi.fn(async () => {});
     render(<PausedBanner detail={loop} agentName={name} onResume={onResume} />);

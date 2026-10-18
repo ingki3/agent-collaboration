@@ -2475,6 +2475,8 @@ on("PATCH", "/workspaces/{id}/settings", (req, p) => {
     check("max_chain_depth", 100);
     check("max_hops_per_hour", 10000);
     check("max_pair_roundtrips", 100);
+    check("max_pair_roundtrips_window", 10000);
+    check("max_pair_roundtrips_window_minutes", 1440);
   }
   if (b.workdir_retention_days != null && b.workdir_retention_days < 0) errors.push({ field: "workdir_retention_days", message: W.retention_min });
   if (b.workdir_disk_quota_gb != null && b.workdir_disk_quota_gb <= 0) errors.push({ field: "workdir_disk_quota_gb", message: W.quota_positive });

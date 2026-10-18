@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Colab Server API
-  version: 0.3.17-draft
+  version: 0.3.18-draft
   summary: Colab 서버 REST API — P1~P3(수직 슬라이스 · 협업 코어 · HITL/재개/예산)에서 웹(W)과 colab CLI(C)가 호출하는 전부.
   description: |
     # 읽는 법
@@ -4653,7 +4653,9 @@ components:
       properties:
         max_chain_depth: { type: integer, minimum: 1, default: 8 }
         max_hops_per_hour: { type: integer, minimum: 1, default: 60 }
-        max_pair_roundtrips: { type: integer, minimum: 1, default: 5 }
+        max_pair_roundtrips: { type: integer, minimum: 1, default: 5, description: '같은 두 에이전트의 연속 왕복 상한. 다른 에이전트가 끼면 절반으로 감쇄(0 리셋 아님, v0.19.32) — 사람이 끼면 그대로 0 리셋.' }
+        max_pair_roundtrips_window: { type: integer, minimum: 1, default: 20, description: 'v0.19.32 — 같은 두 에이전트 사이, 끼어들기·사람 개입과 무관하게 줄지 않는 시간창(아래 _minutes) 누적 왕복 수 상한. 감쇄의 수학적 틈(적대적 타이밍으로 상한 아래 영구 진동)을 막는 보강.' }
+        max_pair_roundtrips_window_minutes: { type: integer, minimum: 1, default: 30, description: 'v0.19.32 — max_pair_roundtrips_window 가 누적되는 시간창(분).' }
 
     BudgetPolicy:
       type: object
@@ -5295,11 +5297,11 @@ components:
         loop:
           type: object
           properties:
-            limit: { type: string, enum: [chain_depth, hops_per_hour, pair_roundtrips] }
+            limit: { type: string, enum: [chain_depth, hops_per_hour, pair_roundtrips, pair_roundtrips_window] }
             count: { type: integer }
             agents:
               type: array
-              description: pair_roundtrips일 때 두 에이전트.
+              description: pair_roundtrips·pair_roundtrips_window(v0.19.32)일 때 두 에이전트.
               items: { type: string, format: uuid }
         runtime:
           type: object

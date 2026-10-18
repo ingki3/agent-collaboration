@@ -13,12 +13,23 @@ type Limits struct {
 	MaxChainDepth     int
 	MaxHopsPerHour    int
 	MaxPairRoundtrips int
+
+	// MaxPairRoundtripsWindow and MaxPairRoundtripsWindowDuration are
+	// v0.19.32's second pair counter: cumulative roundtrips between the SAME
+	// two agents over this duration, completely independent of interjections
+	// or a human hop — see pairRoundtripsWindow. Zero disables it, same as
+	// the other three.
+	MaxPairRoundtripsWindow         int
+	MaxPairRoundtripsWindowDuration time.Duration
 }
 
 // DefaultLimits are the FR-3.5 defaults, and the values 0001_init.sql writes
 // into workspace_settings.loop_limits.
 func DefaultLimits() Limits {
-	return Limits{MaxChainDepth: 8, MaxHopsPerHour: 60, MaxPairRoundtrips: 5}
+	return Limits{
+		MaxChainDepth: 8, MaxHopsPerHour: 60, MaxPairRoundtrips: 5,
+		MaxPairRoundtripsWindow: 20, MaxPairRoundtripsWindowDuration: 30 * time.Minute,
+	}
 }
 
 // HopWindow is the rolling window max_hops_per_hour counts over.
@@ -29,9 +40,10 @@ const HopWindow = time.Hour
 // `loop` branch, migration 0006 + openapi PausedDetail) — E4-01, E4-03, E4-06 and E4-09 are four different rows and
 // the Director cannot act on "loop" alone.
 const (
-	DetailChainDepth     = "chain_depth"
-	DetailHopsPerHour    = "hops_per_hour"
-	DetailPairRoundtrips = "pair_roundtrips"
+	DetailChainDepth           = "chain_depth"
+	DetailHopsPerHour          = "hops_per_hour"
+	DetailPairRoundtrips       = "pair_roundtrips"
+	DetailPairRoundtripsWindow = "pair_roundtrips_window"
 )
 
 // Hop is one trigger in the session's history. FromAgent == uuid.Nil means a
@@ -64,9 +76,10 @@ type LoopVerdict struct {
 	Detail       string // which limit: chain_depth | hops_per_hour | pair_roundtrips
 	HitlToDir    bool   // FR-3.5: the Director is notified, source: system
 
-	ChainDepth     int
-	HopsThisWindow int
-	PairRoundtrips int
+	ChainDepth           int
+	HopsThisWindow       int
+	PairRoundtrips       int
+	PairRoundtripsWindow int
 
 	// Agents is who the limit is about — the two ends of a pair ping-pong, or
 	// the trigger's own pair otherwise. PausedDetail.loop.agents shows them so
@@ -81,10 +94,11 @@ type LoopVerdict struct {
 func CheckLoopLimits(history []Hop, next Hop, lim Limits, now time.Time) LoopVerdict {
 	v := LoopVerdict{
 		Allowed: true, TaskCreated: true, SessionState: "active",
-		ChainDepth:     chainDepth(history, next),
-		HopsThisWindow: hopsInWindow(history, now),
-		PairRoundtrips: pairRoundtrips(history, next),
-		Agents:         hopAgents(next),
+		ChainDepth:           chainDepth(history, next),
+		HopsThisWindow:       hopsInWindow(history, now),
+		PairRoundtrips:       pairRoundtrips(history, next),
+		PairRoundtripsWindow: pairRoundtripsWindow(history, next, now, lim.MaxPairRoundtripsWindowDuration),
+		Agents:               hopAgents(next),
 	}
 	// A human message is never limited: it is the thing that RESETS the
 	// counters, so it can always land.
@@ -98,6 +112,8 @@ func CheckLoopLimits(history []Hop, next Hop, lim Limits, now time.Time) LoopVer
 		return exceeded(v, DetailHopsPerHour)
 	case lim.MaxPairRoundtrips > 0 && v.PairRoundtrips > lim.MaxPairRoundtrips:
 		return exceeded(v, DetailPairRoundtrips)
+	case lim.MaxPairRoundtripsWindow > 0 && v.PairRoundtripsWindow > lim.MaxPairRoundtripsWindow:
+		return exceeded(v, DetailPairRoundtripsWindow)
 	}
 	return v
 }
@@ -191,21 +207,62 @@ func hopsInWindow(history []Hop, now time.Time) int {
 	return n
 }
 
-// pairRoundtrips counts how many consecutive back-and-forths the same two
-// agents have had, `next` included. A third agent or a human breaks the run
-// (E4-04, E4-05); two triggers make one roundtrip.
+// pairRoundtrips counts the same two agents' back-and-forth run, `next`
+// included, since the most recent human hop (a human still resets this run
+// to 0 outright — 사람이 끼면 그대로 0 리셋, FR-2A.2.3과 같은 결 — so the scan
+// starts right after one). A THIRD agent interjecting no longer resets the
+// run to zero (v0.19.32, Director 결정 2026-10-17): a reset there is
+// structurally bypassable — a third agent that interjects once just before
+// every time the pair would trip the limit keeps their "consecutive" count
+// at zero forever (실측 「게임 제작 방」 2026-09-28, 30분 17건·$2,000). An
+// interjection instead HALVES (floor) whatever the run had accumulated —
+// evading the limit now needs precisely timed interjections rather than one
+// occasional one, though not NONE (pairRoundtripsWindow below closes that
+// remaining gap). Two hops make one roundtrip.
 func pairRoundtrips(history []Hop, next Hop) int {
 	if next.Human() {
 		return 0
 	}
-	run := 1
+	start := 0
 	for i := len(history) - 1; i >= 0; i-- {
-		if history[i].Human() || !samePair(history[i], next) {
+		if history[i].Human() {
+			start = i + 1
 			break
 		}
-		run++
 	}
-	return (run + 1) / 2
+	hops := 0
+	for _, h := range history[start:] {
+		if samePair(h, next) {
+			hops++
+		} else {
+			hops /= 2
+		}
+	}
+	hops++ // next itself
+	return (hops + 1) / 2
+}
+
+// pairRoundtripsWindow counts the same two agents' roundtrips within the
+// last `window` — v0.19.32's second pair counter, deliberately independent
+// of EVERYTHING pairRoundtrips reacts to: a third agent's interjection does
+// not halve it, and even a human hop does not reset it. Decay alone has a
+// mathematical gap (an interjection on exactly the right cycle holds the
+// decaying counter in permanent oscillation below the limit); counting every
+// hop in a fixed time window, regardless of what happened in between, closes
+// it — only falling outside the window drops a hop.
+func pairRoundtripsWindow(history []Hop, next Hop, now time.Time, window time.Duration) int {
+	if next.Human() {
+		return 0
+	}
+	cut := now.Add(-window)
+	hops := 1 // next itself
+	for _, h := range history {
+		if h.Human() || !h.At.After(cut) || !samePair(h, next) {
+			continue
+		}
+		hops++
+	}
+	return (hops + 1) / 2
 }
 
 // hopAgents lists the agents at the two ends of the trigger, humans omitted.
@@ -235,6 +292,8 @@ func (v LoopVerdict) LimitText() string {
 		return "한 시간에 오간 횟수가 상한에 닿았습니다"
 	case DetailPairRoundtrips:
 		return "두 에이전트가 상한까지 주고받았습니다"
+	case DetailPairRoundtripsWindow:
+		return "두 에이전트가 일정 시간 동안 상한까지 주고받았습니다"
 	}
 	return "주고받기가 상한에 닿았습니다"
 }
@@ -264,6 +323,8 @@ func (v LoopVerdict) LimitCount() int {
 		return v.HopsThisWindow
 	case DetailPairRoundtrips:
 		return v.PairRoundtrips
+	case DetailPairRoundtripsWindow:
+		return v.PairRoundtripsWindow
 	}
 	return 0
 }

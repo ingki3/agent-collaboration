@@ -7,7 +7,9 @@
 //	max_hops_per_hour  60   agent→agent triggers in a rolling hour; human
 //	                        messages are not counted at all
 //	max_pair_roundtrips 5   consecutive back-and-forth between the SAME two
-//	                        agents; a third party or a human resets it
+//	                        agents; a human resets it, a third party only
+//	                        HALVES it (v0.19.32 — see loop_pair_decay_test.go
+//	                        for the full decay/window story)
 //
 // Exceeding any limit pauses the SESSION with a reason that names the limit,
 // and the offending task is never created. Nothing here is content-based:
@@ -31,10 +33,17 @@ type loopLimits struct {
 	MaxChainDepth     int
 	MaxHopsPerHour    int
 	MaxPairRoundtrips int
+
+	// MaxPairRoundtripsWindow/Duration — v0.19.32, see loop_pair_decay_test.go.
+	MaxPairRoundtripsWindow         int
+	MaxPairRoundtripsWindowDuration time.Duration
 }
 
 func defaultLimits() loopLimits {
-	return loopLimits{MaxChainDepth: 8, MaxHopsPerHour: 60, MaxPairRoundtrips: 5}
+	return loopLimits{
+		MaxChainDepth: 8, MaxHopsPerHour: 60, MaxPairRoundtrips: 5,
+		MaxPairRoundtripsWindow: 20, MaxPairRoundtripsWindowDuration: 30 * time.Minute,
+	}
 }
 
 // hop is one message in the history the limiter reasons over.
@@ -55,9 +64,10 @@ type loopVerdict struct {
 	Detail       string // chain_depth | hops_per_hour | pair_roundtrips
 	HitlToDir    bool   // FR-3.5: Director gets a HITL notice, source: system
 
-	ChainDepth     int
-	HopsThisWindow int
-	PairRoundtrips int
+	ChainDepth           int
+	HopsThisWindow       int
+	PairRoundtrips       int
+	PairRoundtripsWindow int
 }
 
 // checkLoop is wired by T-S2. Signature the report asks for:
@@ -170,18 +180,25 @@ func TestLoopPairRoundtripsGolden(t *testing.T) {
 		}
 	})
 
-	t.Run(caseName("E4-04", "third_party_agent_resets_the_pair_counter"), func(t *testing.T) {
+	// v0.19.32(Director 결정 2026-10-17): a third party no longer RESETS the
+	// pair counter — it HALVES it (floor). A hard reset is structurally
+	// bypassable (a third agent interjecting once per cycle keeps the
+	// "consecutive" count at zero forever — 실측 「게임 제작 방」 2026-09-28,
+	// 30분 17건·$2,000). 4 roundtrips (8 hops) halved once is still 4 hops +
+	// next = 5 → (5+1)/2 = 3, well under the default limit of 5.
+	t.Run(caseName("E4-04", "third_party_agent_halves_the_pair_counter_not_resets_it"), func(t *testing.T) {
 		h := pairPingPong(4, t0)
-		// W steps in — the Lead↔R pair is no longer "consecutive".
+		// W steps in — the Lead↔R pair is no longer "consecutive", but its
+		// count survives at half strength rather than vanishing.
 		h = append(h, hop{fromAgent: agW, toAgent: agLead, at: t0.Add(9 * time.Minute)})
 		next := hop{fromAgent: agLead, toAgent: agR, at: t0.Add(10 * time.Minute)}
 		v := mustLoop(t, h, next, defaultLimits(), next.at)
 
 		if !v.Allowed || !v.TaskCreated {
-			t.Error("a third agent resets the pair counter — the next Lead↔R hop is allowed")
+			t.Error("3 (decayed) does not exceed the default limit 5 — the next Lead↔R hop is allowed")
 		}
-		if v.PairRoundtrips > 1 {
-			t.Errorf("pair_roundtrips = %d after a third party, want the count restarted", v.PairRoundtrips)
+		if v.PairRoundtrips != 3 {
+			t.Errorf("pair_roundtrips = %d after one third-party interjection, want 3 (decayed from 4, not reset to ≤1)", v.PairRoundtrips)
 		}
 	})
 

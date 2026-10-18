@@ -220,7 +220,7 @@ function seed(): Store {
 export function defaultSettings(workspaceId: string): WorkspaceSettings {
   return {
     workspace_id: workspaceId,
-    loop_limits: { max_chain_depth: 8, max_hops_per_hour: 60, max_pair_roundtrips: 5 },
+    loop_limits: { max_chain_depth: 8, max_hops_per_hour: 60, max_pair_roundtrips: 5, max_pair_roundtrips_window: 20, max_pair_roundtrips_window_minutes: 30 },
     // 실서버의 새 워크스페이스(T-W11 curl): `budget_policy: {}` · `runtime_policy: {max_concurrent_tasks: 10}` — 안 정한 칸은 키 자체가
     // 없다(null 이 아니라). 화면은 그 모양을 그대로 받아야 한다.
     budget_policy: {},
