@@ -4482,6 +4482,8 @@ export interface components {
              * @description v0.2.0 — 이름·버전은 방 단위(미션이 달라도 같은 이름이면 다음 버전).
              */
             work_id?: string | null;
+            /** @description v0.3.20(PRD FR-4.3.2) — 사람이 브라우저로 여는 공유 주소: `COLAB_WEB_URL`(설정 없으면 `COLAB_SERVER_URL`) 기준으로 완성한 `downloadArtifact` 경로. 에이전트가 아는 API 경로(`/api/v1/artifacts/{id}/content`)는 리버스 프록시·터널 뒤에서 사람이 못 여는 호스트일 수 있다 — 에이전트는 사람에게 링크를 줄 때 이 칸만 쓴다. */
+            share_url?: string;
         };
         ArtifactReview: {
             /** Format: uuid */
