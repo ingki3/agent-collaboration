@@ -64,7 +64,7 @@ func TestRestrictCommandsReviewer(t *testing.T) {
 		}
 	}
 	// … but the role is told, in the person's words, in one line.
-	if !strings.Contains(s2, "- 이 역할은 카드로 위임 · 아티팩트 제출 · 완료 승인 요청 · 미션 제안 · 결과 수락 · 수정 요청을 쓰지 않는다.") {
+	if !strings.Contains(s2, "- 이 역할은 카드로 위임 · 아티팩트 제출 · 아티팩트 채택 · 완료 승인 요청 · 미션 제안 · 결과 수락 · 수정 요청을 쓰지 않는다.") {
 		t.Fatalf("no 'does not use' line:\n%s", s2)
 	}
 	// Sections after [2] are untouched, and the separator before [4] survives.
@@ -93,7 +93,7 @@ func TestRestrictedLinesGetTheWrapperPath(t *testing.T) {
 // Everything allowed (lead · custom): the list line, no "does not use" line.
 func TestRestrictCommandsEverything(t *testing.T) {
 	// The server's allowed_commands order (openapi enum = gen.ColabCommandValues, #324 NN1).
-	all := []string{"room_get", "room_messages", "artifact_get", "message_post", "status_set", "decision_record", "card_delegate", "artifact_submit", "review_approve", "review_reject", "hitl_ask", "hitl_approve_request", "hitl_request_info", "room_list", "room_read", "work_propose", "card_report", "card_accept", "card_revise", "card_get", "card_list", "memory_note", "memory_supersede", "memory_retire", "memory_get"}
+	all := []string{"room_get", "room_messages", "artifact_get", "message_post", "status_set", "decision_record", "card_delegate", "artifact_submit", "artifact_endorse", "review_approve", "review_reject", "hitl_ask", "hitl_approve_request", "hitl_request_info", "room_list", "room_read", "work_propose", "card_report", "card_accept", "card_revise", "card_get", "card_list", "memory_note", "memory_supersede", "memory_retire", "memory_get"}
 	s2 := section2(t, RestrictCommands(serverBrief, all, shell))
 	if !strings.Contains(s2, "`colab card delegate`") || strings.Contains(s2, "쓰지 않는다") {
 		t.Fatalf("everything-allowed shape wrong:\n%s", s2)
@@ -166,7 +166,7 @@ func TestRestrictCommandsMCPSurfaceNamesTools(t *testing.T) {
 			t.Fatalf("denied tool %q named in [2]:\n%s", bad, s2)
 		}
 	}
-	if !strings.Contains(s2, "- 이 역할은 카드로 위임 · 아티팩트 제출 · 완료 승인 요청 · 미션 제안 · 결과 수락 · 수정 요청을 쓰지 않는다.") {
+	if !strings.Contains(s2, "- 이 역할은 카드로 위임 · 아티팩트 제출 · 아티팩트 채택 · 완료 승인 요청 · 미션 제안 · 결과 수락 · 수정 요청을 쓰지 않는다.") {
 		t.Fatalf("no 'does not use' line:\n%s", s2)
 	}
 	if !strings.HasPrefix(got, serverBriefMCP[:strings.Index(serverBriefMCP, "\n\n[4]")]) {

@@ -32,11 +32,11 @@ REC="$E2E_OUT/fake-records"
 g5_chk_init "$OUT/82-checks.tsv"
 cleanup() { [ -n "${TAP_PID:-}" ] && kill "$TAP_PID" 2>/dev/null || true; daemon_stop "$OUT/daemon-82.pid"; return 0; }
 trap cleanup EXIT
-LEAD_ALL="room_get,room_messages,artifact_get,message_post,status_set,decision_record,card_delegate,artifact_submit,review_approve,review_reject,hitl_ask,hitl_approve_request,hitl_request_info,room_list,room_read,work_propose,card_report,card_accept,card_revise,card_get,card_list,memory_note,memory_supersede,memory_retire,memory_get"
+LEAD_ALL="room_get,room_messages,artifact_get,message_post,status_set,decision_record,card_delegate,artifact_submit,artifact_endorse,review_approve,review_reject,hitl_ask,hitl_approve_request,hitl_request_info,room_list,room_read,work_propose,card_report,card_accept,card_revise,card_get,card_list,memory_note,memory_supersede,memory_retire,memory_get"
 REVIEWER_ALL="room_get,room_messages,artifact_get,message_post,status_set,decision_record,review_approve,review_reject,hitl_ask,hitl_request_info,room_list,room_read,card_report,card_get,card_list,memory_note,memory_supersede,memory_retire,memory_get"
 # T-CARD-S(openapi v0.3.10): 위임 본문은 카드
 card_body() { jq -nc --arg a "$1" --arg g "$2" '{card:{agent_id:$a,goal:$g,criteria:[{text:($g+" — 결과를 보고한다"),method:"review"}],boundaries:"맡은 것 밖은 건드리지 않는다"}}'; }
-DENY_LINE="이 역할은 카드로 위임 · 아티팩트 제출 · 완료 승인 요청 · 미션 제안 · 결과 수락 · 수정 요청을 쓰지 않는다."
+DENY_LINE="이 역할은 카드로 위임 · 아티팩트 제출 · 아티팩트 채택 · 완료 승인 요청 · 미션 제안 · 결과 수락 · 수정 요청을 쓰지 않는다."
 
 # tok_api TOKEN METHOD PATH [JSON] → 본문 + 마지막 줄 코드 (task 토큰으로, 서버에 직접 — 탭을 거치지 않는다)
 tok_api() {
@@ -147,7 +147,7 @@ C="$(PROFILE_ENV="$(gate_env C claude Idle)" create_agent_kind "$WS" C custom cl
 # Asker(writer): hitl ask 하나 열고 턴 종료 → lane waiting_human (I-2). Idle(researcher): 대본 없는 턴(steps []) → 빈 턴.
 W="$(create_agent_fake "$WS" Asker writer claude_code "$MODEL" "$INS" '질문한다')"; W_NAME=Asker
 IDLE="$(create_agent_fake "$WS" Idle researcher claude_code "$MODEL" "$INS" '아무것도 안 한다' '{"turns":[{"steps":[]}]}')"
-chk G1 "Agent.allowed_commands — lead·custom 25 · reviewer 19 (§2.5 v0.9.12)" "25/25/19/19" \
+chk G1 "Agent.allowed_commands — lead·custom 26 · reviewer 19 (§2.5 v0.9.14)" "26/26/19/19" \
   "$(for a in "$LEAD" "$C" "$R" "$RH"; do api_ok GET "/agents/$a" | jq -r '.allowed_commands|length'; done | paste -sd/ -)"
 # 상태별 lane.actions 를 위해 R 이 위임할 상대는 Lead 가 아니라 실제로는 거부되니 상관없다. C 는 Idle 로.
 S="$(create_room_work "$WS" "$(jq -nc --arg rt "$RUNTIME_ID" --arg l "$LEAD" --arg r "$R" --arg rh "$RH" --arg c "$C" --arg w "$W" --arg i "$IDLE" \
@@ -167,11 +167,11 @@ wait_gate L0 "Lead 대본이 delegate 를 시도하고 토큰을 남겼다" "$T_
 gate_json "$T_LEAD" > "$OUT/82-gate-lead.json"
 chk L1 "대본 colab card delegate → exit 0" 0 "$(jq -r .exit "$OUT/82-gate-lead.json")"
 chk L2 "lane 1 생성(W, delegated_from=Lead task)" 1 "$(psqlq "select count(*) from lane where session_id='$S' and delegated_from_task_id='$T_LEAD'")"
-chk L3 "번들 task.allowed_commands(lead) = 25 전부 (claim 탭)" "$LEAD_ALL" "$(jq -r --arg t "$T_LEAD" 'select(.path|endswith("/claim"))|.body.tasks[]|select(.task.id==$t)|.task.allowed_commands|join(",")' "$TAP" | head -1)"
+chk L3 "번들 task.allowed_commands(lead) = 26 전부 (claim 탭)" "$LEAD_ALL" "$(jq -r --arg t "$T_LEAD" 'select(.path|endswith("/claim"))|.body.tasks[]|select(.task.id==$t)|.task.allowed_commands|join(",")' "$TAP" | head -1)"
 MCP_ARGS="$(record_field Lead session/new '.params.mcpServers[]|select(.name=="colab")|.args')"; MCP_ENV="$(record_field Lead session/new '.params.mcpServers[]|select(.name=="colab")|.env')"
-chk L4 "(a) session/new 의 colab MCP argv = mcp serve --allow <25> (acpfake record)" "mcp serve --allow $LEAD_ALL" "$(jq -r 'join(" ")' <<<"$MCP_ARGS")"
+chk L4 "(a) session/new 의 colab MCP argv = mcp serve --allow <26> (acpfake record)" "mcp serve --allow $LEAD_ALL" "$(jq -r 'join(" ")' <<<"$MCP_ARGS")"
 TOOLS="$(mcp_tools "$MCP_ARGS" "$MCP_ENV")"; printf '%s\n' "$TOOLS" > "$OUT/82-mcp-lead.out"
-chk L5 "(a) 그 argv 로 띄운 진짜 colab MCP: tools/list 25(v0.9.12) · colab_card_delegate 있음" "25/yes" "$(csv_len "$TOOLS")/$(in_csv colab_card_delegate "$TOOLS")"
+chk L5 "(a) 그 argv 로 띄운 진짜 colab MCP: tools/list 26(v0.9.14) · colab_card_delegate 있음" "26/yes" "$(csv_len "$TOOLS")/$(in_csv colab_card_delegate "$TOOLS")"
 TT_LEAD="$(cat "$REC/gate-$T_LEAD.token")"
 R_="$(tok_api "$TT_LEAD" POST "/rooms/$S/lanes" "$(card_body "$IDLE" "아무것도 하지 마세요")")"
 chk L6 "(c) lead 토큰 curl POST /lanes(Idle) → 201" 201 "$(api_code <<<"$R_")"
@@ -256,7 +256,7 @@ wait_gate C0 "C 대본이 delegate(Idle) 를 시도하고 토큰을 남겼다" "
 gate_json "$T_C" > "$OUT/82-gate-c.json"
 chk C1 "(b) custom colab card delegate → exit 0" 0 "$(jq -r .exit "$OUT/82-gate-c.json")"
 MCP_ARGS="$(record_field C session/new '.params.mcpServers[]|select(.name=="colab")|.args')"; MCP_ENV="$(record_field C session/new '.params.mcpServers[]|select(.name=="colab")|.env')"
-chk C2 "(a) custom MCP argv --allow 25 · tools/list 25" "mcp serve --allow $LEAD_ALL/25" "$(jq -r 'join(" ")' <<<"$MCP_ARGS")/$(csv_len "$(mcp_tools "$MCP_ARGS" "$MCP_ENV")")"
+chk C2 "(a) custom MCP argv --allow 26 · tools/list 26" "mcp serve --allow $LEAD_ALL/26" "$(jq -r 'join(" ")' <<<"$MCP_ARGS")/$(csv_len "$(mcp_tools "$MCP_ARGS" "$MCP_ENV")")"
 TT_C="$(cat "$REC/gate-$T_C.token")"
 chk C3 "(c) custom 토큰 curl POST /lanes(Idle) → 201 · rejected 행 0" "201/0" "$(tok_api "$TT_C" POST "/rooms/$S/lanes" "$(card_body "$IDLE" "또")" | api_code)/$(rejected_rows "$T_C")"
 chk C4 "(f) 세션 lane 상한 3 이 R·RH·C 로 찼다 — Idle 의 새 task 2(대본 위임·토큰 위임, 카드 후속 제외) 는 queued" 2 "$(psqlq "select count(*) from task t join agent a on a.id=t.agent_id where t.session_id='$S' and a.name='Idle' and t.status='queued' and t.trigger_reason is null and t.created_at > (select created_at from task where id='$T_C')")"

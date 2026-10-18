@@ -153,6 +153,7 @@ export const COMMAND_LABEL = {
   decision_record: "결정 기록",
   card_delegate: "카드로 위임",
   artifact_submit: "아티팩트 제출",
+  artifact_endorse: "아티팩트 채택",
   review_approve: "검토 승인",
   review_reject: "검토 반려",
   hitl_ask: "사람에게 질문",

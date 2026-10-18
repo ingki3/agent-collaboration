@@ -6,10 +6,11 @@
 // colab_card_accept · colab_card_revise · colab_card_get · colab_card_list
 // (v0.9.10) · colab_memory_note · colab_memory_supersede ·
 // colab_memory_retire · colab_memory_get (v0.9.12) · colab_decision_record ·
-// colab_artifact_submit · colab_artifact_get · colab_review_approve ·
-// colab_review_reject · colab_hitl_ask · colab_hitl_approve_request ·
-// colab_hitl_request_info · (v0.8 §2.4a) colab_room_list · colab_room_read ·
-// colab_work_propose. (v0.9 R4 removed the old session-named read tools.)
+// colab_artifact_submit · colab_artifact_endorse (v0.9.14) · colab_artifact_get ·
+// colab_review_approve · colab_review_reject · colab_hitl_ask ·
+// colab_hitl_approve_request · colab_hitl_request_info · (v0.8 §2.4a)
+// colab_room_list · colab_room_read · colab_work_propose. (v0.9 R4 removed
+// the old session-named read tools.)
 //
 // Every tool calls the same internal/colab action the CLI subcommand calls,
 // so a tool and its command produce byte-identical JSON.
@@ -142,6 +143,11 @@ var Tools = []Tool{
 		Name:        "colab_artifact_get",
 		Description: "Read an artifact's metadata, and with `out` also download its body to that path. This is the ONLY way to read another lane's work — worktree paths are never exposed. Same as `colab artifact get <id> [--out]`.",
 		InputSchema: json.RawMessage(`{"type":"object","required":["artifact"],"properties":{"artifact":{"type":"string","description":"artifact id (uuid), not its name — each Artifacts line of the brief ends with id <uuid>"},"out":{"type":"string","description":"write the body here (a file path, or an existing directory)"}},"additionalProperties":false}`),
+	},
+	{
+		Name:        "colab_artifact_endorse",
+		Description: "Accept someone ELSE's artifact as your own submission — for when the completion condition's `artifact_submitted` names you, but you delegate rather than submit directly (orchestrator roles). This re-evaluates the condition the SAME way your own submit would (actor = you), without re-uploading the content. If the condition names a different agent the call fails with code `not_assignee` and nothing is stored. `comment` is optional for now (a later version makes it required). Same as `colab artifact endorse <id> [--comment]`.",
+		InputSchema: json.RawMessage(`{"type":"object","required":["artifact"],"properties":{"artifact":{"type":"string","description":"artifact id (uuid), not its name — each Artifacts line of the brief ends with id <uuid>"},"comment":{"type":"string","description":"what you checked before accepting this as your own submission"},"idempotency_key":{"type":"string"}},"additionalProperties":false}`),
 	},
 	{
 		Name:        "colab_review_approve",
@@ -474,6 +480,7 @@ var toolRuns = map[string]toolRun{
 	"colab_decision_record":  run(as[colab.DecisionRecordArgs], colab.DecisionRecord),
 	"colab_artifact_submit":  run(as[colab.ArtifactSubmitArgs], colab.ArtifactSubmit),
 	"colab_artifact_get":     run(as[colab.ArtifactGetArgs], colab.ArtifactGet),
+	"colab_artifact_endorse": run(as[colab.EndorseArgs], colab.ArtifactEndorse),
 	"colab_review_approve":   run(as[colab.ReviewArgs], colab.ReviewApprove),
 	"colab_review_reject":    run(as[colab.ReviewArgs], colab.ReviewReject),
 	"colab_hitl_ask": run(func(a hitlAskWire) colab.HitlAskArgs {

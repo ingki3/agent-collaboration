@@ -11,7 +11,7 @@ import { COMMAND_LABEL, ROLE_COMMANDS } from "@/lib/wording";
 /** 계약 enum 순서 그대로(openapi `ColabCommand`). */
 export const ALL_COMMANDS: readonly ColabCommand[] = [
   "room_get", "room_messages", "artifact_get", "message_post", "status_set", "decision_record",
-  "card_delegate", "artifact_submit", "review_approve", "review_reject", "hitl_ask", "hitl_approve_request", "hitl_request_info",
+  "card_delegate", "artifact_submit", "artifact_endorse", "review_approve", "review_reject", "hitl_ask", "hitl_approve_request", "hitl_request_info",
   "room_list", "room_read", "work_propose",
   // v0.9.10(PRD FR-3.8) — 작업 카드: 옛 lane 위임 자리가 카드 위임이 되고 카드 명령 다섯이 뒤에 붙는다(계약 enum 순서).
   "card_report", "card_accept", "card_revise", "card_get", "card_list",
@@ -25,9 +25,9 @@ const COMMON: readonly ColabCommand[] = ["room_get", "room_messages", "artifact_
 /** §2.5 표 — 열 순서대로. `lead`·`custom` 은 전부. */
 export const ROLE_COMMAND_TABLE: Record<AgentRole, readonly ColabCommand[]> = {
   lead: ALL_COMMANDS,
-  researcher: [...COMMON, "artifact_submit"],
-  writer: [...COMMON, "artifact_submit"],
-  engineer: [...COMMON, "artifact_submit"],
+  researcher: [...COMMON, "artifact_submit", "artifact_endorse"],
+  writer: [...COMMON, "artifact_submit", "artifact_endorse"],
+  engineer: [...COMMON, "artifact_submit", "artifact_endorse"],
   reviewer: [...COMMON, "review_approve", "review_reject"],
   custom: ALL_COMMANDS,
 };

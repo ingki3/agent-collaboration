@@ -265,7 +265,7 @@ export function makeRuntime(workspaceId: string, name: string): Runtime {
  */
 const COLAB_COMMANDS: readonly ColabCommand[] = [
   "room_get", "room_messages", "artifact_get", "message_post", "status_set", "decision_record",
-  "card_delegate", "artifact_submit", "review_approve", "review_reject", "hitl_ask", "hitl_approve_request", "hitl_request_info",
+  "card_delegate", "artifact_submit", "artifact_endorse", "review_approve", "review_reject", "hitl_ask", "hitl_approve_request", "hitl_request_info",
   "room_list", "room_read", "work_propose",
   "card_report", "card_accept", "card_revise", "card_get", "card_list",
   "memory_note", "memory_supersede", "memory_retire", "memory_get",
@@ -277,7 +277,7 @@ const ROLE_DENIED: Record<Agent["role"], readonly ColabCommand[]> = {
   researcher: ["card_delegate", "review_approve", "review_reject", "hitl_approve_request", "work_propose", "card_accept", "card_revise"],
   writer: ["card_delegate", "review_approve", "review_reject", "hitl_approve_request", "work_propose", "card_accept", "card_revise"],
   engineer: ["card_delegate", "review_approve", "review_reject", "hitl_approve_request", "work_propose", "card_accept", "card_revise"],
-  reviewer: ["card_delegate", "artifact_submit", "hitl_approve_request", "work_propose", "card_accept", "card_revise"],
+  reviewer: ["card_delegate", "artifact_submit", "artifact_endorse", "hitl_approve_request", "work_propose", "card_accept", "card_revise"],
   custom: [],
 };
 export function allowedCommands(role: Agent["role"]): ColabCommand[] {

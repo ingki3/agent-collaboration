@@ -20,7 +20,7 @@ func TestToolRunsCoverTools(t *testing.T) {
 			t.Errorf("toolRuns has %s, which is not in Tools", name)
 		}
 	}
-	if len(toolRuns) != 25 {
-		t.Errorf("toolRuns has %d entries, want 25 (v0.9.12 ledger)", len(toolRuns))
+	if len(toolRuns) != 26 {
+		t.Errorf("toolRuns has %d entries, want 26 (v0.9.14 artifact_endorse)", len(toolRuns))
 	}
 }

@@ -12,6 +12,7 @@ var ColabCommandValues = []ColabCommand{
 	ColabCommandDecisionRecord,
 	ColabCommandCardDelegate,
 	ColabCommandArtifactSubmit,
+	ColabCommandArtifactEndorse,
 	ColabCommandReviewApprove,
 	ColabCommandReviewReject,
 	ColabCommandHitlAsk,

@@ -761,7 +761,7 @@ func TestAdvertisedFlagsAllParse(t *testing.T) {
 		{probe: []string{"lane", "bogus"}, subs: [][]string{{"lane", "delegate"}}},
 		{probe: []string{"status", "bogus"}, subs: [][]string{{"status", "set"}}},
 		{probe: []string{"decision", "bogus"}, subs: [][]string{{"decision", "record"}}},
-		{probe: []string{"artifact"}, subs: [][]string{{"artifact", "submit"}, {"artifact", "get"}}},
+		{probe: []string{"artifact"}, subs: [][]string{{"artifact", "submit"}, {"artifact", "get"}, {"artifact", "endorse"}}},
 		{probe: []string{"review", "bogus"}, subs: [][]string{{"review", "approve"}, {"review", "reject"}}},
 	}
 	for _, g := range groups {

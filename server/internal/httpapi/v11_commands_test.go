@@ -47,6 +47,9 @@ func (f *p2Fixture) cmdOp(t *testing.T, tok string, taskID uuid.UUID, cmd gen.Co
 		return st, out
 	case gen.ColabCommandArtifactSubmit:
 		return f.submit(t, f.sessionID, tok, "doc-"+uuid.NewString()[:8]+".md", "doc", []byte("# x"))
+	case gen.ColabCommandArtifactEndorse:
+		st, out, _ := c.do("POST", f.p+"/artifacts/"+artifact+"/endorsements", map[string]any{"comment": "확인함"}, key()...)
+		return st, out
 	case gen.ColabCommandArtifactGet:
 		st, out, _ := c.do("GET", f.p+"/artifacts/"+artifact, nil)
 		return st, out
