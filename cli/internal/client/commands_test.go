@@ -110,7 +110,7 @@ func TestCLIName(t *testing.T) {
 	want := map[Command]string{
 		CmdRoomGet: "room get", CmdRoomMessages: "room messages", CmdArtifactGet: "artifact get",
 		CmdMessagePost: "message post", CmdStatusSet: "status set", CmdDecisionRecord: "decision record",
-		CmdCardDelegate: "card delegate", CmdArtifactSubmit: "artifact submit",
+		CmdCardDelegate: "card delegate", CmdArtifactSubmit: "artifact submit", CmdArtifactEndorse: "artifact endorse",
 		CmdReviewApprove: "review approve", CmdReviewReject: "review reject",
 		CmdHitlAsk: "hitl ask", CmdHitlApproveRequest: "hitl approve-request", CmdHitlRequestInfo: "hitl request-info",
 		CmdRoomList: "room list", CmdRoomRead: "room read", CmdWorkPropose: "work propose",

@@ -115,7 +115,7 @@ func TestRoundTrip(t *testing.T) {
 	want := "colab_room_get,colab_room_messages,colab_message_post," +
 		"colab_status_set,colab_card_delegate,colab_card_report,colab_card_accept,colab_card_revise,colab_card_get,colab_card_list," +
 		"colab_memory_note,colab_memory_supersede,colab_memory_retire,colab_memory_get,colab_decision_record," +
-		"colab_artifact_submit,colab_artifact_get,colab_review_approve,colab_review_reject," +
+		"colab_artifact_submit,colab_artifact_get,colab_artifact_endorse,colab_review_approve,colab_review_reject," +
 		"colab_hitl_ask,colab_hitl_approve_request,colab_hitl_request_info," +
 		"colab_room_list,colab_room_read,colab_work_propose"
 	if strings.Join(names, ",") != want {

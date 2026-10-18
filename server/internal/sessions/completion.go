@@ -105,7 +105,7 @@ func ValidateTree(t Tree) error {
 
 // Event is something that happens in the session and may satisfy an atom.
 type Event struct {
-	Kind  string // artifact_submit | review_approve | review_reject | director_approve | director_reject | director_end | budget_exhausted
+	Kind  string // artifact_submit | artifact_endorse | review_approve | review_reject | director_approve | director_reject | director_end | budget_exhausted
 	Actor uuid.UUID
 	Note  string
 	// Ref is what the event was about, when there is such a thing (the
@@ -179,6 +179,23 @@ func ApplyEvent(t Tree, st State, ev Event) Outcome {
 			met[CondArtifactSubmitted] = true
 			advanced = true
 		}
+	case "artifact_endorse":
+		// FR-2A.1a(v0.19.28): the designated agent did not submit this
+		// artifact themselves, but says "this is my submission" — the tree
+		// re-evaluates it as the SAME kind of event as artifact_submit
+		// (actor = the endorsing agent), so an orchestrator role that only
+		// ever delegates is not a permanent deadlock. Unlike a plain submit
+		// by the wrong agent (silently satisfies nothing), endorsing as the
+		// wrong agent is an explicit error — a person clicking "채택" for
+		// someone else should know it did nothing, the way a reviewer
+		// judging without designation does (review_approve/reject below).
+		if !namesActor(t, CondArtifactSubmitted, ev.Actor) {
+			o.CLIError = "이 미션의 제출 담당이 아닙니다 — 지정된 담당만 채택할 수 있습니다"
+			o.MetAtoms = atoms(met)
+			return o
+		}
+		advanced = !met[CondArtifactSubmitted]
+		met[CondArtifactSubmitted] = true
 	case "review_approve":
 		if namesActor(t, CondAgentApproval, ev.Actor) {
 			advanced = !met[CondAgentApproval]

@@ -52,6 +52,13 @@ type ReviewCall struct {
 	Body       map[string]any
 }
 
+// EndorseCall is one captured endorseArtifact request (PRD v0.19.28).
+type EndorseCall struct {
+	ArtifactID string
+	Key        string
+	Body       map[string]any
+}
+
 // p2State is embedded in Server; the mutex there guards it. p3State rides
 // along so Server keeps one embedded field per phase.
 type p2State struct {
@@ -93,11 +100,15 @@ type p2State struct {
 	// must not fire however long the whole transfer takes.
 	ChunkDelay time.Duration
 
-	Delegations []Delegation
-	StatusCalls []StatusCall
-	Decisions   []map[string]any
-	Submissions []Submission
-	Reviews     []ReviewCall
+	Delegations  []Delegation
+	StatusCalls  []StatusCall
+	Decisions    []map[string]any
+	Submissions  []Submission
+	Reviews      []ReviewCall
+	Endorsements []EndorseCall
+	// NotDesignatedAssignee makes endorseArtifact answer 403
+	// not_designated_assignee without storing anything (PRD v0.19.28).
+	NotDesignatedAssignee bool
 }
 
 // handleP2 serves the P2 paths. It returns false when path is not one of
@@ -387,6 +398,31 @@ func (s *Server) handleP2(w http.ResponseWriter, r *http.Request, path string) b
 			}
 		}
 		writeJSON(w, 200, out)
+		return true
+
+	case r.Method == "POST" && strings.HasPrefix(path, "/artifacts/") && strings.HasSuffix(path, "/endorsements"):
+		id := strings.TrimSuffix(strings.TrimPrefix(path, "/artifacts/"), "/endorsements")
+		body, ok := decodeBody(s, w, r)
+		if !ok {
+			return true
+		}
+		comment, _ := body["comment"].(string)
+		if s.NotDesignatedAssignee {
+			// v0.19.28: refused *and not stored*, the same shape as review's
+			// not_designated_reviewer (E6-06).
+			s.problem(w, 403, "not_designated_assignee", "Not the designated assignee",
+				"the artifact_submitted completion condition designates another agent")
+			return true
+		}
+		s.Endorsements = append(s.Endorsements, EndorseCall{ArtifactID: id, Key: r.Header.Get("Idempotency-Key"), Body: body})
+		writeJSON(w, 200, map[string]any{
+			"endorsement": map[string]any{
+				"artifact_id": id, "endorsed_by_agent_id": AgentID, "endorsed_by_task_id": TaskID,
+				"comment": comment, "endorsed_at": time.Now().UTC().Format(time.RFC3339),
+			},
+			"completion_progress": map[string]any{"met": 1, "total": 1, "satisfied": true,
+				"human_gate": false, "conditions": []any{}},
+		})
 		return true
 	}
 	return false

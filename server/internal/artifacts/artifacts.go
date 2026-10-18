@@ -68,6 +68,8 @@ type Row struct {
 	WorkID *uuid.UUID
 
 	Review *ReviewRow
+
+	Endorsement *EndorsementRow
 }
 
 // ReviewRow is the artifact_review row (FR-2.2 agent_approval).
@@ -79,6 +81,18 @@ type ReviewRow struct {
 	ReviewerTaskID  *uuid.UUID
 	DecisionID      *uuid.UUID
 	ReviewedAt      time.Time
+}
+
+// EndorsementRow is the artifact_endorsement row (FR-2A.1a, v0.19.28): the
+// artifact_submitted assignee accepting someone else's submission as their
+// own, distinct from a reviewer's agent_approval judgment.
+type EndorsementRow struct {
+	ArtifactID        uuid.UUID
+	EndorsedByAgentID uuid.UUID
+	EndorsedByTaskID  *uuid.UUID
+	Comment           *string
+	DecisionID        *uuid.UUID
+	EndorsedAt        time.Time
 }
 
 // SubmitInput is one submitArtifact call. Content is the `file` part already
@@ -221,10 +235,12 @@ const selectSQL = `
 	       ag.name, a.created_at,
 	       a.version = (SELECT max(b.version) FROM artifact b WHERE b.session_id = a.session_id AND b.name = a.name),
 	       r.verdict::text, r.comments, r.reviewer_agent_id, r.reviewer_task_id, r.decision_id, r.reviewed_at,
-	       a.work_id, a.content_type_judged
+	       a.work_id, a.content_type_judged,
+	       e.endorsed_by_agent_id, e.endorsed_by_task_id, e.comment, e.decision_id, e.endorsed_at
 	FROM artifact a
 	LEFT JOIN agent ag ON ag.id = a.submitted_by_agent_id
-	LEFT JOIN artifact_review_latest r ON r.artifact_id = a.id`
+	LEFT JOIN artifact_review_latest r ON r.artifact_id = a.id
+	LEFT JOIN artifact_endorsement_latest e ON e.artifact_id = a.id`
 
 func scan(row pgx.Row) (*Row, error) {
 	var a Row
@@ -232,15 +248,23 @@ func scan(row pgx.Row) (*Row, error) {
 	var rev ReviewRow
 	var reviewer *uuid.UUID
 	var reviewedAt *time.Time
+	var end EndorsementRow
+	var endorser *uuid.UUID
+	var endorsedAt *time.Time
 	if err := row.Scan(&a.ID, &a.SessionID, &a.Name, &a.Version, &a.Type, &a.StorageRef, &a.SizeBytes, &a.ContentType,
 		&a.Description, &a.SubmittedByTaskID, &a.SubmittedByAgentID, &a.SubmittedByUserID,
 		&a.AgentName, &a.CreatedAt, &a.Latest,
-		&verdict, &rev.Comments, &reviewer, &rev.ReviewerTaskID, &rev.DecisionID, &reviewedAt, &a.WorkID, &a.ContentTypeJudged); err != nil {
+		&verdict, &rev.Comments, &reviewer, &rev.ReviewerTaskID, &rev.DecisionID, &reviewedAt, &a.WorkID, &a.ContentTypeJudged,
+		&endorser, &end.EndorsedByTaskID, &end.Comment, &end.DecisionID, &endorsedAt); err != nil {
 		return nil, err
 	}
 	if verdict != nil && reviewer != nil && reviewedAt != nil {
 		rev.ArtifactID, rev.Verdict, rev.ReviewerAgentID, rev.ReviewedAt = a.ID, *verdict, *reviewer, *reviewedAt
 		a.Review = &rev
+	}
+	if endorser != nil && endorsedAt != nil {
+		end.ArtifactID, end.EndorsedByAgentID, end.EndorsedAt = a.ID, *endorser, *endorsedAt
+		a.Endorsement = &end
 	}
 	return &a, nil
 }
@@ -373,6 +397,22 @@ func (s *Service) RecordReview(ctx context.Context, artifactID uuid.UUID, rev Re
 		return nil, fmt.Errorf("artifacts: record review: %w", err)
 	}
 	return &rev, nil
+}
+
+// RecordEndorsement is FR-2A.1a's (v0.19.28) "채택" write: append-only, like
+// RecordReview — a later endorsement does not erase an earlier one, and the
+// artifact's `endorsement` is the latest row of it.
+func (s *Service) RecordEndorsement(ctx context.Context, artifactID uuid.UUID, e EndorsementRow) (*EndorsementRow, error) {
+	now := s.Clock.Now()
+	e.ArtifactID, e.EndorsedAt = artifactID, now
+	_, err := s.DB.Exec(ctx, `
+		INSERT INTO artifact_endorsement (artifact_id, endorsed_by_agent_id, endorsed_by_task_id, comment, decision_id, endorsed_at)
+		VALUES ($1, $2, $3, $4, $5, $6)`,
+		artifactID, e.EndorsedByAgentID, e.EndorsedByTaskID, e.Comment, e.DecisionID, now)
+	if err != nil {
+		return nil, fmt.Errorf("artifacts: record endorsement: %w", err)
+	}
+	return &e, nil
 }
 
 // ReviewHistory is every judgment recorded for the artifact, newest first

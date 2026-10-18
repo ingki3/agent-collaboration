@@ -73,11 +73,26 @@ describe("S21 미션 열기", () => {
     fireEvent.change(await screen.findByTestId("rd-create-work-assignee"), { target: { value: agent().id } });
     expect(screen.getByTestId("rd-create-work-condition-sentence")).toHaveTextContent(`아티팩트 제출 (${agent().name}) 그리고 Director 승인`);
     expect(screen.queryByTestId("rd-create-work-condition-why")).toBeNull();
+    // FR-2A.1a(v0.19.28) — agent() 는 role: "lead"(store.ts 기본 시드), 보통 직접 제출하지 않는 역할이라 권장 문구를 보인다.
+    expect(screen.getByTestId("rd-create-work-assignee-orchestrator")).toHaveTextContent(CREATE_WORK.assignee_orchestrator_hint);
     fireEvent.change(screen.getByTestId("rd-create-work-goal"), { target: { value: "번역" } });
     waiveDeputy();
     fireEvent.click(screen.getByTestId("rd-create-work-open"));
     await waitFor(() => expect(onOpened).toHaveBeenCalled());
     expect((onOpened.mock.calls[0][0] as Work).completion_condition).toEqual({ op: "and", conditions: [{ type: "artifact_submitted", who: "assignee" }, { type: "user_approval" }] });
+  });
+
+  it("제출자 권장 문구(v0.19.28) — lead 역할에만, 다른 역할이면 안 보인다", async () => {
+    await invite();
+    const researcher = [...store().agents.values()].find((a) => a.role === "researcher")!;
+    await bridge.call("POST", `/rooms/${roomId}/participants`, { agent_id: researcher.id });
+    render(<CreateWorkDialog roomId={roomId} mode="new" onOpened={() => {}} onClose={() => {}} />);
+    fireEvent.change(await screen.findByTestId("rd-create-work-assignee"), { target: { value: researcher.id } });
+    expect(screen.queryByTestId("rd-create-work-assignee-orchestrator")).toBeNull();
+    fireEvent.change(screen.getByTestId("rd-create-work-assignee"), { target: { value: agent().id } });
+    expect(screen.getByTestId("rd-create-work-assignee-orchestrator")).toHaveTextContent(CREATE_WORK.assignee_orchestrator_hint);
+    fireEvent.change(screen.getByTestId("rd-create-work-assignee"), { target: { value: "" } });
+    expect(screen.queryByTestId("rd-create-work-assignee-orchestrator")).toBeNull();
   });
 
   it("종료 조건 바꾸기 — 「에이전트 검토 승인」은 리뷰어 없이 열 수 없다(비활성 + 방의 말 사유)", async () => {

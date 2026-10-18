@@ -98,3 +98,16 @@ type ReviewResult struct {
 	Message            *Message        `json:"message,omitempty"`
 	Raw                json.RawMessage `json:"-"`
 }
+
+// EndorseCreate — POST /artifacts/{id}/endorsements body (endorseArtifact,
+// PRD v0.19.28). Comment is optional for now (v0.19.33 makes it required).
+type EndorseCreate struct {
+	Comment string `json:"comment,omitempty"`
+}
+
+// EndorseResult — endorseArtifact 200 {endorsement, completion_progress}.
+type EndorseResult struct {
+	Endorsement        json.RawMessage `json:"endorsement"`
+	CompletionProgress json.RawMessage `json:"completion_progress"`
+	Raw                json.RawMessage `json:"-"`
+}

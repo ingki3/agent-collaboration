@@ -44,7 +44,7 @@ const AllowFlag = "--allow"
 // the enum line from the contract and fails when this drifts.
 var all = []string{
 	"room_get", "room_messages", "artifact_get", "message_post", "status_set",
-	"decision_record", "card_delegate", "artifact_submit", "review_approve", "review_reject",
+	"decision_record", "card_delegate", "artifact_submit", "artifact_endorse", "review_approve", "review_reject",
 	"hitl_ask", "hitl_approve_request", "hitl_request_info",
 	"room_list", "room_read", "work_propose",
 	// v0.3.10 (PRD FR-3.8): lane_delegate → card_delegate, + the card commands.
@@ -83,6 +83,7 @@ var labels = map[string]string{
 	"memory_retire":        "원장 항목 철회",
 	"memory_get":           "원장 보기",
 	"artifact_submit":      "아티팩트 제출",
+	"artifact_endorse":     "아티팩트 채택",
 	"review_approve":       "검토 승인",
 	"review_reject":        "검토 반려",
 	"hitl_ask":             "사람에게 질문",

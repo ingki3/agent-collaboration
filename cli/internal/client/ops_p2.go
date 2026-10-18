@@ -190,6 +190,23 @@ func (c *Client) ReviewArtifact(ctx context.Context, artifactID string, body Rev
 	return &out, nil
 }
 
+// EndorseArtifact — POST /artifacts/{id}/endorsements (endorseArtifact,
+// PRD v0.19.28). An agent the completion condition did not designate as the
+// artifact_submitted assignee gets 403 not_designated_assignee; nothing is
+// stored.
+func (c *Client) EndorseArtifact(ctx context.Context, artifactID string, body EndorseCreate, key string) (*EndorseResult, error) {
+	res, err := c.Do(ctx, http.MethodPost, "/artifacts/"+url.PathEscape(artifactID)+"/endorsements", nil, body, idemHeader(key))
+	if err != nil {
+		return nil, err
+	}
+	var out EndorseResult
+	if err := decode(res, &out); err != nil {
+		return nil, err
+	}
+	out.Raw = json.RawMessage(res.Body)
+	return &out, nil
+}
+
 // TaskID resolves the task: explicit arg → COLAB_TASK_ID → /cli/context.
 // `status set` is the only P2 command whose path is task-scoped.
 func (c *Client) TaskID(ctx context.Context, explicit string) (string, error) {

@@ -165,6 +165,9 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
   }, [assignee, condTouched, edit]);
 
   const nameOf = useCallback((id: string) => agents.find((a) => a.agent!.id === id)?.agent?.name ?? id, [agents]);
+  // FR-2A.1a(v0.19.28): a `lead`-role assignee usually delegates rather than
+  // submits directly — nudge, don't block (PRD "권한다", not "필수").
+  const assigneeIsLead = !!assignee && agents.find((a) => a.agent!.id === assignee)?.agent?.role === "lead";
   const condNames = useMemo(() => draftNames({ ...draft, submitter: draft.submitter || assignee }, (id) => `${nameOf(id)}`), [draft, assignee, nameOf]);
   const sentence = conditionSentence(condNames, draft.op);
 
@@ -311,6 +314,7 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
               )}
             </label>
             {suggested && suggested === assignee && <p className="rd-warn" data-testid="rd-create-work-suggested">{CREATE_WORK.assignee_suggested}</p>}
+            {assigneeIsLead && <p className="rd-warn" data-testid="rd-create-work-assignee-orchestrator">{CREATE_WORK.assignee_orchestrator_hint}</p>}
             <p className="rd-hint">{CREATE_WORK.assignee_hint}</p>
             {fieldErr("assignee_agent_id") && <span className="rd-err">{fieldErr("assignee_agent_id")}</span>}
           </div>

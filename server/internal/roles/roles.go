@@ -36,8 +36,9 @@ var all = gen.ColabCommandValues
 //     Lead's — a worker that delegates deepens the chain, FR-3.5), no
 //     `review approve/reject` (nobody approves their own output), no
 //     `hitl approve-request` (asking for completion approval is the Lead's);
-//   - reviewer: the same, plus no `artifact submit` (a reviewer does not
-//     produce deliverables — the reason for a rejection goes in
+//   - reviewer: the same, plus no `artifact submit` or `artifact endorse`
+//     (v0.19.28 — a reviewer does not produce deliverables and is not the
+//     `artifact_submitted` assignee; the reason for a rejection goes in
 //     `review reject --reason`) but WITH `review approve/reject`;
 //   - every role but lead · custom: no `work propose` (v0.8, FR-2A.1 — a
 //     mission is the room's unit of work, and suggesting one is the Lead's
@@ -47,7 +48,7 @@ var denied = map[gen.AgentRole]map[gen.ColabCommand]bool{
 	gen.Researcher: {gen.ColabCommandCardDelegate: true, gen.ColabCommandCardAccept: true, gen.ColabCommandCardRevise: true, gen.ColabCommandReviewApprove: true, gen.ColabCommandReviewReject: true, gen.ColabCommandHitlApproveRequest: true, gen.ColabCommandWorkPropose: true},
 	gen.Writer:     {gen.ColabCommandCardDelegate: true, gen.ColabCommandCardAccept: true, gen.ColabCommandCardRevise: true, gen.ColabCommandReviewApprove: true, gen.ColabCommandReviewReject: true, gen.ColabCommandHitlApproveRequest: true, gen.ColabCommandWorkPropose: true},
 	gen.Engineer:   {gen.ColabCommandCardDelegate: true, gen.ColabCommandCardAccept: true, gen.ColabCommandCardRevise: true, gen.ColabCommandReviewApprove: true, gen.ColabCommandReviewReject: true, gen.ColabCommandHitlApproveRequest: true, gen.ColabCommandWorkPropose: true},
-	gen.Reviewer:   {gen.ColabCommandCardDelegate: true, gen.ColabCommandCardAccept: true, gen.ColabCommandCardRevise: true, gen.ColabCommandArtifactSubmit: true, gen.ColabCommandHitlApproveRequest: true, gen.ColabCommandWorkPropose: true},
+	gen.Reviewer:   {gen.ColabCommandCardDelegate: true, gen.ColabCommandCardAccept: true, gen.ColabCommandCardRevise: true, gen.ColabCommandArtifactSubmit: true, gen.ColabCommandArtifactEndorse: true, gen.ColabCommandHitlApproveRequest: true, gen.ColabCommandWorkPropose: true},
 }
 
 // AllowedCommands is the role's row of colab-cli.md §2.5, in §2 order. An

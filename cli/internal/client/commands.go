@@ -24,6 +24,7 @@ const (
 	CmdDecisionRecord     Command = "decision_record"
 	CmdCardDelegate       Command = "card_delegate"
 	CmdArtifactSubmit     Command = "artifact_submit"
+	CmdArtifactEndorse    Command = "artifact_endorse"
 	CmdReviewApprove      Command = "review_approve"
 	CmdReviewReject       Command = "review_reject"
 	CmdHitlAsk            Command = "hitl_ask"
@@ -48,7 +49,7 @@ const (
 // AllCommands is the closed ColabCommand set.
 var AllCommands = []Command{
 	CmdRoomGet, CmdRoomMessages, CmdArtifactGet, CmdMessagePost, CmdStatusSet, CmdDecisionRecord,
-	CmdCardDelegate, CmdArtifactSubmit, CmdReviewApprove, CmdReviewReject,
+	CmdCardDelegate, CmdArtifactSubmit, CmdArtifactEndorse, CmdReviewApprove, CmdReviewReject,
 	CmdHitlAsk, CmdHitlApproveRequest, CmdHitlRequestInfo,
 	CmdRoomList, CmdRoomRead, CmdWorkPropose,
 	CmdCardReport, CmdCardAccept, CmdCardRevise, CmdCardGet, CmdCardList,

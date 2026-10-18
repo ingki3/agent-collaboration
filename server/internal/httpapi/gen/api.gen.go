@@ -388,6 +388,7 @@ func (e CardVerdict) Valid() bool {
 
 // Defines values for ColabCommand.
 const (
+	ColabCommandArtifactEndorse    ColabCommand = "artifact_endorse"
 	ColabCommandArtifactGet        ColabCommand = "artifact_get"
 	ColabCommandArtifactSubmit     ColabCommand = "artifact_submit"
 	ColabCommandCardAccept         ColabCommand = "card_accept"
@@ -418,6 +419,8 @@ const (
 // Valid indicates whether the value is a known member of the ColabCommand enum.
 func (e ColabCommand) Valid() bool {
 	switch e {
+	case ColabCommandArtifactEndorse:
+		return true
 	case ColabCommandArtifactGet:
 		return true
 	case ColabCommandArtifactSubmit:
@@ -2818,7 +2821,10 @@ type Artifact struct {
 	ContentType nullable.Nullable[string] `json:"content_type,omitempty"`
 	CreatedAt   time.Time                 `json:"created_at"`
 	Description nullable.Nullable[string] `json:"description,omitempty"`
-	Id          openapi_types.UUID        `json:"id"`
+
+	// Endorsement FR-2A.1a(v0.19.28) — `artifact_submitted(agent: X)` 의 담당 X 가 다른 에이전트가 제출한 아티팩트를 자기 제출로 받아들인 기록(가장 최근 1건, append-only 이력).
+	Endorsement *ArtifactEndorsement `json:"endorsement,omitempty"`
+	Id          openapi_types.UUID   `json:"id"`
 
 	// Latest 같은 이름 중 최신 버전.
 	Latest      *bool              `json:"latest,omitempty"`
@@ -2838,6 +2844,16 @@ type Artifact struct {
 
 	// WorkId v0.2.0 — 이름·버전은 방 단위(미션이 달라도 같은 이름이면 다음 버전).
 	WorkId nullable.Nullable[openapi_types.UUID] `json:"work_id,omitempty"`
+}
+
+// ArtifactEndorsement FR-2A.1a(v0.19.28) — `artifact_submitted(agent: X)` 의 담당 X 가 다른 에이전트가 제출한 아티팩트를 자기 제출로 받아들인 기록(가장 최근 1건, append-only 이력).
+type ArtifactEndorsement struct {
+	ArtifactId        openapi_types.UUID        `json:"artifact_id"`
+	Comment           nullable.Nullable[string] `json:"comment,omitempty"`
+	DecisionId        *openapi_types.UUID       `json:"decision_id,omitempty"`
+	EndorsedAt        time.Time                 `json:"endorsed_at"`
+	EndorsedByAgentId openapi_types.UUID        `json:"endorsed_by_agent_id"`
+	EndorsedByTaskId  *openapi_types.UUID       `json:"endorsed_by_task_id,omitempty"`
 }
 
 // ArtifactReview defines model for ArtifactReview.
@@ -3145,7 +3161,7 @@ type ColabCLI struct {
 	Version string `json:"version"`
 }
 
-// ColabCommand colab CLI 명령 이름(`colab-cli.md` §2, MCP 툴 이름은 밑줄 표기). v1.1 K-19. v0.2.13(R3): room_list · room_read · work_propose. v0.3.0(R4): session_get·session_messages → room_get·room_messages. v0.3.10(PRD FR-3.8): `lane_delegate` → `card_delegate`(위임은 카드로만), `card_report`·`card_accept`·`card_revise`·`card_get`·`card_list` 추가. 질문 task 는 역할 표 ∩ 질문 표(`room_get`·`room_messages`·`room_list`·`room_read`·`artifact_get`·`card_get`·`card_list`·`message_post`·`status_set`·`hitl_ask`) — colab-cli.md §2.5. v0.3.12(PRD FR-4.6, 맥락 2단계): `memory_note`·`memory_supersede`·`memory_retire`·`memory_get` 추가 — `memory_note`·`memory_supersede` 는 모든 역할이 쓸 수 있지만 `kind: plan`·`progress` 는 서버가 호출자 역할로 한 번 더 막는다(`403 memory_kind_forbidden`).
+// ColabCommand colab CLI 명령 이름(`colab-cli.md` §2, MCP 툴 이름은 밑줄 표기). v1.1 K-19. v0.2.13(R3): room_list · room_read · work_propose. v0.3.0(R4): session_get·session_messages → room_get·room_messages. v0.3.10(PRD FR-3.8): `lane_delegate` → `card_delegate`(위임은 카드로만), `card_report`·`card_accept`·`card_revise`·`card_get`·`card_list` 추가. 질문 task 는 역할 표 ∩ 질문 표(`room_get`·`room_messages`·`room_list`·`room_read`·`artifact_get`·`card_get`·`card_list`·`message_post`·`status_set`·`hitl_ask`) — colab-cli.md §2.5. v0.3.12(PRD FR-4.6, 맥락 2단계): `memory_note`·`memory_supersede`·`memory_retire`·`memory_get` 추가 — `memory_note`·`memory_supersede` 는 모든 역할이 쓸 수 있지만 `kind: plan`·`progress` 는 서버가 호출자 역할로 한 번 더 막는다(`403 memory_kind_forbidden`). v0.3.17(PRD FR-2A.1a, v0.19.28): `artifact_endorse` 추가 — `artifact_submit` 과 같은 역할 표 행(리뷰어 제외).
 type ColabCommand string
 
 // CompletionAtom defines model for CompletionAtom.
@@ -5631,6 +5647,18 @@ type DownloadArtifactParams struct {
 	Range *string `json:"Range,omitempty"`
 }
 
+// EndorseArtifactJSONBody defines parameters for EndorseArtifact.
+type EndorseArtifactJSONBody struct {
+	// Comment 무엇을 확인했는지(선택 — v0.19.33 에서 필수로 바뀐다).
+	Comment *string `json:"comment,omitempty"`
+}
+
+// EndorseArtifactParams defines parameters for EndorseArtifact.
+type EndorseArtifactParams struct {
+	// IdempotencyKey 선택. 주면 `IdempotencyKeyRequired`와 같은 규칙.
+	IdempotencyKey *IdempotencyKeyOptional `json:"Idempotency-Key,omitempty"`
+}
+
 // ReviewArtifactJSONBody defines parameters for ReviewArtifact.
 type ReviewArtifactJSONBody struct {
 	// Comments reject면 필수.
@@ -6287,6 +6315,9 @@ type UpdateAgentProfileJSONRequestBody = AgentProfileUpdate
 
 // CreateTestChatJSONRequestBody defines body for CreateTestChat for application/json ContentType.
 type CreateTestChatJSONRequestBody CreateTestChatJSONBody
+
+// EndorseArtifactJSONRequestBody defines body for EndorseArtifact for application/json ContentType.
+type EndorseArtifactJSONRequestBody EndorseArtifactJSONBody
 
 // ReviewArtifactJSONRequestBody defines body for ReviewArtifact for application/json ContentType.
 type ReviewArtifactJSONRequestBody ReviewArtifactJSONBody
@@ -7028,6 +7059,9 @@ type ServerInterface interface {
 	// DownloadArtifact 아티팩트 본문 다운로드 · 미리보기(v0.3.7 `?inline=true`)
 	// (GET /artifacts/{artifactId}/content)
 	DownloadArtifact(w http.ResponseWriter, r *http.Request, artifactId ArtifactId, params DownloadArtifactParams)
+	// EndorseArtifact 채택(`colab artifact endorse`) — FR-2A.1a(v0.19.28)
+	// (POST /artifacts/{artifactId}/endorsements)
+	EndorseArtifact(w http.ResponseWriter, r *http.Request, artifactId ArtifactId, params EndorseArtifactParams)
 	// ReviewArtifact 리뷰 승인/반려(`colab review approve|reject`)
 	// (POST /artifacts/{artifactId}/review)
 	ReviewArtifact(w http.ResponseWriter, r *http.Request, artifactId ArtifactId, params ReviewArtifactParams)
@@ -7712,6 +7746,56 @@ func (siw *ServerInterfaceWrapper) DownloadArtifact(w http.ResponseWriter, r *ht
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.DownloadArtifact(w, r, artifactId, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// EndorseArtifact operation middleware
+func (siw *ServerInterfaceWrapper) EndorseArtifact(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "artifactId" -------------
+	var artifactId ArtifactId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "artifactId", r.PathValue("artifactId"), &artifactId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: true})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "artifactId", Err: err})
+		return
+	}
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params EndorseArtifactParams
+
+	headers := r.Header
+
+	// ------------- Optional header parameter "Idempotency-Key" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("Idempotency-Key")]; found {
+		var IdempotencyKey IdempotencyKeyOptional
+		n := len(valueList)
+		if n != 1 {
+			siw.ErrorHandlerFunc(w, r, &TooManyValuesForParamError{ParamName: "Idempotency-Key", Count: n})
+			return
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "Idempotency-Key", valueList[0], &IdempotencyKey, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: "uuid"})
+		if err != nil {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "Idempotency-Key", Err: err})
+			return
+		}
+
+		params.IdempotencyKey = &IdempotencyKey
+
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.EndorseArtifact(w, r, artifactId, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -12992,6 +13076,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/artifacts/{artifactId}", wrapper.GetArtifact)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/artifacts/{artifactId}/content", wrapper.DownloadArtifact)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/artifacts/{artifactId}/review", wrapper.ReviewArtifact)
+	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/artifacts/{artifactId}/endorsements", wrapper.EndorseArtifact)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/rooms/{roomId}/decisions", wrapper.ListDecisions)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/rooms/{roomId}/decisions", wrapper.RecordDecision)
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/rooms/{roomId}/cost", wrapper.GetRoomCost)

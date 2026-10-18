@@ -1519,6 +1519,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/artifacts/{artifactId}/endorsements": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                artifactId: components["parameters"]["ArtifactId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 채택(`colab artifact endorse`) — FR-2A.1a(v0.19.28)
+         * @description 권한: `TaskToken`(에이전트). 그 아티팩트의 미션에서 `artifact_submitted` 의 담당으로 지정된 에이전트가 아니면 `403 not_designated_assignee` — 저장하지 않는다(리뷰의 `not_designated_reviewer` 와 같은 모양, 다른 원자).
+         *
+         *     채택은 아티팩트 내용을 다시 올리는 게 아니라 "이것을 내 제출로 받아들인다"는 확인 행동이다 — completion 트리는 이것도 제출(`artifact_submit`)과 같은 사건(actor = 채택한 에이전트)으로 재평가한다: 지정된 담당이 이미 자기 제출로 그 원자를 충족했으면 이 호출은 아무것도 바꾸지 않는다(재평가는 멱등). `type: attachment` 인 아티팩트(사람이 대화에 붙인 첨부, FR-3.7)는 채택해도 원자를 충족시키지 않는다 — 제출 자체가 그렇듯, 산출물이 아니다. 아티팩트가 어느 미션에도 속하지 않으면(`work_id` 없음) 조건도 승인 요청도 건드리지 않는다.
+         */
+        post: operations["endorseArtifact"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/rooms/{roomId}/decisions": {
         parameters: {
             query?: never;
@@ -2601,10 +2625,10 @@ export interface components {
          */
         AgentRole: "lead" | "researcher" | "writer" | "engineer" | "reviewer" | "custom";
         /**
-         * @description colab CLI 명령 이름(`colab-cli.md` §2, MCP 툴 이름은 밑줄 표기). v1.1 K-19. v0.2.13(R3): room_list · room_read · work_propose. v0.3.0(R4): session_get·session_messages → room_get·room_messages. v0.3.10(PRD FR-3.8): `lane_delegate` → `card_delegate`(위임은 카드로만), `card_report`·`card_accept`·`card_revise`·`card_get`·`card_list` 추가. 질문 task 는 역할 표 ∩ 질문 표(`room_get`·`room_messages`·`room_list`·`room_read`·`artifact_get`·`card_get`·`card_list`·`message_post`·`status_set`·`hitl_ask`) — colab-cli.md §2.5. v0.3.12(PRD FR-4.6, 맥락 2단계): `memory_note`·`memory_supersede`·`memory_retire`·`memory_get` 추가 — `memory_note`·`memory_supersede` 는 모든 역할이 쓸 수 있지만 `kind: plan`·`progress` 는 서버가 호출자 역할로 한 번 더 막는다(`403 memory_kind_forbidden`).
+         * @description colab CLI 명령 이름(`colab-cli.md` §2, MCP 툴 이름은 밑줄 표기). v1.1 K-19. v0.2.13(R3): room_list · room_read · work_propose. v0.3.0(R4): session_get·session_messages → room_get·room_messages. v0.3.10(PRD FR-3.8): `lane_delegate` → `card_delegate`(위임은 카드로만), `card_report`·`card_accept`·`card_revise`·`card_get`·`card_list` 추가. 질문 task 는 역할 표 ∩ 질문 표(`room_get`·`room_messages`·`room_list`·`room_read`·`artifact_get`·`card_get`·`card_list`·`message_post`·`status_set`·`hitl_ask`) — colab-cli.md §2.5. v0.3.12(PRD FR-4.6, 맥락 2단계): `memory_note`·`memory_supersede`·`memory_retire`·`memory_get` 추가 — `memory_note`·`memory_supersede` 는 모든 역할이 쓸 수 있지만 `kind: plan`·`progress` 는 서버가 호출자 역할로 한 번 더 막는다(`403 memory_kind_forbidden`). v0.3.17(PRD FR-2A.1a, v0.19.28): `artifact_endorse` 추가 — `artifact_submit` 과 같은 역할 표 행(리뷰어 제외).
          * @enum {string}
          */
-        ColabCommand: "room_get" | "room_messages" | "artifact_get" | "message_post" | "status_set" | "decision_record" | "card_delegate" | "artifact_submit" | "review_approve" | "review_reject" | "hitl_ask" | "hitl_approve_request" | "hitl_request_info" | "room_list" | "room_read" | "work_propose" | "card_report" | "card_accept" | "card_revise" | "card_get" | "card_list" | "memory_note" | "memory_supersede" | "memory_retire" | "memory_get";
+        ColabCommand: "room_get" | "room_messages" | "artifact_get" | "message_post" | "status_set" | "decision_record" | "card_delegate" | "artifact_submit" | "artifact_endorse" | "review_approve" | "review_reject" | "hitl_ask" | "hitl_approve_request" | "hitl_request_info" | "room_list" | "room_read" | "work_propose" | "card_report" | "card_accept" | "card_revise" | "card_get" | "card_list" | "memory_note" | "memory_supersede" | "memory_retire" | "memory_get";
         /**
          * @description `agent_status` — 저장하지 않고 FR-1.3 순서로 파생한다.
          * @enum {string}
@@ -4435,6 +4459,7 @@ export interface components {
             /** @description 같은 이름 중 최신 버전. */
             latest?: boolean;
             review?: components["schemas"]["ArtifactReview"];
+            endorsement?: components["schemas"]["ArtifactEndorsement"];
             /** Format: date-time */
             created_at: string;
             /**
@@ -4457,6 +4482,20 @@ export interface components {
             decision_id?: string;
             /** Format: date-time */
             reviewed_at: string;
+        };
+        /** @description FR-2A.1a(v0.19.28) — `artifact_submitted(agent: X)` 의 담당 X 가 다른 에이전트가 제출한 아티팩트를 자기 제출로 받아들인 기록(가장 최근 1건, append-only 이력). */
+        ArtifactEndorsement: {
+            /** Format: uuid */
+            artifact_id: string;
+            /** Format: uuid */
+            endorsed_by_agent_id: string;
+            /** Format: uuid */
+            endorsed_by_task_id?: string;
+            comment?: string | null;
+            /** Format: uuid */
+            decision_id?: string;
+            /** Format: date-time */
+            endorsed_at: string;
         };
         /**
          * @description `memory_item.kind`. `plan`·`progress` 는 쓰기가 lead·사람으로 제한된다(PRD FR-4.6 2).
@@ -7928,6 +7967,45 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             422: components["responses"]["ValidationError"];
+            default: components["responses"]["Problem"];
+        };
+    };
+    endorseArtifact: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description 선택. 주면 `IdempotencyKeyRequired`와 같은 규칙. */
+                "Idempotency-Key"?: components["parameters"]["IdempotencyKeyOptional"];
+            };
+            path: {
+                artifactId: components["parameters"]["ArtifactId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    /** @description 무엇을 확인했는지(선택 — v0.19.33 에서 필수로 바뀐다). */
+                    comment?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description 기록됨. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        endorsement: components["schemas"]["ArtifactEndorsement"];
+                        completion_progress: components["schemas"]["CompletionProgress"];
+                    };
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             default: components["responses"]["Problem"];
         };
     };

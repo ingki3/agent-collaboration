@@ -631,6 +631,99 @@ func (s *Server) ReviewArtifact(w http.ResponseWriter, r *http.Request, artifact
 	s.idempotent(r.Context(), w, taskScope(pr.Task.TaskID), params.IdempotencyKey.String(), requestHash(r, body), call)
 }
 
+// EndorseArtifact is `colab artifact endorse` (FR-2A.1a, v0.19.28): the
+// artifact_submitted assignee accepting someone ELSE's artifact as their own
+// submission. The designation gate runs FIRST and stores nothing when it
+// fails, the same shape as ReviewArtifact's — a different atom and a
+// different role (the designated SUBMITTER, not a reviewer), so it is not
+// the same table or the same error code.
+func (s *Server) EndorseArtifact(w http.ResponseWriter, r *http.Request, artifactId gen.ArtifactId, params gen.EndorseArtifactParams) {
+	pr := principalOf(r)
+	if pr.Task == nil {
+		writeProblem(w, apperr.Forbidden("agent_only",
+			"채택은 에이전트만 할 수 있습니다 — 제출 담당으로 지정된 에이전트가 다른 제출을 자기 제출로 받아들이는 행동입니다"))
+		return
+	}
+	a, p := s.artifactAccess(r, artifactId)
+	if p != nil {
+		writeProblem(w, p)
+		return
+	}
+	body, p := readBody(w, r)
+	if p != nil {
+		writeProblem(w, p)
+		return
+	}
+	var in gen.EndorseArtifactJSONBody
+	if len(body) > 0 {
+		if p := decodeJSON(w, r, &in); p != nil {
+			writeProblem(w, p)
+			return
+		}
+	}
+	var comment *string
+	if in.Comment != nil {
+		if c := strings.TrimSpace(*in.Comment); c != "" {
+			comment = &c
+		}
+	}
+	if p := s.commandAllowed(r, gen.ColabCommandArtifactEndorse); p != nil {
+		writeProblem(w, p)
+		return
+	}
+
+	call := func() (int, any, *Problem) {
+		out := &sessions.Outcome{}
+		// FR-3.7 rule 4 (see SubmitArtifact): an attachment is material a
+		// person handed over, not a deliverable — endorsing it, like
+		// submitting it, satisfies artifact_submitted for nobody.
+		if a.WorkID != nil && a.Type != ArtifactTypeAttachment {
+			o, err := s.Sessions.ApplyWorkEvent(r.Context(), *a.WorkID, sessions.Event{
+				Kind: "artifact_endorse", Actor: pr.Task.AgentID, Ref: &a.ID,
+			})
+			if err != nil {
+				return 0, nil, apperr.As(err)
+			}
+			out = o
+		}
+		if out.CLIError != "" {
+			return 0, nil, apperr.Forbidden("not_designated_assignee", out.CLIError)
+		}
+		taskID := pr.Task.TaskID
+		end := artifacts.EndorsementRow{EndorsedByAgentID: pr.Task.AgentID, EndorsedByTaskID: &taskID, Comment: comment}
+		if out.DecisionID != uuid.Nil {
+			id := out.DecisionID
+			end.DecisionID = &id
+		}
+		stored, err := s.Artifacts.RecordEndorsement(r.Context(), a.ID, end)
+		if err != nil {
+			return 0, nil, apperr.As(err)
+		}
+		// colab-cli.md §4 (see SubmitArtifact): rides the same verb — both are
+		// ways of satisfying artifact_submitted.
+		if err := s.writeServerEvent(r.Context(), taskID, pr.Task.Attempt, "status", "submit_artifact", a.ID.String(), "ok",
+			map[string]any{"command": "artifact endorse", "result_ref": a.ID.String(),
+				"args": map[string]any{"comment": comment}}, s.Clock.Now()); err != nil {
+			s.Log.Warn("record endorsement", "err", err, "task", taskID)
+		}
+		prog, err := s.artifactProgress(r.Context(), a.WorkID)
+		if err != nil {
+			return 0, nil, apperr.As(err)
+		}
+		return http.StatusOK, map[string]any{"endorsement": endorsementAPI(stored), "completion_progress": prog}, nil
+	}
+	if params.IdempotencyKey == nil {
+		st, out, p := call()
+		if p != nil {
+			writeProblem(w, p)
+			return
+		}
+		writeJSON(w, st, out)
+		return
+	}
+	s.idempotent(r.Context(), w, taskScope(pr.Task.TaskID), params.IdempotencyKey.String(), requestHash(r, body), call)
+}
+
 // postRejectReason puts the reason back where the work is (openapi
 // reviewArtifact: "그 아티팩트를 제출한 task의 lane 스레드에 답글로") AND wakes
 // that lane — E16-B step 5.
@@ -746,6 +839,30 @@ func artifactAPI(a *artifacts.Row) gen.Artifact {
 	if a.Review != nil {
 		rev := reviewAPI(a.Review)
 		out.Review = &rev
+	}
+	if a.Endorsement != nil {
+		end := endorsementAPI(a.Endorsement)
+		out.Endorsement = &end
+	}
+	return out
+}
+
+func endorsementAPI(e *artifacts.EndorsementRow) gen.ArtifactEndorsement {
+	out := gen.ArtifactEndorsement{
+		ArtifactId: e.ArtifactID, EndorsedByAgentId: e.EndorsedByAgentID, EndorsedAt: e.EndorsedAt,
+	}
+	if e.Comment != nil {
+		out.Comment = nullable.NewNullableWithValue(*e.Comment)
+	} else {
+		out.Comment = nullable.NewNullNullable[string]()
+	}
+	if e.EndorsedByTaskID != nil {
+		id := openapi_types.UUID(*e.EndorsedByTaskID)
+		out.EndorsedByTaskId = &id
+	}
+	if e.DecisionID != nil {
+		id := openapi_types.UUID(*e.DecisionID)
+		out.DecisionId = &id
 	}
 	return out
 }

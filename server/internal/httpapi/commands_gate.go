@@ -38,7 +38,11 @@ import (
 var commandVerbs = map[gen.ColabCommand]string{
 	gen.ColabCommandMessagePost: "post_message", gen.ColabCommandStatusSet: "set_status", gen.ColabCommandDecisionRecord: "record_decision",
 	gen.ColabCommandCardDelegate: "delegate", gen.ColabCommandArtifactSubmit: "submit_artifact",
-	gen.ColabCommandReviewApprove: "review", gen.ColabCommandReviewReject: "review",
+	// v0.19.28: endorsing rides the same verb as submitting — both satisfy
+	// the same atom (artifact_submitted), and task_event.schema.json's verb
+	// list is closed.
+	gen.ColabCommandArtifactEndorse: "submit_artifact",
+	gen.ColabCommandReviewApprove:   "review", gen.ColabCommandReviewReject: "review",
 	gen.ColabCommandHitlAsk: "hitl", gen.ColabCommandHitlApproveRequest: "hitl", gen.ColabCommandHitlRequestInfo: "hitl",
 	gen.ColabCommandRoomGet: "read", gen.ColabCommandRoomMessages: "read", gen.ColabCommandArtifactGet: "read",
 	gen.ColabCommandRoomList: "read", gen.ColabCommandRoomRead: "read",

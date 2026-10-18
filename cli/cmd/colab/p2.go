@@ -148,7 +148,8 @@ func runArtifact(args []string, getenv client.Getenv, stdout, stderr io.Writer) 
 	if len(args) == 0 {
 		return usage(stderr, "usage: colab artifact submit --type <t> --file <p> [--name <n>] [--description <d>]\n"+
 			"       colab artifact submit --type diff [--base <rev>] [--name <n>] [--description <d>]\n"+
-			"       colab artifact get <id> [--out <path>]")
+			"       colab artifact get <id> [--out <path>]\n"+
+			"       colab artifact endorse <id> [--comment <t>]")
 	}
 	c := client.New(client.FromEnv(getenv))
 	ctx := context.Background()
@@ -203,8 +204,32 @@ func runArtifact(args []string, getenv client.Getenv, stdout, stderr io.Writer) 
 		}
 		v, err := colab.ArtifactGet(ctx, c, colab.ArtifactGetArgs{Artifact: id, Out: *out})
 		return emit(stdout, stderr, v, err)
+	case "endorse":
+		// `colab artifact endorse <id> [--comment <t>]` (PRD v0.19.28) — the id
+		// is positional, matching `artifact get <id>`.
+		rest := args[1:]
+		id := ""
+		if len(rest) > 0 && !strings.HasPrefix(rest[0], "-") {
+			id, rest = rest[0], rest[1:]
+		}
+		fs, _ := newFlagSet("artifact endorse", stderr)
+		comment := fs.String("comment", "", "what you checked before accepting this as your own submission "+
+			"(선택 지금 — v0.19.33 에서 필수로 바뀐다)")
+		idFlag := fs.String("artifact", "", "alternative to the positional <id>")
+		key := fs.String("idempotency-key", "", "optional Idempotency-Key (uuid) to make a retry replay")
+		if err := fs.Parse(rest); err != nil {
+			return client.ExitUsage
+		}
+		if fs.NArg() > 0 {
+			return usage(stderr, "artifact endorse: unexpected argument %q", fs.Arg(0))
+		}
+		if id == "" {
+			id = *idFlag
+		}
+		v, err := colab.ArtifactEndorse(ctx, c, colab.EndorseArgs{Artifact: id, Comment: *comment, IdempotencyKey: *key})
+		return emit(stdout, stderr, v, err)
 	}
-	return usage(stderr, "colab artifact: unknown subcommand %q (submit · get)", args[0])
+	return usage(stderr, "colab artifact: unknown subcommand %q (submit · get · endorse)", args[0])
 }
 
 func runReview(args []string, getenv client.Getenv, stdout, stderr io.Writer) int {

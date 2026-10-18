@@ -515,6 +515,61 @@ const ServerNotDesignatedReviewer = "not_designated_reviewer"
 // CodeNotReviewer is the CLI code for E6-06 (exit 3).
 const CodeNotReviewer = "not_reviewer"
 
+// ───────────────────────────── endorse ─────────────────────────────
+
+// EndorseArgs — `colab artifact endorse <id> [--comment <t>]` (PRD v0.19.28).
+// Unlike review, the artifact id is a positional argument (colab-cli.md §2.3
+// `colab artifact endorse <id>`), matching `artifact get <id>`.
+type EndorseArgs struct {
+	Artifact string `json:"artifact"`
+	Comment  string `json:"comment,omitempty"`
+
+	IdempotencyKey string `json:"idempotency_key,omitempty"`
+}
+
+// EndorseResult — endorseArtifact 200.
+type EndorseResult struct {
+	ArtifactID         string          `json:"artifact_id"`
+	Endorsement        json.RawMessage `json:"endorsement"`
+	CompletionProgress json.RawMessage `json:"completion_progress"`
+}
+
+// ServerNotDesignatedAssignee is the server's code for "the completion
+// condition's artifact_submitted names someone else".
+const ServerNotDesignatedAssignee = "not_designated_assignee"
+
+// CodeNotAssignee is the CLI code for a refused endorse (exit 3).
+const CodeNotAssignee = "not_assignee"
+
+// ArtifactEndorse feeds the artifact_submitted(agent) completion condition
+// the SAME way a direct submit does (actor = the endorsing agent) — it is
+// the endorsing agent accepting someone else's artifact as their own
+// submission, not a resubmission of its content.
+func ArtifactEndorse(ctx context.Context, c *client.Client, a EndorseArgs) (*EndorseResult, error) {
+	id := strings.TrimSpace(a.Artifact)
+	if id == "" {
+		return nil, client.Usage("artifact endorse: <id> is required (openapi endorseArtifact is POST /artifacts/{id}/endorsements)")
+	}
+	if err := requireArtifactID("artifact endorse", id); err != nil {
+		return nil, err
+	}
+	if err := c.Allow(ctx, client.CmdArtifactEndorse); err != nil {
+		return nil, err
+	}
+	res, err := c.EndorseArtifact(ctx, id, client.EndorseCreate{Comment: a.Comment}, a.IdempotencyKey)
+	if err != nil {
+		// colab-cli.md §2.3: server `403 not_designated_assignee` → CLI
+		// `3 not_assignee`, the same shape as review's `not_reviewer` (E6-06).
+		if e := client.AsError(err); e.Code == ServerNotDesignatedAssignee {
+			remapped := *e
+			remapped.Code = CodeNotAssignee
+			return nil, &remapped
+		}
+		return nil, err
+	}
+	return &EndorseResult{ArtifactID: id, Endorsement: res.Endorsement, CompletionProgress: res.CompletionProgress}, nil
+}
+
 func review(ctx context.Context, c *client.Client, cmd client.Command, a ReviewArgs, verdict, comments string) (*ReviewResult, error) {
 	id := strings.TrimSpace(a.Artifact)
 	if id == "" {
