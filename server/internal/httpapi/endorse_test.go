@@ -1,6 +1,7 @@
 package httpapi
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -105,6 +106,60 @@ func TestEndorseByNonDesignatedAgentIsRefused(t *testing.T) {
 	}
 	if got := f.sessionStatus(t, sess); got != "active" {
 		t.Fatalf("session = %q after a refused endorse, want active", got)
+	}
+}
+
+// TestEndorseCommentRequired is v0.19.33's correction: the designation gate
+// passing is not enough — an empty, whitespace-only, or invisible-runes-only
+// comment is 422, the exact same shape acceptCard's judgement_comment_required
+// uses (cards.JudgementText), so a 1-field button cannot be clicked without
+// having looked at what it endorses. Over the 600-rune cap is too_long.
+func TestEndorseCommentRequired(t *testing.T) {
+	f := newP2Fixture(t)
+	sess := f.artifactSession(t, map[string]any{"op": "and", "conditions": []map[string]any{
+		{"type": "artifact_submitted", "who": "assignee"}, {"type": "user_approval"},
+	}})
+	wTok, _ := f.agentToken(t, sess, f.wUUID, "W")
+	leadTok, _ := f.agentToken(t, sess, f.leadUUID, "Lead")
+
+	st, out := f.submit(t, sess, wTok, "draft.md", "doc", []byte("초안"))
+	if st != 201 {
+		t.Fatalf("submit = %d: %v", st, out)
+	}
+	id := str(out["artifact"].(map[string]any), "id")
+
+	for _, c := range []string{"", "   ", "​ㅤ"} {
+		st, out := f.rawPost(t, f.p+"/artifacts/"+id+"/endorsements", leadTok, map[string]any{"comment": c})
+		if st != 422 {
+			t.Fatalf("endorse with comment %q = %d, want 422: %v", c, st, out)
+		}
+		if code := str(out, "code"); code != "endorse_comment_required" {
+			t.Fatalf("422 code = %q, want endorse_comment_required (comment %q)", code, c)
+		}
+	}
+	// No body at all (JSON decode skipped entirely) must answer the same 422,
+	// not a decode error — the body is optional in shape, the comment is not.
+	st, out = f.raw(t, "POST", f.p+"/artifacts/"+id+"/endorsements", leadTok, "", nil)
+	if st != 422 {
+		t.Fatalf("endorse with no body = %d, want 422: %v", st, out)
+	}
+
+	long := strings.Repeat("a", 601)
+	st, out = f.rawPost(t, f.p+"/artifacts/"+id+"/endorsements", leadTok, map[string]any{"comment": long})
+	if st != 422 {
+		t.Fatalf("endorse with 601-char comment = %d, want 422: %v", st, out)
+	}
+	errs, _ := out["errors"].([]any)
+	if len(errs) != 1 || str(errs[0].(map[string]any), "code") != "too_long" {
+		t.Fatalf("errors = %v, want one field error code too_long", out["errors"])
+	}
+
+	var n int
+	if err := f.pool.QueryRow(t.Context(), `SELECT count(*) FROM artifact_endorsement WHERE artifact_id = $1`, mustUUID(t, id)).Scan(&n); err != nil {
+		t.Fatal(err)
+	}
+	if n != 0 {
+		t.Fatalf("a refused (comment) endorse stored %d rows, want 0", n)
 	}
 }
 

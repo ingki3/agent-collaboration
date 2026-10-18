@@ -5660,8 +5660,8 @@ type DownloadArtifactParams struct {
 
 // EndorseArtifactJSONBody defines parameters for EndorseArtifact.
 type EndorseArtifactJSONBody struct {
-	// Comment 무엇을 확인했는지(선택 — v0.19.33 에서 필수로 바뀐다).
-	Comment *string `json:"comment,omitempty"`
+	// Comment 무엇을 확인했는지.
+	Comment string `json:"comment"`
 }
 
 // EndorseArtifactParams defines parameters for EndorseArtifact.

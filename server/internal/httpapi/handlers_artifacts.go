@@ -14,6 +14,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
@@ -22,6 +23,7 @@ import (
 
 	"github.com/ingki3/agent-collabortion/server/internal/apperr"
 	"github.com/ingki3/agent-collabortion/server/internal/artifacts"
+	"github.com/ingki3/agent-collabortion/server/internal/cards"
 	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
 	"github.com/ingki3/agent-collabortion/server/internal/router"
 	"github.com/ingki3/agent-collabortion/server/internal/sessions"
@@ -631,6 +633,27 @@ func (s *Server) ReviewArtifact(w http.ResponseWriter, r *http.Request, artifact
 	s.idempotent(r.Context(), w, taskScope(pr.Task.TaskID), params.IdempotencyKey.String(), requestHash(r, body), call)
 }
 
+// endorseComment is endorseArtifact's comment check (FR-2A.1a, v0.19.33,
+// Director 결정 2026-10-17): required, exactly the same pattern as
+// acceptCard's judgementComment (cards.JudgementText — invisible runes
+// trimmed, nothing visible left is 422, over the same 600-rune cap is
+// too_long). A 1-field button with no required comment lets the designated
+// agent click through without having looked at what they are endorsing,
+// reintroducing the exact defect (담당 미검수) this atom-split exists to
+// fix — the comment is what leaves a trace of "누가 무엇을 보고 채택했나".
+func endorseComment(raw string) (*string, *Problem) {
+	c, ok := cards.JudgementText(raw)
+	if !ok {
+		p := apperr.Validation(apperr.Field("comment", "endorse_comment_required", cards.JudgementCommentRequiredSentence))
+		p.Code, p.Detail = "endorse_comment_required", cards.JudgementCommentRequiredSentence
+		return nil, p
+	}
+	if utf8.RuneCountInString(c) > cards.JudgementCommentMax {
+		return nil, apperr.Validation(apperr.Field("comment", "too_long", cards.JudgementCommentTooLongSentence))
+	}
+	return &c, nil
+}
+
 // EndorseArtifact is `colab artifact endorse` (FR-2A.1a, v0.19.28): the
 // artifact_submitted assignee accepting someone ELSE's artifact as their own
 // submission. The designation gate runs FIRST and stores nothing when it
@@ -661,11 +684,10 @@ func (s *Server) EndorseArtifact(w http.ResponseWriter, r *http.Request, artifac
 			return
 		}
 	}
-	var comment *string
-	if in.Comment != nil {
-		if c := strings.TrimSpace(*in.Comment); c != "" {
-			comment = &c
-		}
+	comment, p := endorseComment(in.Comment)
+	if p != nil {
+		writeProblem(w, p)
+		return
 	}
 	if p := s.commandAllowed(r, gen.ColabCommandArtifactEndorse); p != nil {
 		writeProblem(w, p)

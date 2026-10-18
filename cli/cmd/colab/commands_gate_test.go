@@ -129,7 +129,7 @@ func invocations(t *testing.T) map[client.Command]invocation {
 		client.CmdDecisionRecord:     {[]string{"decision", "record", "--summary", "s"}, "POST", sess + "/decisions"},
 		client.CmdCardDelegate:       {[]string{"card", "delegate", "--file", card}, "POST", sess + "/lanes"},
 		client.CmdArtifactSubmit:     {[]string{"artifact", "submit", "--type", "doc", "--file", doc}, "POST", sess + "/artifacts"},
-		client.CmdArtifactEndorse:    {[]string{"artifact", "endorse", clienttest.ArtifactID}, "POST", "/artifacts/" + clienttest.ArtifactID + "/endorsements"},
+		client.CmdArtifactEndorse:    {[]string{"artifact", "endorse", clienttest.ArtifactID, "--comment", "확인함"}, "POST", "/artifacts/" + clienttest.ArtifactID + "/endorsements"},
 		client.CmdReviewApprove:      {[]string{"review", "approve", "--artifact", clienttest.ArtifactID}, "POST", "/artifacts/" + clienttest.ArtifactID + "/review"},
 		client.CmdReviewReject:       {[]string{"review", "reject", "--artifact", clienttest.ArtifactID, "--reason", "r"}, "POST", "/artifacts/" + clienttest.ArtifactID + "/review"},
 		client.CmdHitlAsk:            {[]string{"hitl", "ask", "--question", "q", "--default", "d"}, "POST", sess + "/hitl-requests"},

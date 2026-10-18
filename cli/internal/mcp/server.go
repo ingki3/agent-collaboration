@@ -146,8 +146,8 @@ var Tools = []Tool{
 	},
 	{
 		Name:        "colab_artifact_endorse",
-		Description: "Accept someone ELSE's artifact as your own submission — for when the completion condition's `artifact_submitted` names you, but you delegate rather than submit directly (orchestrator roles). This re-evaluates the condition the SAME way your own submit would (actor = you), without re-uploading the content. If the condition names a different agent the call fails with code `not_assignee` and nothing is stored. `comment` is optional for now (a later version makes it required). Same as `colab artifact endorse <id> [--comment]`.",
-		InputSchema: json.RawMessage(`{"type":"object","required":["artifact"],"properties":{"artifact":{"type":"string","description":"artifact id (uuid), not its name — each Artifacts line of the brief ends with id <uuid>"},"comment":{"type":"string","description":"what you checked before accepting this as your own submission"},"idempotency_key":{"type":"string"}},"additionalProperties":false}`),
+		Description: "Accept someone ELSE's artifact as your own submission — for when the completion condition's `artifact_submitted` names you, but you delegate rather than submit directly (orchestrator roles). This re-evaluates the condition the SAME way your own submit would (actor = you), without re-uploading the content. If the condition names a different agent the call fails with code `not_assignee` and nothing is stored. `comment` is REQUIRED — what you checked before accepting it; empty fails with code `endorse_comment_required`. Same as `colab artifact endorse <id> --comment`.",
+		InputSchema: json.RawMessage(`{"type":"object","required":["artifact","comment"],"properties":{"artifact":{"type":"string","description":"artifact id (uuid), not its name — each Artifacts line of the brief ends with id <uuid>"},"comment":{"type":"string","minLength":1,"description":"what you checked before accepting this as your own submission"},"idempotency_key":{"type":"string"}},"additionalProperties":false}`),
 	},
 	{
 		Name:        "colab_review_approve",
