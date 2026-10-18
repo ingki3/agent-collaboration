@@ -2874,8 +2874,21 @@ export interface components {
             max_chain_depth?: number;
             /** @default 60 */
             max_hops_per_hour?: number;
-            /** @default 5 */
+            /**
+             * @description 같은 두 에이전트의 연속 왕복 상한. 다른 에이전트가 끼면 절반으로 감쇄(0 리셋 아님, v0.19.32) — 사람이 끼면 그대로 0 리셋.
+             * @default 5
+             */
             max_pair_roundtrips?: number;
+            /**
+             * @description v0.19.32 — 같은 두 에이전트 사이, 끼어들기·사람 개입과 무관하게 줄지 않는 시간창(아래 _minutes) 누적 왕복 수 상한. 감쇄의 수학적 틈(적대적 타이밍으로 상한 아래 영구 진동)을 막는 보강.
+             * @default 20
+             */
+            max_pair_roundtrips_window?: number;
+            /**
+             * @description v0.19.32 — max_pair_roundtrips_window 가 누적되는 시간창(분).
+             * @default 30
+             */
+            max_pair_roundtrips_window_minutes?: number;
         };
         /** @description FR-7.3. 스키마 v0는 `jsonb '{}'` — 키는 이 문서가 정한다(미결 항목 참조). */
         BudgetPolicy: {
@@ -3505,9 +3518,9 @@ export interface components {
             };
             loop?: {
                 /** @enum {string} */
-                limit?: "chain_depth" | "hops_per_hour" | "pair_roundtrips";
+                limit?: "chain_depth" | "hops_per_hour" | "pair_roundtrips" | "pair_roundtrips_window";
                 count?: number;
-                /** @description pair_roundtrips일 때 두 에이전트. */
+                /** @description pair_roundtrips·pair_roundtrips_window(v0.19.32)일 때 두 에이전트. */
                 agents?: string[];
             };
             runtime?: {

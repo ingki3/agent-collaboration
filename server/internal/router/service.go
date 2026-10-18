@@ -709,6 +709,12 @@ func (s *Service) loopLimits(ctx context.Context, tx pgx.Tx, wsID uuid.UUID) (Li
 	if v, ok := raw["max_pair_roundtrips"]; ok {
 		lim.MaxPairRoundtrips = v
 	}
+	if v, ok := raw["max_pair_roundtrips_window"]; ok {
+		lim.MaxPairRoundtripsWindow = v
+	}
+	if v, ok := raw["max_pair_roundtrips_window_minutes"]; ok {
+		lim.MaxPairRoundtripsWindowDuration = time.Duration(v) * time.Minute
+	}
 	return lim, nil
 }
 
@@ -732,7 +738,12 @@ func (s *Service) loopLimits(ctx context.Context, tx pgx.Tx, wsID uuid.UUID) (Li
 // workspace a person configured (max_chain_depth 8, max_hops_per_hour 60 by
 // default) — it bounds memory for a workspace that raised the limits to
 // "effectively off", where the window would otherwise grow with the room.
-func (s *Service) loadHops(ctx context.Context, tx pgx.Tx, sessionID uuid.UUID, now time.Time) ([]Hop, error) {
+//
+// window is the WIDEST of the two time-bounded limits (max_hops_per_hour's
+// fixed hour, v0.19.32's configurable max_pair_roundtrips_window_minutes) —
+// a workspace that raises the pair-roundtrips window past an hour must still
+// see every hop pairRoundtripsWindow needs, or it silently undercounts.
+func (s *Service) loadHops(ctx context.Context, tx pgx.Tx, sessionID uuid.UUID, now time.Time, window time.Duration) ([]Hop, error) {
 	rows, err := tx.Query(ctx, `
 		SELECT id, from_agent_id, to_agent_id, created_at, cause FROM (
 		  SELECT id, from_agent_id, to_agent_id, created_at, COALESCE(cause_hop_id, 0) AS cause
@@ -742,7 +753,7 @@ func (s *Service) loadHops(ctx context.Context, tx pgx.Tx, sessionID uuid.UUID, 
 		                          WHERE session_id = $1 AND from_agent_id IS NULL), 0)
 		         OR created_at > $2)
 		  ORDER BY id DESC LIMIT $3) w
-		ORDER BY id`, sessionID, now.Add(-HopWindow), HopReadCap)
+		ORDER BY id`, sessionID, now.Add(-window), HopReadCap)
 	if err != nil {
 		return nil, err
 	}
@@ -883,7 +894,11 @@ func (s *Service) judgeHop(ctx context.Context, tx pgx.Tx, sessionID, wsID uuid.
 	if err != nil {
 		return LoopVerdict{}, err
 	}
-	history, err := s.loadHops(ctx, tx, sessionID, now)
+	window := HopWindow
+	if limits.MaxPairRoundtripsWindowDuration > window {
+		window = limits.MaxPairRoundtripsWindowDuration
+	}
+	history, err := s.loadHops(ctx, tx, sessionID, now, window)
 	if err != nil {
 		return LoopVerdict{}, err
 	}

@@ -130,6 +130,7 @@ func adaptLoop(history []hop, next hop, lim loopLimits, now time.Time) loopVerdi
 		Allowed: v.Allowed, TaskCreated: v.TaskCreated, SessionState: v.SessionState,
 		PauseReason: v.PauseReason, Detail: v.Detail, HitlToDir: v.HitlToDir,
 		ChainDepth: v.ChainDepth, HopsThisWindow: v.HopsThisWindow, PairRoundtrips: v.PairRoundtrips,
+		PairRoundtripsWindow: v.PairRoundtripsWindow,
 	}
 }
 

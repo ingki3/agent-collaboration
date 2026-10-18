@@ -118,7 +118,7 @@ describe("workspace settings — 부분 갱신 · 권한", () => {
   it("그룹 한 키만 보내도 다른 키는 남는다(S-26 `||` 합치기)", async () => {
     const id = await ws();
     const s = await must<WorkspaceSettings>("PATCH", `/workspaces/${id}/settings`, { body: { loop_limits: { max_pair_roundtrips: 2 } } });
-    expect(s.loop_limits).toEqual({ max_chain_depth: 8, max_hops_per_hour: 60, max_pair_roundtrips: 2 });
+    expect(s.loop_limits).toEqual({ max_chain_depth: 8, max_hops_per_hour: 60, max_pair_roundtrips: 2, max_pair_roundtrips_window: 20, max_pair_roundtrips_window_minutes: 30 });
   });
 
   it("422 는 errors[] 에 필드별 문장(서버 handlers_settings.go 의 문장)", async () => {

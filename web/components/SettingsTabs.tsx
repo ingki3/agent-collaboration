@@ -187,6 +187,12 @@ export function WorkspaceSettingsTab({ tab, settings, role, onSave, fieldErrors 
           <SettingRow label="둘이 연속으로 주고받는 횟수" defaultValue={SETTINGS_DEFAULTS.loop_limits.max_pair_roundtrips} impact={IMPACT.max_pair_roundtrips} error={err("loop_limits.max_pair_roundtrips")} testid="row-pair-roundtrips">
             <input className="input input--num" type="number" min={1} max={100} disabled={lock} value={str(draft.loop_limits.max_pair_roundtrips)} aria-label="둘이 연속으로 주고받는 횟수" onChange={(e) => set((d) => ({ ...d, loop_limits: { ...d.loop_limits, max_pair_roundtrips: num(e.target.value) } }))} />
           </SettingRow>
+          <SettingRow label="시간창 안 누적 왕복 수" defaultValue={`${SETTINGS_DEFAULTS.loop_limits.max_pair_roundtrips_window} / ${SETTINGS_DEFAULTS.loop_limits.max_pair_roundtrips_window_minutes}분`} impact={IMPACT.max_pair_roundtrips_window} error={err("loop_limits.max_pair_roundtrips_window") ?? err("loop_limits.max_pair_roundtrips_window_minutes")} testid="row-pair-roundtrips-window">
+            <input className="input input--num" type="number" min={1} max={10000} disabled={lock} value={str(draft.loop_limits.max_pair_roundtrips_window)} aria-label="시간창 안 누적 왕복 수" onChange={(e) => set((d) => ({ ...d, loop_limits: { ...d.loop_limits, max_pair_roundtrips_window: num(e.target.value) } }))} />
+            <span>회 /</span>
+            <input className="input input--num" type="number" min={1} max={1440} disabled={lock} value={str(draft.loop_limits.max_pair_roundtrips_window_minutes)} aria-label="시간창(분)" onChange={(e) => set((d) => ({ ...d, loop_limits: { ...d.loop_limits, max_pair_roundtrips_window_minutes: num(e.target.value) } }))} />
+            <span>분</span>
+          </SettingRow>
           <p className="srow__apply">{IMPACT.loop_limits_apply}</p>
         </>
       )}

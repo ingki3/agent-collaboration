@@ -16,6 +16,7 @@ import (
 	"github.com/ingki3/agent-collabortion/server/internal/db"
 	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
 	"github.com/ingki3/agent-collabortion/server/internal/rooms"
+	"github.com/ingki3/agent-collabortion/server/internal/router"
 )
 
 // Workspace settings (SCREEN §2.3). P2 turns these on because FR-3.5's loop
@@ -173,6 +174,9 @@ func validateSettings(in gen.WorkspaceSettingsUpdate) *Problem {
 		check("max_chain_depth", l.MaxChainDepth, 100)
 		check("max_hops_per_hour", l.MaxHopsPerHour, 10000)
 		check("max_pair_roundtrips", l.MaxPairRoundtrips, 100)
+		// v0.19.32.
+		check("max_pair_roundtrips_window", l.MaxPairRoundtripsWindow, 10000)
+		check("max_pair_roundtrips_window_minutes", l.MaxPairRoundtripsWindowMinutes, 1440)
 	}
 	// FR-4.5 분량 상한 — 계약 RoomReadPolicy 의 minimum(1 · 500) 그대로. 0 은 읽기를
 	// 조용히 끄는 값이라 상한이 아니다.
@@ -252,7 +256,7 @@ func loadSettings(ctx context.Context, q db.DBTX, wsID uuid.UUID) (*gen.Workspac
 	} else {
 		out.WorkdirDiskQuotaGb = nullable.NewNullNullable[int]()
 	}
-	_ = json.Unmarshal(loop, &out.LoopLimits)
+	out.LoopLimits = effectiveLoopLimits(loop)
 	_ = json.Unmarshal(budget, &out.BudgetPolicy)
 	_ = json.Unmarshal(reuse, &out.ContextReuse)
 	_ = json.Unmarshal(runtime, &out.RuntimePolicy)
@@ -294,6 +298,39 @@ func marshalJSON(v any) []byte {
 
 // effectiveRoomDefaults is what a new room inherits, keys filled — S14 shows
 // the value createRoom will use, not the sparse stored override.
+// effectiveLoopLimits fills the two v0.19.32 keys (max_pair_roundtrips_window ·
+// _minutes) when the stored jsonb predates them — every existing row's
+// default (migration 0001) is missing them, and router.loopLimits already
+// falls back to router.DefaultLimits() for a key the row does not carry;
+// this is the same fallback at the read layer, so S14 shows the number the
+// router actually enforces rather than null (effectiveRoomDefaults' pattern).
+func effectiveLoopLimits(raw []byte) gen.LoopLimits {
+	var l gen.LoopLimits
+	_ = json.Unmarshal(raw, &l)
+	def := router.DefaultLimits()
+	if l.MaxChainDepth == nil {
+		v := def.MaxChainDepth
+		l.MaxChainDepth = &v
+	}
+	if l.MaxHopsPerHour == nil {
+		v := def.MaxHopsPerHour
+		l.MaxHopsPerHour = &v
+	}
+	if l.MaxPairRoundtrips == nil {
+		v := def.MaxPairRoundtrips
+		l.MaxPairRoundtrips = &v
+	}
+	if l.MaxPairRoundtripsWindow == nil {
+		v := def.MaxPairRoundtripsWindow
+		l.MaxPairRoundtripsWindow = &v
+	}
+	if l.MaxPairRoundtripsWindowMinutes == nil {
+		v := int(def.MaxPairRoundtripsWindowDuration / time.Minute)
+		l.MaxPairRoundtripsWindowMinutes = &v
+	}
+	return l
+}
+
 func effectiveRoomDefaults(raw []byte, defaultIsolation string) *gen.RoomDefaults {
 	var d gen.RoomDefaults
 	_ = json.Unmarshal(raw, &d)

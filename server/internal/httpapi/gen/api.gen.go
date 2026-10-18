@@ -1555,9 +1555,10 @@ func (e PauseReason) Valid() bool {
 
 // Defines values for PausedDetailLoopLimit.
 const (
-	PausedDetailLoopLimitChainDepth     PausedDetailLoopLimit = "chain_depth"
-	PausedDetailLoopLimitHopsPerHour    PausedDetailLoopLimit = "hops_per_hour"
-	PausedDetailLoopLimitPairRoundtrips PausedDetailLoopLimit = "pair_roundtrips"
+	PausedDetailLoopLimitChainDepth           PausedDetailLoopLimit = "chain_depth"
+	PausedDetailLoopLimitHopsPerHour          PausedDetailLoopLimit = "hops_per_hour"
+	PausedDetailLoopLimitPairRoundtrips       PausedDetailLoopLimit = "pair_roundtrips"
+	PausedDetailLoopLimitPairRoundtripsWindow PausedDetailLoopLimit = "pair_roundtrips_window"
 )
 
 // Valid indicates whether the value is a known member of the PausedDetailLoopLimit enum.
@@ -1568,6 +1569,8 @@ func (e PausedDetailLoopLimit) Valid() bool {
 	case PausedDetailLoopLimitHopsPerHour:
 		return true
 	case PausedDetailLoopLimitPairRoundtrips:
+		return true
+	case PausedDetailLoopLimitPairRoundtripsWindow:
 		return true
 	default:
 		return false
@@ -3753,9 +3756,17 @@ type LaneStatus string
 
 // LoopLimits FR-3.5.
 type LoopLimits struct {
-	MaxChainDepth     *int `json:"max_chain_depth,omitempty"`
-	MaxHopsPerHour    *int `json:"max_hops_per_hour,omitempty"`
+	MaxChainDepth  *int `json:"max_chain_depth,omitempty"`
+	MaxHopsPerHour *int `json:"max_hops_per_hour,omitempty"`
+
+	// MaxPairRoundtrips 같은 두 에이전트의 연속 왕복 상한. 다른 에이전트가 끼면 절반으로 감쇄(0 리셋 아님, v0.19.32) — 사람이 끼면 그대로 0 리셋.
 	MaxPairRoundtrips *int `json:"max_pair_roundtrips,omitempty"`
+
+	// MaxPairRoundtripsWindow v0.19.32 — 같은 두 에이전트 사이, 끼어들기·사람 개입과 무관하게 줄지 않는 시간창(아래 _minutes) 누적 왕복 수 상한. 감쇄의 수학적 틈(적대적 타이밍으로 상한 아래 영구 진동)을 막는 보강.
+	MaxPairRoundtripsWindow *int `json:"max_pair_roundtrips_window,omitempty"`
+
+	// MaxPairRoundtripsWindowMinutes v0.19.32 — max_pair_roundtrips_window 가 누적되는 시간창(분).
+	MaxPairRoundtripsWindowMinutes *int `json:"max_pair_roundtrips_window_minutes,omitempty"`
 }
 
 // Me defines model for Me.
@@ -4223,7 +4234,7 @@ type PausedDetail struct {
 	// CanResolveFrom deputy면 언제부터.
 	CanResolveFrom nullable.Nullable[time.Time] `json:"can_resolve_from,omitempty"`
 	Loop           *struct {
-		// Agents pair_roundtrips일 때 두 에이전트.
+		// Agents pair_roundtrips·pair_roundtrips_window(v0.19.32)일 때 두 에이전트.
 		Agents *[]openapi_types.UUID  `json:"agents,omitempty"`
 		Count  *int                   `json:"count,omitempty"`
 		Limit  *PausedDetailLoopLimit `json:"limit,omitempty"`

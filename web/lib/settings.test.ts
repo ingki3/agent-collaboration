@@ -44,8 +44,8 @@ describe("탭 표 — SCREEN §4.10 의 8탭 + 대시보드", () => {
 });
 
 describe("기본값 — PRD §7 · openapi default", () => {
-  it("8 · 60 · 5 · 2000 · links · 10 · none · 14 · P7D · false", () => {
-    expect(SETTINGS_DEFAULTS.loop_limits).toEqual({ max_chain_depth: 8, max_hops_per_hour: 60, max_pair_roundtrips: 5 });
+  it("8 · 60 · 5 · 20/30 · 2000 · links · 10 · none · 14 · P7D · false", () => {
+    expect(SETTINGS_DEFAULTS.loop_limits).toEqual({ max_chain_depth: 8, max_hops_per_hour: 60, max_pair_roundtrips: 5, max_pair_roundtrips_window: 20, max_pair_roundtrips_window_minutes: 30 });
     expect(SETTINGS_DEFAULTS.context_reuse).toEqual({ max_summary_tokens: 2000, include_artifacts: "links" });
     expect(SETTINGS_DEFAULTS.runtime_policy.max_concurrent_tasks).toBe(10);
     expect(SETTINGS_DEFAULTS.default_isolation).toBe("none");
