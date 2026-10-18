@@ -123,7 +123,7 @@ func (s *Server) ReadRoom(w http.ResponseWriter, r *http.Request, roomId gen.Roo
 		out.Decisions = append(out.Decisions, sessions.DecisionAPI(res.RoomID, d))
 	}
 	for _, a := range res.Artifacts {
-		out.Artifacts = append(out.Artifacts, artifactAPI(a))
+		out.Artifacts = append(out.Artifacts, artifactAPI(a, s.Auth.BaseURL))
 	}
 	writeJSON(w, http.StatusOK, out)
 }

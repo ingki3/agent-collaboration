@@ -116,7 +116,7 @@ func (s *Server) SubmitArtifact(w http.ResponseWriter, r *http.Request, roomId g
 		if err != nil {
 			return 0, nil, apperr.As(err)
 		}
-		api := artifactAPI(fresh)
+		api := artifactAPI(fresh, s.Auth.BaseURL)
 		// colab-cli.md §4: every CLI call is a `status` row on the attempt's
 		// feed. Until v1.1 submit · review · decision had none (only message
 		// post · status set · lane delegate · hitl did), which left the FR-7.2
@@ -286,7 +286,7 @@ func (s *Server) ListArtifacts(w http.ResponseWriter, r *http.Request, roomId ge
 	}
 	out := make([]gen.Artifact, 0, len(rows))
 	for _, a := range rows {
-		out = append(out, artifactAPI(a))
+		out = append(out, artifactAPI(a, s.Auth.BaseURL))
 	}
 	writeJSON(w, http.StatusOK, out)
 }
@@ -351,7 +351,7 @@ func (s *Server) GetArtifact(w http.ResponseWriter, r *http.Request, artifactId 
 		writeProblem(w, p)
 		return
 	}
-	writeJSON(w, http.StatusOK, artifactAPI(a))
+	writeJSON(w, http.StatusOK, artifactAPI(a, s.Auth.BaseURL))
 }
 
 // DownloadWriteBudget is how long a download of size bytes may take to be
@@ -816,11 +816,18 @@ func (s *Server) artifactProgress(ctx context.Context, workID *uuid.UUID) (gen.C
 	return sessions.LoadWorkProgress(ctx, s.DB, *workID)
 }
 
-func artifactAPI(a *artifacts.Row) gen.Artifact {
+// artifactAPI renders a. webURL is the origin a person's browser can open
+// (COLAB_WEB_URL, else COLAB_SERVER_URL — the same fallback invite links
+// already use, auth.Service.BaseURL) — PRD FR-4.3.2 (v0.19.29): an agent only
+// knows the API path, which is not the host a person's browser can reach
+// behind a reverse proxy or tunnel (실측 「게임 기획」 방, 2026-10-16).
+func artifactAPI(a *artifacts.Row, webURL string) gen.Artifact {
 	out := gen.Artifact{
 		Id: a.ID, SessionId: a.SessionID, Name: a.Name, Version: a.Version, Type: a.Type,
 		StorageRef: a.StorageRef, CreatedAt: a.CreatedAt,
 	}
+	shareURL := strings.TrimRight(webURL, "/") + "/api/v1/artifacts/" + a.ID.String() + "/content"
+	out.ShareUrl = &shareURL
 	if a.WorkID != nil {
 		out.WorkId = nullable.NewNullableWithValue(openapi_types.UUID(*a.WorkID))
 	}

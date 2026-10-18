@@ -2830,12 +2830,15 @@ type Artifact struct {
 	Id          openapi_types.UUID   `json:"id"`
 
 	// Latest 같은 이름 중 최신 버전.
-	Latest      *bool              `json:"latest,omitempty"`
-	Name        string             `json:"name"`
-	Review      *ArtifactReview    `json:"review,omitempty"`
-	SessionId   openapi_types.UUID `json:"session_id"`
-	SizeBytes   *int64             `json:"size_bytes,omitempty"`
-	StorageRef  string             `json:"storage_ref"`
+	Latest    *bool              `json:"latest,omitempty"`
+	Name      string             `json:"name"`
+	Review    *ArtifactReview    `json:"review,omitempty"`
+	SessionId openapi_types.UUID `json:"session_id"`
+
+	// ShareUrl v0.3.20(PRD FR-4.3.2) — 사람이 브라우저로 여는 공유 주소: `COLAB_WEB_URL`(설정 없으면 `COLAB_SERVER_URL`) 기준으로 완성한 `downloadArtifact` 경로. 에이전트가 아는 API 경로(`/api/v1/artifacts/{id}/content`)는 리버스 프록시·터널 뒤에서 사람이 못 여는 호스트일 수 있다 — 에이전트는 사람에게 링크를 줄 때 이 칸만 쓴다.
+	ShareUrl    *string `json:"share_url,omitempty"`
+	SizeBytes   *int64  `json:"size_bytes,omitempty"`
+	StorageRef  string  `json:"storage_ref"`
 	SubmittedBy *struct {
 		AgentId   *openapi_types.UUID `json:"agent_id,omitempty"`
 		AgentName *string             `json:"agent_name,omitempty"`

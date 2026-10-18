@@ -62,6 +62,9 @@ type Surface struct {
 	// says how to fetch them.
 	MediaRule   string
 	AttachFetch string
+	// harness v0.9.21 (PRD FR-4.3.2): brief [2]'s fixed line on sharing an
+	// artifact's link with a person.
+	ShareLinkRule string
 	// harness v0.9.18 (PRD FR-4.6): brief [2]'s fixed ledger line, and the
 	// <mission_ledger> overflow pointer for one kind.
 	LedgerRule string
@@ -149,6 +152,16 @@ const (
 	AttachFetchMCP = "Download one into your folder with the `colab_artifact_get` tool (`artifact`: the id, `out`: a path in your folder)."
 )
 
+// ShareLinkRule / ShareLinkRuleMCP are harness v0.9.21's brief [2] line (PRD
+// FR-4.3.2, 실사용 사고 2026-10-16): an agent only knows the API path
+// (`/api/v1/artifacts/{id}/content`), which is not the address a person's
+// browser can open behind a reverse proxy or tunnel — `share_url` is the
+// one field built from the deployment's own public address (COLAB_WEB_URL).
+const (
+	ShareLinkRule    = "- When you give a person a link to an artifact, use its `share_url` (in the response of `colab artifact get`/`submit`) — not the API path, which a person's browser cannot open behind a proxy or tunnel.\n"
+	ShareLinkRuleMCP = "- When you give a person a link to an artifact, use its `share_url` (in the response of the `colab_artifact_get`/`colab_artifact_submit` tool) — not the API path, which a person's browser cannot open behind a proxy or tunnel.\n"
+)
+
 // LedgerRule / LedgerRuleMCP are harness v0.9.20's brief [2] line (PRD
 // FR-4.6 5) — the contract's words per surface, the command in backticks for
 // the wrapper rewrite (toolwrap.cliRe) and so that the daemon's role filter
@@ -198,6 +211,7 @@ var shellSurface = Surface{
 	FocusRule:       FocusRule,
 	MediaRule:       MediaRule,
 	AttachFetch:     AttachFetch,
+	ShareLinkRule:   ShareLinkRule,
 	LedgerRule:      LedgerRule,
 	ledgerMore:      "`colab memory get --kind %s`",
 	MissionRead:     "Read one in full with `colab room messages --thread <id>`.",
@@ -225,6 +239,7 @@ var mcpSurface = Surface{
 	FocusRule:       FocusRuleMCP,
 	MediaRule:       MediaRuleMCP,
 	AttachFetch:     AttachFetchMCP,
+	ShareLinkRule:   ShareLinkRuleMCP,
 	LedgerRule:      LedgerRuleMCP,
 	ledgerMore:      "the `colab_memory_get` tool (`kind: \"%s\"`)",
 	MissionRead:     "Read one in full with the `colab_room_messages` tool (`thread`: the message id).",
@@ -262,6 +277,7 @@ func (s Surface) Section2() string {
 		"- " + s.DetailRule + "\n" +
 		"- " + s.Deliverable + "\n" +
 		s.MediaRule + "\n" +
+		s.ShareLinkRule +
 		s.FoldersRule + "\n" +
 		s.FocusRule +
 		"- Mentioning another agent asks it a question — it answers and does no new work; work is handed over only with a card. Do not mention agents just to acknowledge.\n" +
