@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/realtime"
+	"github.com/ingki3/agent-collaboration/server/internal/realtime"
 )
 
 // T-R4 (openapi v0.3.0, D22 — Director 승인 2026-09-24): the old /sessions/*

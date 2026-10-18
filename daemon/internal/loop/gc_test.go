@@ -17,11 +17,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/internal/config"
-	"github.com/ingki3/agent-collabortion/daemon/internal/gitrepo"
-	"github.com/ingki3/agent-collabortion/daemon/internal/orphan"
-	"github.com/ingki3/agent-collabortion/daemon/internal/workdir"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/internal/config"
+	"github.com/ingki3/agent-collaboration/daemon/internal/gitrepo"
+	"github.com/ingki3/agent-collaboration/daemon/internal/orphan"
+	"github.com/ingki3/agent-collaboration/daemon/internal/workdir"
 )
 
 // initRepo makes a throwaway repository with one commit on `main`. The

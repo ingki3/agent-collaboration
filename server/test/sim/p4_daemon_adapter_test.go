@@ -32,7 +32,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/daemon/worktreesim"
+	"github.com/ingki3/agent-collaboration/daemon/worktreesim"
 )
 
 var (

@@ -1,6 +1,6 @@
 package acp
 
-import "github.com/ingki3/agent-collabortion/contracts"
+import "github.com/ingki3/agent-collaboration/contracts"
 
 // Tool surface values (harness §10 v0.8, contracts.Capability.ToolSurface) —
 // HOW the agent talks back to the platform, which is not the same question as

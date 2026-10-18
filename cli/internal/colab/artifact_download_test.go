@@ -17,9 +17,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
-	"github.com/ingki3/agent-collabortion/cli/internal/client/clienttest"
-	"github.com/ingki3/agent-collabortion/cli/internal/colab"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client/clienttest"
+	"github.com/ingki3/agent-collaboration/cli/internal/colab"
 )
 
 // A body larger than any internal read cap must arrive whole. 17 MiB is past

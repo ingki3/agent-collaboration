@@ -11,8 +11,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
 )
 
 // NN2 — add 는 같은 키가 다시 오면 더한다. 덮어쓰기여도 기존 스위트는 통과했지만,

@@ -24,8 +24,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/internal/gitrepo"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/internal/gitrepo"
 )
 
 func planWorktreeGolden(t *testing.T, root, repo, sessionSlug, agentSlug, existingForAgent string) WorktreePlan {

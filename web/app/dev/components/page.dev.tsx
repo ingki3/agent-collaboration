@@ -109,7 +109,7 @@ const RUNTIME: Runtime = {
     { kind: "claude_code", version: "2.1.258", adapter_version: "0.74.0", logged_in: true, models: ["claude-sonnet-5", "claude-opus-5"], protocol_version: 1, resume: true, usage: true, tool_disallow: true, brief_transport: "acp_meta_system_prompt", allow_once_missing: false, supported_options: { effort: ["low", "medium", "high", "xhigh"] } },
     { kind: "hermes", version: "0.20.6", adapter_version: null, logged_in: true, models: ["hermes-4"], protocol_version: 1, resume: false, usage: false, tool_disallow: false, brief_transport: "instruction_file", allow_once_missing: true },
   ],
-  repos: [{ path: "~/dev/colab", remote_url: "git@github.com:ingki3/agent-collabortion.git", branch: "main", clean: true }],
+  repos: [{ path: "~/dev/colab", remote_url: "git@github.com:ingki3/agent-collaboration.git", branch: "main", clean: true }],
   max_concurrent_tasks: null, running_task_count: 2, workdir_disk_bytes: 3_200_000_000,
   colab_cli: { present: true, version: "0.4.0" }, offline_since: null, grace_ends_at: null, paused_session_count: 0,
   created_at: T, updated_at: T,

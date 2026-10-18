@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/acpfake"
-	"github.com/ingki3/agent-collabortion/daemon/internal/api"
-	"github.com/ingki3/agent-collabortion/daemon/internal/brief"
-	"github.com/ingki3/agent-collabortion/daemon/internal/gitrepo"
-	"github.com/ingki3/agent-collabortion/daemon/internal/harness/acp"
-	"github.com/ingki3/agent-collabortion/daemon/internal/workdir"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/acpfake"
+	"github.com/ingki3/agent-collaboration/daemon/internal/api"
+	"github.com/ingki3/agent-collaboration/daemon/internal/brief"
+	"github.com/ingki3/agent-collaboration/daemon/internal/gitrepo"
+	"github.com/ingki3/agent-collaboration/daemon/internal/harness/acp"
+	"github.com/ingki3/agent-collaboration/daemon/internal/workdir"
 )
 
 func worktreeBundle(id, repo string, attempt int) contracts.TaskBundle {

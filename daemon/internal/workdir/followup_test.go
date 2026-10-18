@@ -18,8 +18,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/internal/gitrepo"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/internal/gitrepo"
 )
 
 // repoUnderRoot is the fixture NN5 is about: the user's repository lives

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/internal/gitrepo"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/internal/gitrepo"
 )
 
 const wdID = "7c1d2e3f-0000-4000-8000-0000000000d1"

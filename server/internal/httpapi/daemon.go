@@ -11,12 +11,12 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
-	"github.com/ingki3/agent-collabortion/server/internal/testchat"
-	"github.com/ingki3/agent-collabortion/server/internal/tokens"
-	"github.com/ingki3/agent-collabortion/server/internal/workdirs"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/testchat"
+	"github.com/ingki3/agent-collaboration/server/internal/tokens"
+	"github.com/ingki3/agent-collaboration/server/internal/workdirs"
 )
 
 // workdirKindOf reads the session's isolation kind so a recorded workdir gets

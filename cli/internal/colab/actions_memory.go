@@ -12,7 +12,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
 )
 
 // The ledger enums, openapi MemoryKind · MemoryCertainty · MemoryOutcome and

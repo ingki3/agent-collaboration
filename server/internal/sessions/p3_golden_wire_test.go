@@ -22,7 +22,7 @@
 package sessions
 
 import (
-	"github.com/ingki3/agent-collabortion/server/internal/cost"
+	"github.com/ingki3/agent-collaboration/server/internal/cost"
 )
 
 func init() {

@@ -1,7 +1,7 @@
 package httpapi
 
 import (
-	"github.com/ingki3/agent-collabortion/server/internal/cards"
+	"github.com/ingki3/agent-collaboration/server/internal/cards"
 
 	"encoding/json"
 	"errors"
@@ -16,16 +16,16 @@ import (
 	"github.com/oapi-codegen/nullable"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/hitl"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/lanes"
-	"github.com/ingki3/agent-collabortion/server/internal/messages"
-	"github.com/ingki3/agent-collabortion/server/internal/realtime"
-	"github.com/ingki3/agent-collabortion/server/internal/roles"
-	"github.com/ingki3/agent-collabortion/server/internal/router"
-	"github.com/ingki3/agent-collabortion/server/internal/sessions"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/hitl"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/lanes"
+	"github.com/ingki3/agent-collaboration/server/internal/messages"
+	"github.com/ingki3/agent-collaboration/server/internal/realtime"
+	"github.com/ingki3/agent-collaboration/server/internal/roles"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/sessions"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 func (s *Server) ListMessages(w http.ResponseWriter, r *http.Request, roomId gen.RoomId, params gen.ListMessagesParams) {

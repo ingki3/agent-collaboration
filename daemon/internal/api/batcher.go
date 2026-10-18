@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // Batcher ships task_events in batches (≤100 events or 1s, daemon-protocol

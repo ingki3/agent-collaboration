@@ -12,13 +12,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/oapi-codegen/nullable"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/auth"
-	"github.com/ingki3/agent-collabortion/server/internal/db"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/inbox"
-	"github.com/ingki3/agent-collabortion/server/internal/rooms"
-	"github.com/ingki3/agent-collabortion/server/internal/sessions"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/auth"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/inbox"
+	"github.com/ingki3/agent-collaboration/server/internal/rooms"
+	"github.com/ingki3/agent-collaboration/server/internal/sessions"
 )
 
 // Mission proposals (openapi createWorkProposal · listWorkProposals ·

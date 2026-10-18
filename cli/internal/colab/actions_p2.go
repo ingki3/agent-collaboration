@@ -17,7 +17,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
 )
 
 // ───────────────────────────── status set ─────────────────────────────

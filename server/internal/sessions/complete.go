@@ -1,7 +1,7 @@
 package sessions
 
 import (
-	"github.com/ingki3/agent-collabortion/server/internal/cards"
+	"github.com/ingki3/agent-collaboration/server/internal/cards"
 
 	"context"
 	"encoding/json"
@@ -14,15 +14,15 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/db"
-	"github.com/ingki3/agent-collabortion/server/internal/inbox"
-	"github.com/ingki3/agent-collabortion/server/internal/messages"
-	"github.com/ingki3/agent-collabortion/server/internal/quiet"
-	"github.com/ingki3/agent-collabortion/server/internal/realtime"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
-	"github.com/ingki3/agent-collabortion/server/internal/tokens"
-	"github.com/ingki3/agent-collabortion/server/internal/workdirs"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/inbox"
+	"github.com/ingki3/agent-collaboration/server/internal/messages"
+	"github.com/ingki3/agent-collaboration/server/internal/quiet"
+	"github.com/ingki3/agent-collaboration/server/internal/realtime"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/tokens"
+	"github.com/ingki3/agent-collaboration/server/internal/workdirs"
 )
 
 // ParseTree reads session.completion_condition. The stored shape allows nested

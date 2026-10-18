@@ -10,11 +10,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/ingki3/agent-collabortion/contracts/clock"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
-	"github.com/ingki3/agent-collabortion/server/internal/tokens"
-	"github.com/ingki3/agent-collabortion/server/internal/workdirs"
+	"github.com/ingki3/agent-collaboration/contracts/clock"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/server/internal/tokens"
+	"github.com/ingki3/agent-collaboration/server/internal/workdirs"
 )
 
 // TestP4RebindMovesTheRepositoryAndRevivesWork is G7 차단 ④ (S-58) plus the two

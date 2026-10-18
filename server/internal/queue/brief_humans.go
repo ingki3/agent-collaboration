@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
 )
 
 // briefHuman is one person of brief [5]: the display name, the ROOM role

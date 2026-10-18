@@ -17,7 +17,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
 )
 
 func previewLaneOf(t *testing.T, pv map[string]any, agent string) (laneID any, resolution int) {

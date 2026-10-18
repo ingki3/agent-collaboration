@@ -8,8 +8,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 
-	"github.com/ingki3/agent-collabortion/server/internal/tokens"
-	"github.com/ingki3/agent-collabortion/server/internal/workdirs"
+	"github.com/ingki3/agent-collaboration/server/internal/tokens"
+	"github.com/ingki3/agent-collaboration/server/internal/workdirs"
 )
 
 // DeleteUnmergedDetail is deleteRoom's 409 `workdir_unmerged` (FR-2.7). It

@@ -38,8 +38,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
-	"github.com/ingki3/agent-collabortion/cli/internal/colab"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/colab"
 )
 
 // ProtocolVersion is the MCP revision this server negotiates.

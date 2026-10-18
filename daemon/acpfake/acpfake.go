@@ -22,7 +22,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/daemon/internal/harness/acp"
+	"github.com/ingki3/agent-collaboration/daemon/internal/harness/acp"
 )
 
 // Aliases for the harness types that appear in this package's PUBLIC API.

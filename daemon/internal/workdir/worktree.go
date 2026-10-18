@@ -19,8 +19,8 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/internal/gitrepo"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/internal/gitrepo"
 )
 
 // WorktreeRequest is what the daemon needs to decide one agent's checkout.

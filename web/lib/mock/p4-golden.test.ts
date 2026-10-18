@@ -53,7 +53,7 @@ async function login() {
   expect(cookie).not.toBe("");
 }
 
-/** 워크스페이스 · 시드 런타임(remote `git@github.com:ingki3/agent-collabortion.git`) · 에이전트 둘. */
+/** 워크스페이스 · 시드 런타임(remote `git@github.com:ingki3/agent-collaboration.git`) · 에이전트 둘. */
 async function base() {
   const me = await must<{ workspaces: { id: string }[] }>("GET", "/me");
   const ws = me.workspaces[0].id;
@@ -71,7 +71,7 @@ function addRuntime(ws: string, name: string, repos: Runtime["repos"], status: R
   return rt;
 }
 
-const REMOTE = "git@github.com:ingki3/agent-collabortion.git";
+const REMOTE = "git@github.com:ingki3/agent-collaboration.git";
 
 async function newSession(opts: { isolation?: "none" | "worktree"; runtimeId?: string; ws: string; agents: string[] }): Promise<Session> {
   return must<Session>("POST", `/__mock/workspaces/${opts.ws}/seed-room`, {

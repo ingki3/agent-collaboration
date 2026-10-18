@@ -25,12 +25,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/daemon/acpfake"
-	"github.com/ingki3/agent-collabortion/daemon/internal/api"
-	"github.com/ingki3/agent-collabortion/daemon/internal/harness/acp"
-	"github.com/ingki3/agent-collabortion/daemon/internal/toolwrap"
-	"github.com/ingki3/agent-collabortion/daemon/internal/workdir"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/daemon/acpfake"
+	"github.com/ingki3/agent-collaboration/daemon/internal/api"
+	"github.com/ingki3/agent-collaboration/daemon/internal/harness/acp"
+	"github.com/ingki3/agent-collaboration/daemon/internal/toolwrap"
+	"github.com/ingki3/agent-collaboration/daemon/internal/workdir"
 )
 
 const testChatID = "7e1a2b3c-0000-4000-8000-00000000c4a7"

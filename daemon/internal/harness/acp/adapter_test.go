@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // N1 — the tool table is managed with the adapter pin: a pin bump must

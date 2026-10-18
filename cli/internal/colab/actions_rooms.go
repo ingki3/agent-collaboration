@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
 )
 
 // The room commands of colab-cli.md §2.4a (PRD v0.19 FR-4.5 · FR-2A.1).

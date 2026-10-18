@@ -3,7 +3,7 @@ package tasks
 import (
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // SweepOutcome is what one stale task looks like after the scheduler sweep.

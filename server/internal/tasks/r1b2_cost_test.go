@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/testdb"
+	"github.com/ingki3/agent-collaboration/server/internal/testdb"
 )
 
 // TestRollUpCostIsPerMission is V19_R1B_HANDOFF (a) for the finish roll-up:

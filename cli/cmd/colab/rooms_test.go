@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
-	"github.com/ingki3/agent-collabortion/cli/internal/client/clienttest"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client/clienttest"
 )
 
 // colab-cli.md v0.8 §2.4a through the CLI: room list · room read · work

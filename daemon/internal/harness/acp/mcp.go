@@ -3,7 +3,7 @@ package acp
 import (
 	"strings"
 
-	"github.com/ingki3/agent-collabortion/daemon/internal/commands"
+	"github.com/ingki3/agent-collaboration/daemon/internal/commands"
 )
 
 // MCP transports of `mcpServers[]`. stdio carries no `type` on the wire (it

@@ -6,7 +6,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/db"
+	"github.com/ingki3/agent-collaboration/server/internal/db"
 )
 
 // RequeuedAttempt reads the state a heartbeat-expiry re-queue leaves behind:

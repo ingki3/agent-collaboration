@@ -5,9 +5,9 @@ import (
 
 	"github.com/oapi-codegen/nullable"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/metrics"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/metrics"
 )
 
 // GetWorkspaceMetrics is PRD §11's ten indicators (openapi getWorkspaceMetrics,

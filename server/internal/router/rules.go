@@ -8,14 +8,14 @@
 package router
 
 import (
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
 
 	"regexp"
 	"strings"
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 // mentionRe matches the FR-3.2 link form: [@Name](mention://agent/<id>).

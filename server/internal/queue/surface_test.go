@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/sessions"
+	"github.com/ingki3/agent-collaboration/server/internal/sessions"
 )
 
 // shellCommand is a colab shell command in command position — a backtick

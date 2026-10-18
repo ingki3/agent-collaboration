@@ -5,7 +5,7 @@ import (
 
 	"github.com/oapi-codegen/nullable"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 // S-83: the server only ever emitted `cancel`, so 「다시 지시」·「응답하러 가기」·

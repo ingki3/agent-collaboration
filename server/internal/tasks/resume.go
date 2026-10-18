@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // Resume, retry and re-instruction (PRD FR-5.4 재개 모델, FR-7.1 M5, FR-3.4 B,

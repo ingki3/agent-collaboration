@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/router"
+	"github.com/ingki3/agent-collaboration/server/internal/router"
 )
 
 // T-REVISION (실사용 「금융 에이전트 시장 규모 추정 방」, 2026-10-14): E6-04

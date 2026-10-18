@@ -1,7 +1,7 @@
 package acp
 
 import (
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // BriefMarkerStart/End delimit the instruction-file brief (harness §10).

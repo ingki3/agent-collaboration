@@ -3,7 +3,7 @@ package acp
 import (
 	"fmt"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // Budget enforcement inside one attempt (PRD FR-7.3 M9, §8.2.2,

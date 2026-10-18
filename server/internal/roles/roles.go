@@ -14,8 +14,8 @@ package roles
 import (
 	"strings"
 
-	"github.com/ingki3/agent-collabortion/server/internal/cards"
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/cards"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 // all is every ColabCommand in contract order — what `lead` and `custom`

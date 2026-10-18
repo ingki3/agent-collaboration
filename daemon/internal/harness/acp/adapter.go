@@ -1,6 +1,6 @@
 package acp
 
-import "github.com/ingki3/agent-collabortion/contracts"
+import "github.com/ingki3/agent-collaboration/contracts"
 
 // AdapterPin is the claude-agent-acp version this package was verified
 // against (harness §1, G1 F1). Everything below that depends on adapter

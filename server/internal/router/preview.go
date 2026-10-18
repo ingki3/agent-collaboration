@@ -1,7 +1,7 @@
 package router
 
 import (
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
 
 	"context"
 	"errors"
@@ -12,8 +12,8 @@ import (
 	"github.com/oapi-codegen/nullable"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
-	"github.com/ingki3/agent-collabortion/server/internal/lanestate"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/lanestate"
 )
 
 // Preview answers FR-3.6: "이 메시지는 A, B를 트리거합니다 (프로파일: …)". It

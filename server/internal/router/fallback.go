@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/lanestate"
+	"github.com/ingki3/agent-collaboration/server/internal/lanestate"
 )
 
 // FallbackDelay is FR-3.3 rule 7's grace period before the assignee is woken.

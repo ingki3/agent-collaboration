@@ -12,8 +12,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/metrics"
-	"github.com/ingki3/agent-collabortion/server/internal/realtime"
+	"github.com/ingki3/agent-collaboration/server/internal/metrics"
+	"github.com/ingki3/agent-collaboration/server/internal/realtime"
 )
 
 type roomsFixture struct {

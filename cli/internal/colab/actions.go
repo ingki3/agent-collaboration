@@ -13,7 +13,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
 )
 
 // MessagePostArgs — `colab message post --body [--detail | --detail-file] [--reply-to | --top-level] [--mention] [--attach <id>]…`.

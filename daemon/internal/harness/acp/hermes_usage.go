@@ -1,6 +1,6 @@
 package acp
 
-import "github.com/ingki3/agent-collabortion/contracts"
+import "github.com/ingki3/agent-collaboration/contracts"
 
 // Hermes reports its ACP `usage` in a different shape from Claude Code, and
 // reading it as if it were the same one inflated every hermes attempt's bill

@@ -5,7 +5,7 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/ingki3/agent-collabortion/server/internal/eventschema"
+	"github.com/ingki3/agent-collaboration/server/internal/eventschema"
 )
 
 // S-52. The server writes task_event rows of its own — cancel notes, budget

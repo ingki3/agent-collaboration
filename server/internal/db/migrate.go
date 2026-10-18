@@ -14,7 +14,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/ingki3/agent-collabortion/server/migrations"
+	"github.com/ingki3/agent-collaboration/server/migrations"
 )
 
 // migrationLockKey is the pg_advisory_lock key that serialises concurrent

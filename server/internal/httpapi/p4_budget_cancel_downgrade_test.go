@@ -3,7 +3,7 @@ package httpapi
 import (
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // S-50, the other direction (#151 review NN1).

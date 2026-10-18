@@ -27,7 +27,7 @@ if echo "$IFACE" | grep -v -x -F "$(echo "$IFACE" | grep -E "^($(echo $IMPL | tr
   echo '	openapi_types "github.com/oapi-codegen/runtime/types"'
   echo
 fi
-echo '	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"'
+echo '	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"'
 echo ')'
 echo
 echo '// unimplemented answers every operation with 501 not_implemented. Server'

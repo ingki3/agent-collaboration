@@ -1,7 +1,7 @@
 package roles
 
 import (
-	"github.com/ingki3/agent-collabortion/server/internal/cards"
+	"github.com/ingki3/agent-collaboration/server/internal/cards"
 
 	"os"
 	"path/filepath"
@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 // The role table is not typed here twice. contracts/colab-cli.md §2.5 is

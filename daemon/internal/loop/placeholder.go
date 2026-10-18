@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // placeholder.go implements the harness §10 v0.8.7 placeholder substitution.

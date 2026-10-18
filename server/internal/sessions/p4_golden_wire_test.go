@@ -19,7 +19,7 @@
 package sessions
 
 import (
-	"github.com/ingki3/agent-collabortion/server/internal/llm"
+	"github.com/ingki3/agent-collaboration/server/internal/llm"
 )
 
 func init() {

@@ -3,8 +3,8 @@ package queue
 import (
 	"fmt"
 
-	"github.com/ingki3/agent-collabortion/contracts"
-	"github.com/ingki3/agent-collabortion/server/internal/cards"
+	"github.com/ingki3/agent-collaboration/contracts"
+	"github.com/ingki3/agent-collaboration/server/internal/cards"
 )
 
 // Surface is every sentence the server writes that names a colab command,

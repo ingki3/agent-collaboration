@@ -22,7 +22,7 @@
 //
 // The task brief names `daemon/internal/acpfake`. Go forbids importing another
 // module's `internal/` tree (measured: "use of internal package
-// github.com/ingki3/agent-collabortion/daemon/internal/acpfake not allowed"),
+// github.com/ingki3/agent-collaboration/daemon/internal/acpfake not allowed"),
 // and P3a may not modify implementation code to move it. So the runtime side
 // is a local stand-in whose ONLY job is to replay "M posts + N edits, then
 // die, then do it all again". It deliberately does NOT decide anything: every

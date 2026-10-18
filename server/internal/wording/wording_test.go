@@ -40,7 +40,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
 )
 
 // ── 범위 ────────────────────────────────────────────────────────────────

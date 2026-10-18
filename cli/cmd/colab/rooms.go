@@ -5,8 +5,8 @@ import (
 	"flag"
 	"io"
 
-	"github.com/ingki3/agent-collabortion/cli/internal/client"
-	"github.com/ingki3/agent-collabortion/cli/internal/colab"
+	"github.com/ingki3/agent-collaboration/cli/internal/client"
+	"github.com/ingki3/agent-collaboration/cli/internal/colab"
 )
 
 // colab-cli.md v0.9 §2.4a — room get · room messages · room list ·

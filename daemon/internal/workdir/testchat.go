@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // A test chat (daemon-protocol v0.8 §4.5) runs its turns in a temporary

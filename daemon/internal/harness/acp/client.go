@@ -15,7 +15,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // Client drives one ACP agent subprocess. One Client == one process == one

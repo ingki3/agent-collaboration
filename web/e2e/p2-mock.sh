@@ -51,7 +51,7 @@ chk "광고 없는 옵션은 422" "$P2" "422"
 # 런타임 후보
 RC=$(curl -sS -b "$J" "$B/workspaces/$WS/runtime-candidates?isolation=none")
 chk "none 은 자동 선택 허용" "$(echo "$RC" | python3 -c 'import sys,json;print(json.load(sys.stdin)["auto_select_allowed"])')" "True"
-RC2=$(curl -sS -b "$J" "$B/workspaces/$WS/runtime-candidates?isolation=worktree&remote_url=git@github.com:ingki3/agent-collabortion.git")
+RC2=$(curl -sS -b "$J" "$B/workspaces/$WS/runtime-candidates?isolation=worktree&remote_url=git@github.com:ingki3/agent-collaboration.git")
 chk "worktree 는 자동 선택 불가" "$(echo "$RC2" | python3 -c 'import sys,json;print(json.load(sys.stdin)["auto_select_allowed"])')" "False"
 chk "remote URL 일치 런타임 후보" "$(echo "$RC2" | python3 -c 'import sys,json;print(json.load(sys.stdin)["candidates"][0]["eligible"])')" "True"
 

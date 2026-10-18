@@ -4,7 +4,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/apperr"
+	"github.com/ingki3/agent-collaboration/server/internal/apperr"
 )
 
 // TestCheckBudgetRaise is S-49: the too_low rule and its sentence in one

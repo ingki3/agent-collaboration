@@ -24,8 +24,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/ingki3/agent-collabortion/server/internal/llm"
-	"github.com/ingki3/agent-collabortion/server/internal/messages"
+	"github.com/ingki3/agent-collaboration/server/internal/llm"
+	"github.com/ingki3/agent-collaboration/server/internal/messages"
 )
 
 func legacyMissionMessages(work string, ms []*messages.Row, surf Surface) string {

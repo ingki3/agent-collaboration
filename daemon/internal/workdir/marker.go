@@ -38,7 +38,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ingki3/agent-collabortion/daemon/internal/gitrepo"
+	"github.com/ingki3/agent-collaboration/daemon/internal/gitrepo"
 )
 
 // MarkerName is the name tag's file name inside the workdir.

@@ -5,7 +5,7 @@ package httpapi
 import (
 	"net/http"
 
-	"github.com/ingki3/agent-collabortion/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
 )
 
 // unimplemented answers every operation with 501 not_implemented. Server

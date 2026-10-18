@@ -19,7 +19,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 type eventSchema struct {

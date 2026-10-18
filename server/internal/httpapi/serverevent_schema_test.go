@@ -5,8 +5,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/realtime"
-	"github.com/ingki3/agent-collabortion/server/internal/tasks"
+	"github.com/ingki3/agent-collaboration/server/internal/realtime"
+	"github.com/ingki3/agent-collaboration/server/internal/tasks"
 )
 
 // TestMain is S-52's assertion, placed where it costs nothing and catches

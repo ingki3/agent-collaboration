@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // §2.1 — allow-list only: no user shell variables leak, COLAB_* present,

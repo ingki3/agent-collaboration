@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/contracts"
+	"github.com/ingki3/agent-collaboration/contracts"
 )
 
 // S-77 (T-I5 PR #206 신규 결함 2): the adapter puts the whole command line in

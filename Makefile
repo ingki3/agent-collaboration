@@ -55,8 +55,8 @@ test-db:
 # build toolchain) when a build skips these flags.
 COLAB_BUILD_REF ?= $(shell git rev-parse HEAD 2>/dev/null)
 COLAB_GO_MIN ?= $(shell sed -n 's/^go \([0-9.]*\).*/\1/p' go.work)
-SERVER_LDFLAGS := -X github.com/ingki3/agent-collabortion/server/internal/buildinfo.ref=$(COLAB_BUILD_REF) \
-                  -X github.com/ingki3/agent-collabortion/server/internal/buildinfo.goMin=$(COLAB_GO_MIN)
+SERVER_LDFLAGS := -X github.com/ingki3/agent-collaboration/server/internal/buildinfo.ref=$(COLAB_BUILD_REF) \
+                  -X github.com/ingki3/agent-collaboration/server/internal/buildinfo.goMin=$(COLAB_GO_MIN)
 
 build:
 	@mkdir -p bin

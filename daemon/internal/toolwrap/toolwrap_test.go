@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/daemon/internal/toolwrap"
+	"github.com/ingki3/agent-collaboration/daemon/internal/toolwrap"
 )
 
 var attemptEnv = []string{

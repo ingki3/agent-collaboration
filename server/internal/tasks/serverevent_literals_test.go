@@ -26,7 +26,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ingki3/agent-collabortion/server/internal/eventschema"
+	"github.com/ingki3/agent-collaboration/server/internal/eventschema"
 )
 
 // serverEventWriters → number of trailing args after which (class, verb,
