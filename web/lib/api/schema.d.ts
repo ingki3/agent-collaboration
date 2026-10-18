@@ -1535,6 +1535,8 @@ export interface paths {
          * @description 권한: `TaskToken`(에이전트). 그 아티팩트의 미션에서 `artifact_submitted` 의 담당으로 지정된 에이전트가 아니면 `403 not_designated_assignee` — 저장하지 않는다(리뷰의 `not_designated_reviewer` 와 같은 모양, 다른 원자).
          *
          *     채택은 아티팩트 내용을 다시 올리는 게 아니라 "이것을 내 제출로 받아들인다"는 확인 행동이다 — completion 트리는 이것도 제출(`artifact_submit`)과 같은 사건(actor = 채택한 에이전트)으로 재평가한다: 지정된 담당이 이미 자기 제출로 그 원자를 충족했으면 이 호출은 아무것도 바꾸지 않는다(재평가는 멱등). `type: attachment` 인 아티팩트(사람이 대화에 붙인 첨부, FR-3.7)는 채택해도 원자를 충족시키지 않는다 — 제출 자체가 그렇듯, 산출물이 아니다. 아티팩트가 어느 미션에도 속하지 않으면(`work_id` 없음) 조건도 승인 요청도 건드리지 않는다.
+         *
+         *     v0.19.33(Director 결정 2026-10-17). **`comment` 필수** — 무엇을 확인했는지 한두 문장(비거나 공백만이면 `422 endorse_comment_required`, `acceptCard`의 `judgement_comment_required`와 같은 패턴). 1-필드 버튼만으로는 내용을 안 보고도 누를 수 있어, 이 완화책이 막으려던 결함(담당 미검수)을 그대로 들여온다 — 완벽한 강제는 아니다(코멘트 내용의 질까지는 안 본다), 다만 "누가 무엇을 보고 채택했나"의 흔적은 항상 남는다.
          */
         post: operations["endorseArtifact"];
         delete?: never;
@@ -7995,11 +7997,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: {
+        requestBody: {
             content: {
                 "application/json": {
-                    /** @description 무엇을 확인했는지(선택 — v0.19.33 에서 필수로 바뀐다). */
-                    comment?: string;
+                    /** @description 무엇을 확인했는지. */
+                    comment: string;
                 };
             };
         };
@@ -8019,6 +8021,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            422: components["responses"]["ValidationError"];
             default: components["responses"]["Problem"];
         };
     };

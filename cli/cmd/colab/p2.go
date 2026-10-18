@@ -149,7 +149,7 @@ func runArtifact(args []string, getenv client.Getenv, stdout, stderr io.Writer) 
 		return usage(stderr, "usage: colab artifact submit --type <t> --file <p> [--name <n>] [--description <d>]\n"+
 			"       colab artifact submit --type diff [--base <rev>] [--name <n>] [--description <d>]\n"+
 			"       colab artifact get <id> [--out <path>]\n"+
-			"       colab artifact endorse <id> [--comment <t>]")
+			"       colab artifact endorse <id> --comment <t>")
 	}
 	c := client.New(client.FromEnv(getenv))
 	ctx := context.Background()
@@ -205,7 +205,7 @@ func runArtifact(args []string, getenv client.Getenv, stdout, stderr io.Writer) 
 		v, err := colab.ArtifactGet(ctx, c, colab.ArtifactGetArgs{Artifact: id, Out: *out})
 		return emit(stdout, stderr, v, err)
 	case "endorse":
-		// `colab artifact endorse <id> [--comment <t>]` (PRD v0.19.28) — the id
+		// `colab artifact endorse <id> --comment <t>` (PRD v0.19.28, 필수 v0.19.33) — the id
 		// is positional, matching `artifact get <id>`.
 		rest := args[1:]
 		id := ""
@@ -213,8 +213,7 @@ func runArtifact(args []string, getenv client.Getenv, stdout, stderr io.Writer) 
 			id, rest = rest[0], rest[1:]
 		}
 		fs, _ := newFlagSet("artifact endorse", stderr)
-		comment := fs.String("comment", "", "what you checked before accepting this as your own submission "+
-			"(선택 지금 — v0.19.33 에서 필수로 바뀐다)")
+		comment := fs.String("comment", "", "required — what you checked before accepting this as your own submission")
 		idFlag := fs.String("artifact", "", "alternative to the positional <id>")
 		key := fs.String("idempotency-key", "", "optional Idempotency-Key (uuid) to make a retry replay")
 		if err := fs.Parse(rest); err != nil {

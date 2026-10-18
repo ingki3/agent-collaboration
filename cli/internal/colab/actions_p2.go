@@ -517,7 +517,7 @@ const CodeNotReviewer = "not_reviewer"
 
 // ───────────────────────────── endorse ─────────────────────────────
 
-// EndorseArgs — `colab artifact endorse <id> [--comment <t>]` (PRD v0.19.28).
+// EndorseArgs — `colab artifact endorse <id> --comment <t>` (PRD v0.19.28, 필수 v0.19.33).
 // Unlike review, the artifact id is a positional argument (colab-cli.md §2.3
 // `colab artifact endorse <id>`), matching `artifact get <id>`.
 type EndorseArgs struct {
@@ -552,6 +552,12 @@ func ArtifactEndorse(ctx context.Context, c *client.Client, a EndorseArgs) (*End
 	}
 	if err := requireArtifactID("artifact endorse", id); err != nil {
 		return nil, err
+	}
+	// v0.19.33(Director 결정 2026-10-17): required, same as `card accept
+	// --comment` — a server round trip only to learn the comment was empty
+	// wastes a call the CLI can refuse before sending.
+	if strings.TrimSpace(a.Comment) == "" {
+		return nil, client.Usage("artifact endorse: --comment is required")
 	}
 	if err := c.Allow(ctx, client.CmdArtifactEndorse); err != nil {
 		return nil, err
