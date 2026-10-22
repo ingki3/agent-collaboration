@@ -676,214 +676,37 @@ func (s *Service) Finish(ctx context.Context, taskID uuid.UUID, attempt int, f c
 		}
 		wsID, sessionID, workID = t.WorkspaceID, t.SessionID, t.WorkID
 		before := t.Status
-		if attempt != t.Attempt {
-			var outcome *string
-			if err := tx.QueryRow(ctx, `SELECT outcome FROM task_attempt WHERE task_id = $1 AND attempt = $2`, t.ID, attempt).Scan(&outcome); err == nil && outcome != nil {
-				final = Status(*outcome)
-				return nil
-			}
-			return ErrStaleAttempt
-		}
-		var finished *time.Time
-		var outcome *string
-		_ = tx.QueryRow(ctx, `SELECT finished_at, outcome FROM task_attempt WHERE task_id = $1 AND attempt = $2`, t.ID, attempt).Scan(&finished, &outcome)
-		if finished != nil || Terminal(t.Status) {
-			// S-19: the repeat still rolls up. The roll-up is a SUM over
-			// task_usage, not an increment, so running it again is harmless —
-			// and if the FIRST finish's roll-up failed (its own transaction,
-			// after this one committed) this is the only thing that ever
-			// retries it. Without this line a session whose last finish lost
-			// its roll-up shows a permanently stale cost_usd.
-			costed = true
-			final = t.Status
+
+		if idemFinal, done, idemCosted, err := s.finishIdempotencyCheck(ctx, tx, t, attempt); err != nil {
+			return err
+		} else if done {
+			final, costed = idemFinal, idemCosted
 			return nil
 		}
-		// daemon-protocol §4.4: `resume_outcome` is "resumed" | "cold_start" |
-		// null, and the null is not a false. An attempt that never had a
-		// session to resume must leave the column NULL, or the NEXT attempt
-		// reads "the previous one cold started" and throws away the ref this
-		// very finish is storing (measured: TestResumeRefRidesNextClaim).
-		var resumed *bool
-		switch f.ResumeOutcome {
-		case "resumed":
-			t := true
-			resumed = &t
-		case "cold_start":
-			fa := false
-			resumed = &fa
-		}
-		if _, err := tx.Exec(ctx, `
-			INSERT INTO task_attempt (task_id, attempt, runtime_id, finished_at, outcome, resumed, stop_reason)
-			VALUES ($1, $2, $3, $4, $5, $6, $7)
-			ON CONFLICT (task_id, attempt) DO UPDATE SET finished_at = EXCLUDED.finished_at, outcome = EXCLUDED.outcome,
-			  resumed = EXCLUDED.resumed, stop_reason = EXCLUDED.stop_reason`,
-			t.ID, attempt, t.RuntimeID, now, f.Outcome, resumed, f.StopReason); err != nil {
-			return fmt.Errorf("tasks: finish attempt: %w", err)
-		}
-		// harness v0.7.1: `estimated: true` means the runtime did not price the
-		// turn, and the 0 that rides along is a type artefact — contracts.Usage
-		// cannot omit a float64 — not a measurement. Storing it would be the
-		// original defect one layer down, so the server drops it here and the
-		// roll-up fills the number from the workspace price table (S-20). Only
-		// an `estimated: false` zero is a real zero.
-		reported := f.Usage.CostUSD
-		if f.Usage.Estimated {
-			reported = 0
-		}
-		// The model is stored because the estimate is per-model. It is the one
-		// the daemon MEASURED (harness §7 `_meta.quota.model_usage[].model`),
-		// which is what model_drift is about: pricing a drifted turn at the
-		// profile's rate would bill the model that did not run it.
-		var model *string
-		if f.Usage.Model != "" {
-			m := f.Usage.Model
-			model = &m
-		}
-		// An EMPTY usage report is "no information", not "zero". Since P3 the
-		// heartbeat records the turn's running usage (FR-7.3 M9), so a finish
-		// that carries nothing — a cancelled attempt often does — would erase
-		// what the turn actually cost and the session's total would fall
-		// (measured on the :8094 stack: a cancel after $2.20 reported $0).
-		empty := f.Usage.InputTokens == 0 && f.Usage.OutputTokens == 0 &&
-			f.Usage.CacheReadTokens == 0 && f.Usage.CostUSD == 0
-		if !empty {
-			if _, err := tx.Exec(ctx, `
-				INSERT INTO task_usage (task_id, attempt, input_tokens, output_tokens, cache_read, cost_usd, estimated, model, updated_at)
-				VALUES ($1, $9, $2, $3, $4, $5, $6, $7, $8)
-				ON CONFLICT (task_id, attempt) DO UPDATE SET input_tokens = EXCLUDED.input_tokens, output_tokens = EXCLUDED.output_tokens,
-				  cache_read = EXCLUDED.cache_read, cost_usd = EXCLUDED.cost_usd, estimated = EXCLUDED.estimated,
-				  model = COALESCE(EXCLUDED.model, task_usage.model), updated_at = EXCLUDED.updated_at`,
-				t.ID, f.Usage.InputTokens, f.Usage.OutputTokens, f.Usage.CacheReadTokens, reported, f.Usage.Estimated, model, now, attempt); err != nil {
-				return fmt.Errorf("tasks: usage: %w", err)
-			}
-		}
-		costed = true
-		// T-CTX0: the finish half of the attempt's context metric
-		// (measurement only; its own savepoint, never fails the finish).
-		recordMetricFinish(ctx, tx, t.ID, attempt, resumed, f, now)
-		// harness.md §6: the ref is stored verbatim (contracts.RuntimeSessionRef →
-		// jsonb with the contract keys) — it is the only basis for the next
-		// attempt's TaskBundle.resume. The lane CHECK (0004) requires
-		// runtime_kind + session_id; reject earlier with a typed error.
-		ref, err := ValidateSessionRef(f.RuntimeSessionRef)
+
+		resumed, err := s.recordAttemptFinish(ctx, tx, t, attempt, f, now)
 		if err != nil {
 			return err
 		}
-		if ref != nil {
-			// harness §10 v0.9.14: the lane's ref and its 기준점 are one pair —
-			// the anchor of the attempt that just sent its turn prompt to this
-			// session (queue.recordContextAnchor). An attempt without one
-			// (dispatched before the rollout) clears it: no delta then.
-			if _, err := tx.Exec(ctx, `
-				UPDATE lane l SET runtime_session_ref = $2, updated_at = $3,
-				       context_anchor_message_id = ta.context_anchor_message_id, context_anchor_at = ta.context_anchor_at
-				FROM (SELECT $1::uuid AS lane_id) x
-				LEFT JOIN task_attempt ta ON ta.task_id = $4 AND ta.attempt = $5
-				WHERE l.id = x.lane_id`, t.LaneID, ref, now, t.ID, attempt); err != nil {
-				return fmt.Errorf("tasks: runtime_session_ref: %w", err)
-			}
+		if err := s.recordUsage(ctx, tx, t, attempt, f, resumed, now); err != nil {
+			return err
 		}
-		decided := f.Outcome
-		if decided != "completed" {
-			// A cancel command was issued for this attempt (cancelLane): the
-			// daemon's failed/paused report after it is the cancel taking
-			// effect, not a retryable failure (E10-04: no requeue).
-			//
-			// S-50: the budget pause's OWN cancel is excluded. §8.2.2 makes a
-			// budget pause stop the turn through the same `cancel` command, so
-			// every `paused_budget` finish arrived with one outstanding and was
-			// promoted to `cancelled` — which is E9-01 read backwards ("a
-			// budget overrun is not a failure", the Director can resume it) and
-			// then died on `task_paused_detail_check`, losing the attempt row
-			// and the `runtime_session_ref` that is the next attempt's only
-			// resume basis (G6 2판 §9.5, 3/3). director · kill_switch · loop ·
-			// session_paused cancels are somebody ELSE asking the turn to stop,
-			// and they still decide the outcome.
-			if requested, err := nonBudgetCancelRequested(ctx, tx, t.ID, attempt); err != nil {
-				return err
-			} else if requested {
-				decided = "cancelled"
-			} else if decided == "cancelled" {
-				// S-50, the other direction (#151 review NN1). The promotion
-				// above stops the SERVER from turning a budget pause into a
-				// cancellation, but a daemon that reports `outcome: cancelled`
-				// for the very same budget cancel walks straight past it — it
-				// arrives already saying "cancelled", so there is nothing to
-				// promote and cancelLocked runs on a row that is already
-				// `paused(budget)`.
-				//
-				// That is E9-01 read backwards ("a budget overrun is not a
-				// failure"): the Director can approve a raise and resume, and a
-				// `cancelled` task has nothing to resume. Only a cancel set
-				// that is ENTIRELY budget downgrades — the moment a director ·
-				// kill_switch · loop · session_paused cancel is also present,
-				// somebody else asked the turn to stop and E10-04 stands
-				// unchanged.
-				if budgetOnly, err := budgetOnlyCancelRequested(ctx, tx, t.ID, attempt); err != nil {
-					return err
-				} else if budgetOnly {
-					decided = "paused_budget"
-				}
-			}
+		costed = true
+
+		if err := s.applySessionRef(ctx, tx, t, attempt, f, now); err != nil {
+			return err
 		}
-		if decided != f.Outcome {
-			// The attempt row records the SERVER's decision, not the daemon's
-			// report. §4.4 is explicit that "위 열거는 서버 응답의 최종 상태이지
-			// 데몬 판단이 아니다", and this row is read back as the answer to a
-			// REPEAT finish (the idempotency branch above returns
-			// `Status(task_attempt.outcome)`). Leaving the daemon's word there
-			// makes a retried finish report `cancelled` for a task the server
-			// parked as `paused(budget)` — the two halves of the same attempt
-			// disagreeing, which is how the resume the Director approved goes
-			// looking for a task that says it was cancelled (#151 review NN1).
-			if _, err := tx.Exec(ctx, `
-				UPDATE task_attempt SET outcome = $3 WHERE task_id = $1 AND attempt = $2`,
-				t.ID, attempt, decided); err != nil {
-				return fmt.Errorf("tasks: finish attempt outcome: %w", err)
-			}
+
+		decided, err := s.decideFinishOutcome(ctx, tx, t, attempt, f)
+		if err != nil {
+			return err
+		}
+		if err := s.persistDecidedOutcome(ctx, tx, t, attempt, f.Outcome, decided); err != nil {
+			return err
 		}
 		if f.Outcome == "completed" && decided == "completed" {
-			if requested, err := nonBudgetCancelRequested(ctx, tx, t.ID, attempt); err != nil {
+			if err := s.recordCompletedSideEffects(ctx, tx, t, attempt, f, now); err != nil {
 				return err
-			} else if requested {
-				// S-51: the cancel lost the race with the turn's own end. The task
-				// is genuinely `completed` and that is what the screen must show —
-				// but the feed already carries "사람이 중단함" from the moment the
-				// button was pressed, so without this line the timeline says a
-				// person stopped a turn that finished on its own. Consuming the
-				// command here is belt-and-braces: daemonFinish consumes it before
-				// this runs, and a direct Finish caller (the queue's own paths,
-				// tests) would otherwise leave it to the 24h TTL.
-				// S-52: the cancel WAS rejected, and `rejected_reason` is the
-				// schema's own slot for exactly that (its examples are
-				// token_revoked·hitl_already_open). The sentence goes to `args`.
-				if err := InsertServerEventOnce(ctx, tx, t.ID, attempt, "status", "cancel", "cancel_raced_turn_end", "info",
-					map[string]any{
-						"command":         "cancel",
-						"rejected_reason": "cancel_raced_turn_end",
-						"args": map[string]any{
-							"note": "취소 요청이 턴 종료와 겹쳐 적용되지 않았습니다 — 턴은 이미 끝나 있었습니다",
-						},
-					}, now); err != nil {
-					return err
-				}
-				if err := tokens.ConsumeAttemptCommands(ctx, tx, t.ID, attempt, now); err != nil {
-					return err
-				}
-			}
-			// FR-7.2 (v1.1): the turn ended on its own with nothing to show.
-			// Judged here, on the attempt's committed record, because finish is
-			// the one moment the record is complete — a turn the runtime or the
-			// server cut short (max_tokens, cancel, budget) is not "did
-			// nothing", so only `end_turn`.
-			if f.StopReason == "end_turn" {
-				if empty, err := emptyTurn(ctx, tx, t.ID, attempt); err != nil {
-					return err
-				} else if empty {
-					if err := noteEmptyTurn(ctx, tx, t.ID, attempt, now); err != nil {
-						return err
-					}
-				}
 			}
 		}
 		if decided == "completed" && t.PendingHitl {
@@ -899,49 +722,13 @@ func (s *Service) Finish(ctx context.Context, taskID uuid.UUID, attempt int, f c
 		}
 		switch decided {
 		case "completed":
-			if _, err := Transition(t.Status, Completed); err != nil {
+			end, gotEnd, err := s.finishCompleted(ctx, tx, t, attempt, f, now)
+			if err != nil {
 				return err
 			}
-			if _, err := tx.Exec(ctx, `UPDATE task SET status = 'completed', finished_at = $2, stop_reason = $3, heartbeat_at = NULL, updated_at = $2 WHERE id = $1`,
-				t.ID, now, f.StopReason); err != nil {
-				return err
+			if gotEnd {
+				ends = append(ends, end)
 			}
-			if err := s.Tokens.Revoke(ctx, tx, t.ID, attempt, "completed"); err != nil {
-				return err
-			}
-			// lane: another queued task on this lane keeps it queued, else
-			// done; a `blocked` lane keeps its question (FR-6.2.1). T-RF1: the
-			// one writer of a finished lane is lanedone.MarkDone. The lane
-			// frame goes out below with task.updated (s.publish).
-			//
-			// T-FIX-B: a lane this turn's end moved to `done` owes the same
-			// follow-up `status set done` runs — the join (FR-6.5) and the
-			// re-entry report. MarkDone calls AfterDone only on the transition
-			// (a lane the agent already closed runs nothing again); the
-			// closure just records it, and laneEnded runs it after the commit
-			// (LaneEnded — lock order).
-			if _, err := lanedone.MarkDone(ctx, tx, lanedone.Request{
-				LaneID: t.LaneID, TaskID: t.ID, Cause: lanedone.TurnEnd, Now: now, Hub: s.Hub,
-				AfterDone: func(context.Context, pgx.Tx) error {
-					ends = append(ends, LaneEnd{LaneID: t.LaneID, TaskID: t.ID, Attempt: attempt, Status: "done"})
-					return nil
-				},
-			}); err != nil {
-				return err
-			}
-			// S-53: a turn that COMPLETED after a rebind has replayed the
-			// diffs, so the instruction stops travelling. It is cleared here
-			// rather than when the bundle is built because a bundle can be
-			// built and then lost — a requeue (E5-03 runtime_offline) on the
-			// first attempt after a rebind would otherwise leave attempt 2 with
-			// a cold-start prompt and no word about the diffs to apply, and
-			// E14-06 would break silently.
-			if _, err := tx.Exec(ctx, `
-				UPDATE room SET rebind_prompt = NULL, updated_at = $2
-				WHERE id = $1 AND rebind_prompt IS NOT NULL`, t.SessionID, now); err != nil {
-				return err
-			}
-			t.Status, t.FinishedAt = Completed, &now
 		case "cancelled":
 			if err := s.cancelLocked(ctx, tx, t, f.StopReason, now); err != nil {
 				return err
@@ -950,28 +737,7 @@ func (s *Service) Finish(ctx context.Context, taskID uuid.UUID, attempt int, f c
 			final = t.Status
 			return nil
 		case "paused_budget":
-			// The task is ALREADY `paused(budget)` when the server is what
-			// found the overrun: applyBudgetPause parks the row and asks the
-			// daemon to stop, and this finish is that request being carried out
-			// (S-50). `paused → paused` is not an edge FR-7.1 has, and adding
-			// one would say a pause can re-pause; there is simply nothing to
-			// transition. What this branch still owes the row is the same in
-			// both cases, and the attempt record and the lane's
-			// `runtime_session_ref` — written above, for every outcome — are
-			// what the Director's approval resumes from.
-			if t.Status != Paused {
-				if _, err := Transition(t.Status, Paused); err != nil {
-					return err
-				}
-			}
-			if _, err := tx.Exec(ctx, `UPDATE task SET status = 'paused', paused_reason = 'budget', finished_at = NULL, heartbeat_at = NULL, updated_at = $2 WHERE id = $1`,
-				t.ID, now); err != nil {
-				return err
-			}
-			if err := s.Tokens.Revoke(ctx, tx, t.ID, attempt, "paused"); err != nil {
-				return err
-			}
-			if _, err := tx.Exec(ctx, `UPDATE lane SET status = 'paused', updated_at = $2 WHERE id = $1 AND NOT $3`, t.LaneID, now, t.IsQuestion()); err != nil {
+			if err := s.finishPausedBudget(ctx, tx, t, attempt, now); err != nil {
 				return err
 			}
 			t.Status = Paused
@@ -1013,6 +779,346 @@ func (s *Service) Finish(ctx context.Context, taskID uuid.UUID, attempt int, f c
 		s.settled(ctx, workID)
 	}
 	return final, err
+}
+
+// finishIdempotencyCheck mirrors Finish's two early-exit cases: a report for
+// an attempt number that is no longer current, and a repeat report for the
+// attempt that is current but already recorded as finished. `costed` is true
+// only for the second case (S-19: the repeat still rolls up — the roll-up is
+// a SUM over task_usage, not an increment, so running it again is harmless,
+// and if the FIRST finish's roll-up failed — its own transaction, after this
+// one committed — this is the only thing that ever retries it. Without it a
+// session whose last finish lost its roll-up shows a permanently stale
+// cost_usd). The first case never sets it: it answers a stale attempt number
+// from the row the CURRENT attempt already wrote, not a repeat of this one.
+func (s *Service) finishIdempotencyCheck(ctx context.Context, tx pgx.Tx, t *Row, attempt int) (final Status, done, costed bool, err error) {
+	if attempt != t.Attempt {
+		var outcome *string
+		if err := tx.QueryRow(ctx, `SELECT outcome FROM task_attempt WHERE task_id = $1 AND attempt = $2`, t.ID, attempt).Scan(&outcome); err == nil && outcome != nil {
+			return Status(*outcome), true, false, nil
+		}
+		return "", false, false, ErrStaleAttempt
+	}
+	var finished *time.Time
+	var outcome *string
+	_ = tx.QueryRow(ctx, `SELECT finished_at, outcome FROM task_attempt WHERE task_id = $1 AND attempt = $2`, t.ID, attempt).Scan(&finished, &outcome)
+	if finished != nil || Terminal(t.Status) {
+		return t.Status, true, true, nil
+	}
+	return "", false, false, nil
+}
+
+// recordAttemptFinish persists the attempt's run outcome (daemon-protocol
+// §4.4) onto task_attempt and returns the `resumed` tri-state it wrote, for
+// recordUsage's T-CTX0 metric to read back.
+func (s *Service) recordAttemptFinish(ctx context.Context, tx pgx.Tx, t *Row, attempt int, f contracts.Finish, now time.Time) (*bool, error) {
+	// daemon-protocol §4.4: `resume_outcome` is "resumed" | "cold_start" |
+	// null, and the null is not a false. An attempt that never had a
+	// session to resume must leave the column NULL, or the NEXT attempt
+	// reads "the previous one cold started" and throws away the ref this
+	// very finish is storing (measured: TestResumeRefRidesNextClaim).
+	var resumed *bool
+	switch f.ResumeOutcome {
+	case "resumed":
+		t := true
+		resumed = &t
+	case "cold_start":
+		fa := false
+		resumed = &fa
+	}
+	if _, err := tx.Exec(ctx, `
+		INSERT INTO task_attempt (task_id, attempt, runtime_id, finished_at, outcome, resumed, stop_reason)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+		ON CONFLICT (task_id, attempt) DO UPDATE SET finished_at = EXCLUDED.finished_at, outcome = EXCLUDED.outcome,
+		  resumed = EXCLUDED.resumed, stop_reason = EXCLUDED.stop_reason`,
+		t.ID, attempt, t.RuntimeID, now, f.Outcome, resumed, f.StopReason); err != nil {
+		return nil, fmt.Errorf("tasks: finish attempt: %w", err)
+	}
+	return resumed, nil
+}
+
+// recordUsage persists the attempt's token/cost report (task_usage) and the
+// T-CTX0 context metric. The caller sets `costed` itself once this returns
+// without error — it is unconditionally true from here on, even when the
+// usage report itself was empty.
+func (s *Service) recordUsage(ctx context.Context, tx pgx.Tx, t *Row, attempt int, f contracts.Finish, resumed *bool, now time.Time) error {
+	// harness v0.7.1: `estimated: true` means the runtime did not price the
+	// turn, and the 0 that rides along is a type artefact — contracts.Usage
+	// cannot omit a float64 — not a measurement. Storing it would be the
+	// original defect one layer down, so the server drops it here and the
+	// roll-up fills the number from the workspace price table (S-20). Only
+	// an `estimated: false` zero is a real zero.
+	reported := f.Usage.CostUSD
+	if f.Usage.Estimated {
+		reported = 0
+	}
+	// The model is stored because the estimate is per-model. It is the one
+	// the daemon MEASURED (harness §7 `_meta.quota.model_usage[].model`),
+	// which is what model_drift is about: pricing a drifted turn at the
+	// profile's rate would bill the model that did not run it.
+	var model *string
+	if f.Usage.Model != "" {
+		m := f.Usage.Model
+		model = &m
+	}
+	// An EMPTY usage report is "no information", not "zero". Since P3 the
+	// heartbeat records the turn's running usage (FR-7.3 M9), so a finish
+	// that carries nothing — a cancelled attempt often does — would erase
+	// what the turn actually cost and the session's total would fall
+	// (measured on the :8094 stack: a cancel after $2.20 reported $0).
+	empty := f.Usage.InputTokens == 0 && f.Usage.OutputTokens == 0 &&
+		f.Usage.CacheReadTokens == 0 && f.Usage.CostUSD == 0
+	if !empty {
+		if _, err := tx.Exec(ctx, `
+			INSERT INTO task_usage (task_id, attempt, input_tokens, output_tokens, cache_read, cost_usd, estimated, model, updated_at)
+			VALUES ($1, $9, $2, $3, $4, $5, $6, $7, $8)
+			ON CONFLICT (task_id, attempt) DO UPDATE SET input_tokens = EXCLUDED.input_tokens, output_tokens = EXCLUDED.output_tokens,
+			  cache_read = EXCLUDED.cache_read, cost_usd = EXCLUDED.cost_usd, estimated = EXCLUDED.estimated,
+			  model = COALESCE(EXCLUDED.model, task_usage.model), updated_at = EXCLUDED.updated_at`,
+			t.ID, f.Usage.InputTokens, f.Usage.OutputTokens, f.Usage.CacheReadTokens, reported, f.Usage.Estimated, model, now, attempt); err != nil {
+			return fmt.Errorf("tasks: usage: %w", err)
+		}
+	}
+	// T-CTX0: the finish half of the attempt's context metric
+	// (measurement only; its own savepoint, never fails the finish).
+	recordMetricFinish(ctx, tx, t.ID, attempt, resumed, f, now)
+	return nil
+}
+
+// applySessionRef validates and stores the runtime's resume handle onto the
+// lane row — the only basis for the next attempt's TaskBundle.resume.
+func (s *Service) applySessionRef(ctx context.Context, tx pgx.Tx, t *Row, attempt int, f contracts.Finish, now time.Time) error {
+	// harness.md §6: the ref is stored verbatim (contracts.RuntimeSessionRef →
+	// jsonb with the contract keys) — it is the only basis for the next
+	// attempt's TaskBundle.resume. The lane CHECK (0004) requires
+	// runtime_kind + session_id; reject earlier with a typed error.
+	ref, err := ValidateSessionRef(f.RuntimeSessionRef)
+	if err != nil {
+		return err
+	}
+	if ref != nil {
+		// harness §10 v0.9.14: the lane's ref and its 기준점 are one pair —
+		// the anchor of the attempt that just sent its turn prompt to this
+		// session (queue.recordContextAnchor). An attempt without one
+		// (dispatched before the rollout) clears it: no delta then.
+		if _, err := tx.Exec(ctx, `
+			UPDATE lane l SET runtime_session_ref = $2, updated_at = $3,
+			       context_anchor_message_id = ta.context_anchor_message_id, context_anchor_at = ta.context_anchor_at
+			FROM (SELECT $1::uuid AS lane_id) x
+			LEFT JOIN task_attempt ta ON ta.task_id = $4 AND ta.attempt = $5
+			WHERE l.id = x.lane_id`, t.LaneID, ref, now, t.ID, attempt); err != nil {
+			return fmt.Errorf("tasks: runtime_session_ref: %w", err)
+		}
+	}
+	return nil
+}
+
+// decideFinishOutcome reconciles the daemon's reported outcome against cancel
+// commands outstanding for this attempt (E9-01, E10-04, S-50).
+func (s *Service) decideFinishOutcome(ctx context.Context, tx pgx.Tx, t *Row, attempt int, f contracts.Finish) (string, error) {
+	decided := f.Outcome
+	if decided != "completed" {
+		// A cancel command was issued for this attempt (cancelLane): the
+		// daemon's failed/paused report after it is the cancel taking
+		// effect, not a retryable failure (E10-04: no requeue).
+		//
+		// S-50: the budget pause's OWN cancel is excluded. §8.2.2 makes a
+		// budget pause stop the turn through the same `cancel` command, so
+		// every `paused_budget` finish arrived with one outstanding and was
+		// promoted to `cancelled` — which is E9-01 read backwards ("a
+		// budget overrun is not a failure", the Director can resume it) and
+		// then died on `task_paused_detail_check`, losing the attempt row
+		// and the `runtime_session_ref` that is the next attempt's only
+		// resume basis (G6 2판 §9.5, 3/3). director · kill_switch · loop ·
+		// session_paused cancels are somebody ELSE asking the turn to stop,
+		// and they still decide the outcome.
+		if requested, err := nonBudgetCancelRequested(ctx, tx, t.ID, attempt); err != nil {
+			return "", err
+		} else if requested {
+			decided = "cancelled"
+		} else if decided == "cancelled" {
+			// S-50, the other direction (#151 review NN1). The promotion
+			// above stops the SERVER from turning a budget pause into a
+			// cancellation, but a daemon that reports `outcome: cancelled`
+			// for the very same budget cancel walks straight past it — it
+			// arrives already saying "cancelled", so there is nothing to
+			// promote and cancelLocked runs on a row that is already
+			// `paused(budget)`.
+			//
+			// That is E9-01 read backwards ("a budget overrun is not a
+			// failure"): the Director can approve a raise and resume, and a
+			// `cancelled` task has nothing to resume. Only a cancel set
+			// that is ENTIRELY budget downgrades — the moment a director ·
+			// kill_switch · loop · session_paused cancel is also present,
+			// somebody else asked the turn to stop and E10-04 stands
+			// unchanged.
+			if budgetOnly, err := budgetOnlyCancelRequested(ctx, tx, t.ID, attempt); err != nil {
+				return "", err
+			} else if budgetOnly {
+				decided = "paused_budget"
+			}
+		}
+	}
+	return decided, nil
+}
+
+// persistDecidedOutcome overwrites the attempt row's outcome with the
+// server's decision when it diverges from the daemon's report.
+func (s *Service) persistDecidedOutcome(ctx context.Context, tx pgx.Tx, t *Row, attempt int, reported, decided string) error {
+	if decided == reported {
+		return nil
+	}
+	// The attempt row records the SERVER's decision, not the daemon's
+	// report. §4.4 is explicit that "위 열거는 서버 응답의 최종 상태이지
+	// 데몬 판단이 아니다", and this row is read back as the answer to a
+	// REPEAT finish (the idempotency branch above returns
+	// `Status(task_attempt.outcome)`). Leaving the daemon's word there
+	// makes a retried finish report `cancelled` for a task the server
+	// parked as `paused(budget)` — the two halves of the same attempt
+	// disagreeing, which is how the resume the Director approved goes
+	// looking for a task that says it was cancelled (#151 review NN1).
+	if _, err := tx.Exec(ctx, `
+		UPDATE task_attempt SET outcome = $3 WHERE task_id = $1 AND attempt = $2`,
+		t.ID, attempt, decided); err != nil {
+		return fmt.Errorf("tasks: finish attempt outcome: %w", err)
+	}
+	return nil
+}
+
+// recordCompletedSideEffects runs the two things a `completed` finish still
+// owes the record before the state transition: S-51/S-52's race note (a
+// cancel that lost to the turn's own end), and FR-7.2's empty-turn card.
+func (s *Service) recordCompletedSideEffects(ctx context.Context, tx pgx.Tx, t *Row, attempt int, f contracts.Finish, now time.Time) error {
+	if requested, err := nonBudgetCancelRequested(ctx, tx, t.ID, attempt); err != nil {
+		return err
+	} else if requested {
+		// S-51: the cancel lost the race with the turn's own end. The task
+		// is genuinely `completed` and that is what the screen must show —
+		// but the feed already carries "사람이 중단함" from the moment the
+		// button was pressed, so without this line the timeline says a
+		// person stopped a turn that finished on its own. Consuming the
+		// command here is belt-and-braces: daemonFinish consumes it before
+		// this runs, and a direct Finish caller (the queue's own paths,
+		// tests) would otherwise leave it to the 24h TTL.
+		// S-52: the cancel WAS rejected, and `rejected_reason` is the
+		// schema's own slot for exactly that (its examples are
+		// token_revoked·hitl_already_open). The sentence goes to `args`.
+		if err := InsertServerEventOnce(ctx, tx, t.ID, attempt, "status", "cancel", "cancel_raced_turn_end", "info",
+			map[string]any{
+				"command":         "cancel",
+				"rejected_reason": "cancel_raced_turn_end",
+				"args": map[string]any{
+					"note": "취소 요청이 턴 종료와 겹쳐 적용되지 않았습니다 — 턴은 이미 끝나 있었습니다",
+				},
+			}, now); err != nil {
+			return err
+		}
+		if err := tokens.ConsumeAttemptCommands(ctx, tx, t.ID, attempt, now); err != nil {
+			return err
+		}
+	}
+	// FR-7.2 (v1.1): the turn ended on its own with nothing to show.
+	// Judged here, on the attempt's committed record, because finish is
+	// the one moment the record is complete — a turn the runtime or the
+	// server cut short (max_tokens, cancel, budget) is not "did
+	// nothing", so only `end_turn`.
+	if f.StopReason == "end_turn" {
+		if empty, err := emptyTurn(ctx, tx, t.ID, attempt); err != nil {
+			return err
+		} else if empty {
+			if err := noteEmptyTurn(ctx, tx, t.ID, attempt, now); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+// finishCompleted carries out the `completed` transition: task row, token
+// revoke, the lane's join (lanedone.MarkDone), and the rebind-prompt clear.
+// It reports the LaneEnd lanedone's AfterDone recorded (if the lane actually
+// ended) rather than appending to the caller's slice directly, so Finish
+// keeps sole ownership of `ends`.
+func (s *Service) finishCompleted(ctx context.Context, tx pgx.Tx, t *Row, attempt int, f contracts.Finish, now time.Time) (LaneEnd, bool, error) {
+	if _, err := Transition(t.Status, Completed); err != nil {
+		return LaneEnd{}, false, err
+	}
+	if _, err := tx.Exec(ctx, `UPDATE task SET status = 'completed', finished_at = $2, stop_reason = $3, heartbeat_at = NULL, updated_at = $2 WHERE id = $1`,
+		t.ID, now, f.StopReason); err != nil {
+		return LaneEnd{}, false, err
+	}
+	if err := s.Tokens.Revoke(ctx, tx, t.ID, attempt, "completed"); err != nil {
+		return LaneEnd{}, false, err
+	}
+	// lane: another queued task on this lane keeps it queued, else
+	// done; a `blocked` lane keeps its question (FR-6.2.1). T-RF1: the
+	// one writer of a finished lane is lanedone.MarkDone. The lane
+	// frame goes out below with task.updated (s.publish).
+	//
+	// T-FIX-B: a lane this turn's end moved to `done` owes the same
+	// follow-up `status set done` runs — the join (FR-6.5) and the
+	// re-entry report. MarkDone calls AfterDone only on the transition
+	// (a lane the agent already closed runs nothing again); the
+	// closure just records it, and laneEnded runs it after the commit
+	// (LaneEnded — lock order).
+	var end LaneEnd
+	var gotEnd bool
+	if _, err := lanedone.MarkDone(ctx, tx, lanedone.Request{
+		LaneID: t.LaneID, TaskID: t.ID, Cause: lanedone.TurnEnd, Now: now, Hub: s.Hub,
+		AfterDone: func(context.Context, pgx.Tx) error {
+			end = LaneEnd{LaneID: t.LaneID, TaskID: t.ID, Attempt: attempt, Status: "done"}
+			gotEnd = true
+			return nil
+		},
+	}); err != nil {
+		return LaneEnd{}, false, err
+	}
+	// S-53: a turn that COMPLETED after a rebind has replayed the
+	// diffs, so the instruction stops travelling. It is cleared here
+	// rather than when the bundle is built because a bundle can be
+	// built and then lost — a requeue (E5-03 runtime_offline) on the
+	// first attempt after a rebind would otherwise leave attempt 2 with
+	// a cold-start prompt and no word about the diffs to apply, and
+	// E14-06 would break silently.
+	if _, err := tx.Exec(ctx, `
+		UPDATE room SET rebind_prompt = NULL, updated_at = $2
+		WHERE id = $1 AND rebind_prompt IS NOT NULL`, t.SessionID, now); err != nil {
+		return LaneEnd{}, false, err
+	}
+	t.Status, t.FinishedAt = Completed, &now
+	return end, gotEnd, nil
+}
+
+// finishPausedBudget carries out the daemon's stop for a pause the SERVER
+// already decided (applyBudgetPause parked the row and asked for the stop) —
+// S-50: there is no state transition here, only the attempt bookkeeping
+// every outcome owes.
+func (s *Service) finishPausedBudget(ctx context.Context, tx pgx.Tx, t *Row, attempt int, now time.Time) error {
+	// The task is ALREADY `paused(budget)` when the server is what
+	// found the overrun: applyBudgetPause parks the row and asks the
+	// daemon to stop, and this finish is that request being carried out
+	// (S-50). `paused → paused` is not an edge FR-7.1 has, and adding
+	// one would say a pause can re-pause; there is simply nothing to
+	// transition. What this branch still owes the row is the same in
+	// both cases, and the attempt record and the lane's
+	// `runtime_session_ref` — written above, for every outcome — are
+	// what the Director's approval resumes from.
+	if t.Status != Paused {
+		if _, err := Transition(t.Status, Paused); err != nil {
+			return err
+		}
+	}
+	if _, err := tx.Exec(ctx, `UPDATE task SET status = 'paused', paused_reason = 'budget', finished_at = NULL, heartbeat_at = NULL, updated_at = $2 WHERE id = $1`,
+		t.ID, now); err != nil {
+		return err
+	}
+	if err := s.Tokens.Revoke(ctx, tx, t.ID, attempt, "paused"); err != nil {
+		return err
+	}
+	if _, err := tx.Exec(ctx, `UPDATE lane SET status = 'paused', updated_at = $2 WHERE id = $1 AND NOT $3`, t.LaneID, now, t.IsQuestion()); err != nil {
+		return err
+	}
+	return nil
 }
 
 // rollUpCost folds the attempt's usage into session.cost_usd and publishes
