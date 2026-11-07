@@ -515,9 +515,9 @@ func (s *Service) afterLaneDone(ctx context.Context, tx pgx.Tx, sessionID, wsID,
 // max_pair_roundtrips counts.
 func (s *Service) maybeFireJoin(ctx context.Context, tx pgx.Tx, sessionID, wsID uuid.UUID, director *uuid.UUID, from, waker, delegTask uuid.UUID, reentryRan bool, now time.Time) (bool, error) {
 	var delegAgent uuid.UUID
-	var fired *time.Time
-	if err := tx.QueryRow(ctx, `SELECT agent_id, join_fired_at FROM task WHERE id = $1 FOR UPDATE`, delegTask).
-		Scan(&delegAgent, &fired); err != nil {
+	var fired, cardsNotified *time.Time
+	if err := tx.QueryRow(ctx, `SELECT agent_id, join_fired_at, cards_notified_at FROM task WHERE id = $1 FOR UPDATE`, delegTask).
+		Scan(&delegAgent, &fired, &cardsNotified); err != nil {
 		return false, err
 	}
 	if fired != nil {
@@ -606,11 +606,20 @@ func (s *Service) maybeFireJoin(ctx context.Context, tx pgx.Tx, sessionID, wsID 
 	// re-entered-lane-ends-the-group case needs both). A delegator that is
 	// merely "running" (not queued) also keeps the existing behaviour —
 	// nothing woke it for this round yet, so this notice is the one real hop.
+	//
+	// That "still queued right now" snapshot alone misses the common timing
+	// where the group's card-wake has ALREADY been claimed and completed by
+	// the time this lane formally ends (실사용 e2e 72_scenario_a 재현: Lead's
+	// card-review task finishes well before the last child's lane transitions
+	// to terminal, so activeStatus reads idle again here) — cardsNotified is
+	// the durable twin of that same check, set by wakeDelegatorForResult when
+	// it did that earlier wake, and survives past the gap.
 	woken, activeStatus, err := activeTaskFor(ctx, tx, sessionID, delegAgent)
 	if err != nil {
 		return false, err
 	}
-	if reentryRan || activeStatus != "queued" {
+	alreadyCardNotified := !reentryRan && cardsNotified != nil
+	if reentryRan || (activeStatus != "queued" && !alreadyCardNotified) {
 		if woken, err = s.wakeTask(ctx, tx, sessionID, wsID, director, from, delegAgent, waker, delegTask, msgID, "", now); err != nil {
 			return false, err
 		}

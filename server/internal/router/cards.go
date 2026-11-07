@@ -28,6 +28,7 @@ import (
 	"github.com/ingki3/agent-collaboration/server/internal/apperr"
 	"github.com/ingki3/agent-collaboration/server/internal/cards"
 	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/lanestate"
 	"github.com/ingki3/agent-collaboration/server/internal/messages"
 	"github.com/ingki3/agent-collaboration/server/internal/roomgate"
 	"github.com/ingki3/agent-collaboration/server/internal/tasks"
@@ -150,6 +151,17 @@ func (s *Service) SubmitResult(ctx context.Context, taskID uuid.UUID, attempt in
 // "one child, reports and ends its turn" shape), maybeFireJoin would see
 // this call's queued task and, without its own matching check, hop it
 // again for the same round — fixed there via the same activeTaskFor.
+//
+// A second twin lives INSIDE the idle branch, for fan-out: when a task
+// delegates to SEVERAL children at once and the delegator goes idle between
+// their reports (the fake-runtime scenarios resolve each child in well under
+// a second — plausible for fast real agents too), each child reporting while
+// idle would otherwise force its OWN wake, one FR-3.5 hop apiece, for what is
+// really one round-trip of the group (72_scenario_a 재현: Lead 3-child 위임 →
+// 5 Lead 재기동·hop 10개 소진·Writer 위임 전에 영구 정체). hasPendingSiblingLane
+// defers the wake to whichever child turns out to be the LAST one still
+// active, which then gathers every sibling's card — not just its own — the
+// same way maybeFireJoin's groupResultCards bundles a join.
 func (s *Service) wakeDelegatorForResult(ctx context.Context, tx pgx.Tx, tc taskCtx, c *cards.Row, submittingTaskID, msgID uuid.UUID, now time.Time) error {
 	activeID, activeStatus, err := activeTaskFor(ctx, tx, tc.sessionID, c.DelegatorID)
 	if err != nil {
@@ -169,17 +181,75 @@ func (s *Service) wakeDelegatorForResult(ctx context.Context, tx pgx.Tx, tc task
 		// this; narrower than the bug this fixes, left as a follow-up.
 		return nil
 	}
-	// Idle: nothing else is ever going to tell the delegator. This is the
-	// one case that needs an actual new wake-up, hop and all.
+	if c.DelegatorTaskID != nil {
+		pending, err := hasPendingSiblingLane(ctx, tx, *c.DelegatorTaskID, submittingTaskID)
+		if err != nil {
+			return err
+		}
+		if pending {
+			// Other children in this group are still active — leave the card
+			// unattached; whichever one is last re-checks the same way and,
+			// finding none pending, does the one wake for the whole group.
+			return nil
+		}
+	}
+	// Idle, and nothing else in this group is still active: this is the one
+	// case that needs an actual new wake-up, hop and all.
 	requester := uuid.Nil
+	ids := []uuid.UUID{c.ID}
 	if c.DelegatorTaskID != nil {
 		requester = *c.DelegatorTaskID
+		if group, _, err := groupResultCards(ctx, tx, requester); err != nil {
+			return err
+		} else if len(group) > 0 {
+			ids = group
+		}
 	}
 	woken, err := s.wakeTask(ctx, tx, tc.sessionID, tc.wsID, tc.director, tc.agentID, c.DelegatorID, submittingTaskID, requester, msgID, "", now)
 	if err != nil {
 		return err
 	}
-	return attachResultCards(ctx, tx, woken, []uuid.UUID{c.ID})
+	if c.DelegatorTaskID != nil {
+		// A momentary "is Lead still queued right now" snapshot (activeTaskFor)
+		// is NOT enough for maybeFireJoin to recognize this same wake later —
+		// by the time this child's lane formally ends (often seconds away, and
+		// near-instant with a fast runtime), Lead's task from THIS wake has
+		// usually already been claimed and completed, so the snapshot shows
+		// idle again and maybeFireJoin double-hops the same round (실사용 e2e
+		// 72_scenario_a 재현). This durable mark survives past that gap.
+		if _, err := tx.Exec(ctx, `UPDATE task SET cards_notified_at = $2 WHERE id = $1 AND cards_notified_at IS NULL`,
+			*c.DelegatorTaskID, now); err != nil {
+			return err
+		}
+	}
+	return attachResultCards(ctx, tx, woken, ids)
+}
+
+// hasPendingSiblingLane reports whether any OTHER lane delegated from the
+// same task (excluding the reporting task's own lane) is still non-terminal
+// — the group isn't done reporting yet, so a fresh wake now would be one
+// hop per child instead of one for the whole round.
+func hasPendingSiblingLane(ctx context.Context, tx pgx.Tx, delegTask, selfTask uuid.UUID) (bool, error) {
+	var selfLane uuid.UUID
+	if err := tx.QueryRow(ctx, `SELECT lane_id FROM task WHERE id = $1`, selfTask).Scan(&selfLane); err != nil {
+		return false, err
+	}
+	rows, err := tx.Query(ctx, `
+		SELECT status::text FROM lane WHERE delegated_from_task_id = $1 AND id <> $2`, delegTask, selfLane)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var st string
+		if err := rows.Scan(&st); err != nil {
+			return false, err
+		}
+		if !lanestate.Terminal(st) {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
 }
 
 func fillEvidenceLabels(ctx context.Context, tx pgx.Tx, r *cards.Result) {
