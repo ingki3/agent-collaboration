@@ -228,13 +228,30 @@ func (s *Service) wakeDelegatorForResult(ctx context.Context, tx pgx.Tx, tc task
 				body += fmt.Sprintf("\n결과 카드: %s v%d — 기준 %d/%d 충족", c.Label(), c.Version, res.MetCount, len(c.Criteria))
 			}
 		} else {
+			// Per-child "- Name: status" lines are not decoration — a
+			// delegator with MULTIPLE separate groups (here: the
+			// Researcher group, then later a lone Writer group) tells them
+			// apart by name, same as the real join's own bundle does.
+			// Without them this text is indistinguishable from every
+			// OTHER group's "모두 끝났습니다", and a delegator that
+			// branches on seeing its own prior child's name (this repo's
+			// fixtures/agent.sh does) re-delegates that same child all
+			// over again, round after round, until FR-3.5's loop limiter
+			// finally pauses the session (실사용 e2e 72_scenario_a 재현:
+			// Writer 묶음이 Researcher 묶음과 같은 문구라 Lead 가 "-
+			// Writer:" 를 못 찾고 Writer 를 거듭 재위임해 8분 가까이
+			// 정체됐다).
+			names, err := groupChildNames(ctx, tx, requester)
+			if err != nil {
+				return err
+			}
 			lines := ""
 			if group, l, err := groupResultCards(ctx, tx, requester); err != nil {
 				return err
 			} else if len(group) > 0 {
 				ids, lines = group, l
 			}
-			body = "위임한 작업이 모두 끝났습니다.\n"
+			body = "위임한 작업이 모두 끝났습니다.\n" + names
 			if lines != "" {
 				body += "\n결과 카드:\n" + lines
 			}
@@ -263,6 +280,29 @@ func (s *Service) wakeDelegatorForResult(ctx context.Context, tx pgx.Tx, tc task
 		}
 	}
 	return attachResultCards(ctx, tx, woken, ids)
+}
+
+// groupChildNames is the "- Name: status\n" lines for every lane delegated
+// from delegTask, in the same shape maybeFireJoin's own bundle uses — but
+// without requiring every lane to be terminal first, since this runs before
+// the reporting child's own lane has necessarily reached that point.
+func groupChildNames(ctx context.Context, tx pgx.Tx, delegTask uuid.UUID) (string, error) {
+	rows, err := tx.Query(ctx, `
+		SELECT l.status::text, a.name FROM lane l JOIN agent a ON a.id = l.agent_id
+		WHERE l.delegated_from_task_id = $1 ORDER BY l.created_at`, delegTask)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	var out string
+	for rows.Next() {
+		var status, name string
+		if err := rows.Scan(&status, &name); err != nil {
+			return "", err
+		}
+		out += "- " + name + ": " + status + "\n"
+	}
+	return out, rows.Err()
 }
 
 // hasPendingSiblingLane reports whether any OTHER lane delegated from the
