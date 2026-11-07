@@ -28,6 +28,7 @@ import (
 	"github.com/ingki3/agent-collaboration/server/internal/apperr"
 	"github.com/ingki3/agent-collaboration/server/internal/cards"
 	"github.com/ingki3/agent-collaboration/server/internal/httpapi/gen"
+	"github.com/ingki3/agent-collaboration/server/internal/lanestate"
 	"github.com/ingki3/agent-collaboration/server/internal/messages"
 	"github.com/ingki3/agent-collaboration/server/internal/roomgate"
 	"github.com/ingki3/agent-collaboration/server/internal/tasks"
@@ -100,6 +101,9 @@ func (s *Service) SubmitResult(ctx context.Context, taskID uuid.UUID, attempt in
 	if err != nil {
 		return nil, err
 	}
+	if err := s.wakeDelegatorForResult(ctx, tx, tc, c, taskID, msgID, now); err != nil {
+		return nil, err
+	}
 	if attempt < 1 {
 		attempt = 1
 	}
@@ -117,7 +121,215 @@ func (s *Service) SubmitResult(ctx context.Context, taskID uuid.UUID, attempt in
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
+	if s.Notifier != nil {
+		s.Notifier.Notify()
+	}
 	return out, nil
+}
+
+// wakeDelegatorForResult makes sure the card's delegator ends up with the
+// just-submitted result on its <result_cards> (PRD FR-3.8 4) — without
+// double-counting the hop FR-3.5 already gives this report through whatever
+// ELSE wakes the delegator for the same round (an ordinary mention the
+// assignee's turn also posts, or the lane's eventual end via
+// maybeFireJoin/notifyReentry).
+//
+// cards.StoreResult writes the result bubble with a direct INSERT that never
+// reaches Decide()/routeTrigger (no mention link, no routing) — submitting a
+// result otherwise creates no task for the delegator by itself, ever
+// (실사용 사고 2026-11-06/07, 최대 10시간 두 번 방치). An earlier version of this
+// fix called wakeTask unconditionally, which calls judgeHop every time
+// (service.go routeTrigger's "every trigger is judged" is the same rule) —
+// for the common case where the assignee's turn ALSO posts an ordinary
+// mention in the same breath, that counted the one round-trip as two hops
+// and broke FR-3.5's pair/chain-depth accounting (TestS76/TestS78...,
+// 코드리뷰 2026-11-07). The fix: only call wakeTask — a genuinely NEW hop —
+// when nothing else is going to carry the card to the delegator right now.
+//
+// The idle branch below still has a twin outside this function: if the
+// delegator's whole GROUP finishes moments later (the common
+// "one child, reports and ends its turn" shape), maybeFireJoin would see
+// this call's queued task and, without its own matching check, hop it
+// again for the same round — fixed there via the same activeTaskFor.
+//
+// A second twin lives INSIDE the idle branch, for fan-out: when a task
+// delegates to SEVERAL children at once and the delegator goes idle between
+// their reports (the fake-runtime scenarios resolve each child in well under
+// a second — plausible for fast real agents too), each child reporting while
+// idle would otherwise force its OWN wake, one FR-3.5 hop apiece, for what is
+// really one round-trip of the group (72_scenario_a 재현: Lead 3-child 위임 →
+// 5 Lead 재기동·hop 10개 소진·Writer 위임 전에 영구 정체). hasPendingSiblingLane
+// defers the wake to whichever child turns out to be the LAST one still
+// active, which then gathers every sibling's card — not just its own — the
+// same way maybeFireJoin's groupResultCards bundles a join.
+func (s *Service) wakeDelegatorForResult(ctx context.Context, tx pgx.Tx, tc taskCtx, c *cards.Row, submittingTaskID, msgID uuid.UUID, now time.Time) error {
+	activeID, activeStatus, err := activeTaskFor(ctx, tx, tc.sessionID, c.DelegatorID)
+	if err != nil {
+		return err
+	}
+	switch activeStatus {
+	case "queued":
+		// Already going to run (coalescing would land here anyway) — hang
+		// the card on it directly, no extra hop.
+		return attachResultCards(ctx, tx, activeID, []uuid.UUID{c.ID})
+	case "running":
+		// Mid-turn already. Its own report (if any) hopped this round, or —
+		// if the assignee's lane keeps running past this submission with no
+		// accompanying mention — the lane's eventual end still reaches the
+		// delegator via maybeFireJoin/notifyReentry, both card-aware. Only a
+		// lane that both skips the mention AND never ends again would miss
+		// this; narrower than the bug this fixes, left as a follow-up.
+		return nil
+	}
+	if c.DelegatorTaskID != nil {
+		pending, err := hasPendingSiblingLane(ctx, tx, *c.DelegatorTaskID, submittingTaskID)
+		if err != nil {
+			return err
+		}
+		if pending {
+			// Other children in this group are still active — leave the card
+			// unattached; whichever one is last re-checks the same way and,
+			// finding none pending, does the one wake for the whole group.
+			return nil
+		}
+	}
+	// Idle, and nothing else in this group is still active: this is the one
+	// case that needs an actual new wake-up, hop and all.
+	requester := uuid.Nil
+	ids := []uuid.UUID{c.ID}
+	trigger := msgID
+	if c.DelegatorTaskID != nil {
+		requester = *c.DelegatorTaskID
+		// A raw card bubble as the trigger looks like nothing a delegator (real
+		// agent OR this repo's own test fixtures) recognizes as "the group is
+		// done" — fixtures/agent.sh and the real PRD flow both branch on seeing
+		// the join's exact phrase in <trigger> (실사용 e2e 73_scenario_b 재현:
+		// PM 의 유일한 분기가 "위임한 작업이 모두 끝났습니다" 를 트리거에서 찾는
+		// 것인데, 카드 말풍선이 트리거라 못 찾아 QA 멘션을 건너뛰고 "확인했습니다"
+		// 로 빠졌다 — 합류 메시지는 방에 떴지만 그건 트리거가 아니었다). Post the
+		// same phrase this group's eventual formal join would use, and make
+		// THAT the trigger — the formal join, if it still fires later once
+		// lanes actually end, is the one this dedups via cards_notified_at.
+		//
+		// But only the FIRST time: a revise's re-submission reaches this same
+		// idle/no-pending-sibling branch again later, and "위임한 작업이 모두
+		// 끝났습니다" a second time for the same group is simply false — the
+		// group already finished once (실사용 e2e 101_task_cards 재현, "합류
+		// 묶음 1건" 이 2건으로 깨졌다). cards_notified_at (set below, once)
+		// doubles as that "already told the group is done" marker.
+		var alreadyNotified bool
+		if err := tx.QueryRow(ctx, `SELECT cards_notified_at IS NOT NULL FROM task WHERE id = $1`, requester).Scan(&alreadyNotified); err != nil {
+			return err
+		}
+		var body string
+		if alreadyNotified {
+			body = "요청하신 작업이 끝났습니다."
+			if res := cards.ParseResult(c.Result); res != nil {
+				body += fmt.Sprintf("\n결과 카드: %s v%d — 기준 %d/%d 충족", c.Label(), c.Version, res.MetCount, len(c.Criteria))
+			}
+		} else {
+			// Per-child "- Name: status" lines are not decoration — a
+			// delegator with MULTIPLE separate groups (here: the
+			// Researcher group, then later a lone Writer group) tells them
+			// apart by name, same as the real join's own bundle does.
+			// Without them this text is indistinguishable from every
+			// OTHER group's "모두 끝났습니다", and a delegator that
+			// branches on seeing its own prior child's name (this repo's
+			// fixtures/agent.sh does) re-delegates that same child all
+			// over again, round after round, until FR-3.5's loop limiter
+			// finally pauses the session (실사용 e2e 72_scenario_a 재현:
+			// Writer 묶음이 Researcher 묶음과 같은 문구라 Lead 가 "-
+			// Writer:" 를 못 찾고 Writer 를 거듭 재위임해 8분 가까이
+			// 정체됐다).
+			names, err := groupChildNames(ctx, tx, requester)
+			if err != nil {
+				return err
+			}
+			lines := ""
+			if group, l, err := groupResultCards(ctx, tx, requester); err != nil {
+				return err
+			} else if len(group) > 0 {
+				ids, lines = group, l
+			}
+			body = "위임한 작업이 모두 끝났습니다.\n" + names
+			if lines != "" {
+				body += "\n결과 카드:\n" + lines
+			}
+		}
+		posted, err := s.SystemPost(ctx, tx, tc.sessionID, body)
+		if err != nil {
+			return err
+		}
+		trigger = posted
+	}
+	woken, err := s.wakeTask(ctx, tx, tc.sessionID, tc.wsID, tc.director, tc.agentID, c.DelegatorID, submittingTaskID, requester, trigger, "", now)
+	if err != nil {
+		return err
+	}
+	if c.DelegatorTaskID != nil {
+		// A momentary "is Lead still queued right now" snapshot (activeTaskFor)
+		// is NOT enough for maybeFireJoin to recognize this same wake later —
+		// by the time this child's lane formally ends (often seconds away, and
+		// near-instant with a fast runtime), Lead's task from THIS wake has
+		// usually already been claimed and completed, so the snapshot shows
+		// idle again and maybeFireJoin double-hops the same round (실사용 e2e
+		// 72_scenario_a 재현). This durable mark survives past that gap.
+		if _, err := tx.Exec(ctx, `UPDATE task SET cards_notified_at = $2 WHERE id = $1 AND cards_notified_at IS NULL`,
+			*c.DelegatorTaskID, now); err != nil {
+			return err
+		}
+	}
+	return attachResultCards(ctx, tx, woken, ids)
+}
+
+// groupChildNames is the "- Name: status\n" lines for every lane delegated
+// from delegTask, in the same shape maybeFireJoin's own bundle uses — but
+// without requiring every lane to be terminal first, since this runs before
+// the reporting child's own lane has necessarily reached that point.
+func groupChildNames(ctx context.Context, tx pgx.Tx, delegTask uuid.UUID) (string, error) {
+	rows, err := tx.Query(ctx, `
+		SELECT l.status::text, a.name FROM lane l JOIN agent a ON a.id = l.agent_id
+		WHERE l.delegated_from_task_id = $1 ORDER BY l.created_at`, delegTask)
+	if err != nil {
+		return "", err
+	}
+	defer rows.Close()
+	var out string
+	for rows.Next() {
+		var status, name string
+		if err := rows.Scan(&status, &name); err != nil {
+			return "", err
+		}
+		out += "- " + name + ": " + status + "\n"
+	}
+	return out, rows.Err()
+}
+
+// hasPendingSiblingLane reports whether any OTHER lane delegated from the
+// same task (excluding the reporting task's own lane) is still non-terminal
+// — the group isn't done reporting yet, so a fresh wake now would be one
+// hop per child instead of one for the whole round.
+func hasPendingSiblingLane(ctx context.Context, tx pgx.Tx, delegTask, selfTask uuid.UUID) (bool, error) {
+	var selfLane uuid.UUID
+	if err := tx.QueryRow(ctx, `SELECT lane_id FROM task WHERE id = $1`, selfTask).Scan(&selfLane); err != nil {
+		return false, err
+	}
+	rows, err := tx.Query(ctx, `
+		SELECT status::text FROM lane WHERE delegated_from_task_id = $1 AND id <> $2`, delegTask, selfLane)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var st string
+		if err := rows.Scan(&st); err != nil {
+			return false, err
+		}
+		if !lanestate.Terminal(st) {
+			return true, nil
+		}
+	}
+	return false, rows.Err()
 }
 
 func fillEvidenceLabels(ctx context.Context, tx pgx.Tx, r *cards.Result) {

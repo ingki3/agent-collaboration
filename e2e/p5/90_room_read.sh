@@ -221,7 +221,13 @@ chk E.7a 201 "$(report_card_api "$TOKW")" "W: 결과 카드"
 chk E.7 200 "$(tok_api "$TOKW" POST "/tasks/$TW/status" '{"status":"done"}' | api_code)" "W: status done → 합류(R 은 blocked = 끝남)"
 TJ="$(queued_task "$A" "$LEAD")"
 chk E.8 "yes/$SEOYEON" "$( [ -n "$TJ" ] && [ "$TJ" != "$TQ" ] && echo yes || echo no )/$(orig_of "$TJ")" "합류 기상 task — 새 task, 서연 승계(status.go 합류 INSERT)"
-chk E.9 "1" "$(psqlq "select count(*) from task t join message m on m.id=t.trigger_message_id where t.id='$TJ' and m.content like '위임한 작업이 모두 끝났습니다%'")" "그 task 의 트리거가 합류 메시지"
+# T-CARD-WAKE: W 가 카드를 낸 순간 R 은 이미 blocked(terminal)라 그 카드 제출
+# 자체가 묶음을 완성한다 — wakeDelegatorForResult 가 그 자리에서 Lead 를 깨워,
+# 뒤이은 status done 의 공식 합류는 (cards_notified_at 로) 같은 task 에 묶일 뿐
+# 새 트리거를 달지 않는다. 그래서 트리거는 합류 메시지이거나 W 의 결과 카드
+# 말풍선(card_role=result) 둘 중 하나 — 어느 쪽이든 "이 그룹이 끝났다"는 신호다.
+chk E.9 "1" "$(psqlq "select count(*) from task t join message m on m.id=t.trigger_message_id
+  where t.id='$TJ' and (m.content like '위임한 작업이 모두 끝났습니다%' or m.card_role = 'result')")" "그 task 의 트리거가 합류 메시지 또는 결과 카드"
 finish "$TW" "$ATW"
 IFS=$'\t' read -r ATJ TOKJ <<<"$(take "$TJ")"
 chk E.10 200 "$(read_code "$TOKJ" "$D")" "합류로 깨어난 Lead 가 참고를 읽는다(V19_impl §4 위험 4 ③)"

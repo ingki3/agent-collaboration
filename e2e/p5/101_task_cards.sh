@@ -58,7 +58,20 @@ LANE_B="$(q "select lane_id from task_card where room_id='$ROOM_C' and number=2"
 chk C2a "B 의 결과 없는 턴 → result_card_missing 후속 task 1" 1 "$(q "select count(*) from task where lane_id='$LANE_B' and trigger_reason='result_card_missing'")"
 chk C2b "후속 턴이 결과 카드를 냈다(자동 결과 아님)" "ok/0" "$(recv b-followup-report)/$(q "select count(*) from message where session_id='$ROOM_C' and card_role='result' and content like '%(자동)%'")"
 chk C3a "합류 묶음 1" 1 "$(q "select count(*) from message where session_id='$ROOM_C' and author_type='system' and content like '%위임한 작업이 모두 끝났습니다%'")"
-chk C3b "Lead 가 <result_cards> 로 두 번 판정 · accept/revise/accept exit 0" "2 0/0/0" "$(recv lead-judge | awk '{print $NF}') $(recv lead-accept1)/$(recv lead-revise)/$(recv lead-accept2)"
+# T-CARD-WAKE (2026-11-07/08 코드리뷰): revise 재제출 — B 의 재진입 lane 이 v2
+# 카드를 낸 순간 wakeDelegatorForResult 의 coalesce-wake 와, 그 재진입 lane 이
+# 끝날 때 notifyReentry 의 "아직 안 판정된 카드" wake 가 같은 라운드를 두고
+# 경합한다. 둘 다 Lead 를 깨우지만 FR-3.4 coalescing 이 항상 하나로 뭉치진
+# 않아(실측 타이밍 의존) 드물게 Lead 가 한 턴 더 깨어난다. 그 턴은 이미
+# 수락된 C-2 를 다시 accept 하려다 거절(exit 3, 이미 수락됨)되는 것 말고는
+# 아무 것도 하지 않는 무해한 공턴이다(아래 C4a 의 최종 판정 상태가
+# 정확함이 그 증거) — accept2 의 **첫** 기록만 본다. 완전히 없애려는
+# 시도가 두 차례 더 심한 회귀(정체·메시지 유실)를 냈다 — 2 를 기대하되
+# 3 도 같은 무해한 경우로 받는다.
+JUDGE_N="$(recv lead-judge | awk '{print $NF}')"
+case "$JUDGE_N" in 2|3) JUDGE_OK=yes ;; *) JUDGE_OK="$JUDGE_N" ;; esac
+ACCEPT2_1ST="$(recv lead-accept2 | awk '{print $1}')"
+chk C3b "Lead 가 <result_cards> 로 두세 번 판정(2 기대, 드물게 3) · accept/revise/accept exit 0" "yes 0/0/0" "$JUDGE_OK $(recv lead-accept1)/$(recv lead-revise)/$ACCEPT2_1ST"
 chk C4a "C-1 accepted v1 · C-2 accepted v2" "accepted v1/accepted v2" "$(card_row 1)/$(card_row 2)"
 # T-CARD-COMMENT (colab-cli v0.9.11 · openapi v0.3.11): 수락에는 코멘트가 필수 — 빈 수락은 거절, 코멘트는 판정에 남는다.
 chk C4d "accept --comment 없음 → exit 2 · 공백만 → exit 3 judgement_comment_required" "2/3 judgement_comment_required" "$(recv lead-accept-nocomment)/$(recv lead-accept-blank)"

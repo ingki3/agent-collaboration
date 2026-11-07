@@ -29,6 +29,7 @@ import { PanelTabs, type PanelTab } from "./PanelTabs";
 import { CardBoard, boardHead } from "./CardBoard";
 import { LedgerList } from "./LedgerList";
 import { metByName } from "./SessionAside";
+import { goalExcerpt } from "@/lib/cards";
 import { progressSummary, topOp } from "@/lib/completion";
 import { humanDuration } from "@/lib/time";
 import { panelActionsEnabled, type PanelMode } from "@/lib/room-view";
@@ -257,11 +258,11 @@ function WorkOverview(props: WorkPanelProps) {
           )}
         </div>
       )}
-      {/* 제목 줄 — "최근 활동" 줄(바로 위)이나 "미션 목표"(바로 아래)와 같은 문장이면 또 적지 않는다
-          (실사용 요청 2026-10-14: 같은 긴 문장이 한 칸에 세 번까지 보였다 — 미션을 메시지에서 열면
-          title 이 goal 의 복사본이라 흔하다). 상태 배지는 그 자리에 그대로 둔다. */}
+      {/* 제목 줄 — 서버가 goal 에서 짧은 제목을 뽑으므로(openWork shortTitleOf, 실사용 요청 2026-11-07) title 은 이제
+          goal 과 거의 늘 다른, 훑어볼 수 있는 한 줄이다. "최근 활동" 줄(바로 위)만 그 제목을 이미 인용했으므로
+          거기선 또 적지 않는다. 상태 배지는 그 자리에 그대로 둔다. */}
       <div className="work-panel__title">
-        {mode.kind !== "recent" && work.title.trim() !== work.goal.trim() && <b data-testid="work-title">{work.title}</b>}
+        {mode.kind !== "recent" && <b data-testid="work-title">{work.title}</b>}
         <Badge kind="work" value={work.status} size="sm" data-testid="work-status" />
       </div>
       <dl className="aside__dl">
@@ -272,7 +273,7 @@ function WorkOverview(props: WorkPanelProps) {
         </dd>
       </dl>
       <h3 className="aside__h">{WORK_PANEL.goal}</h3>
-      <p className="aside__goal" data-testid="work-goal">{work.goal}</p>
+      <GoalText goal={work.goal} />
       {work.acceptance_criteria.length > 0 && (
         <ul className="aside__list">
           {work.acceptance_criteria.map((c, i) => <li key={i}>{c}</li>)}
@@ -326,6 +327,22 @@ function WorkOverview(props: WorkPanelProps) {
       </p>
       {!closed && actions}
     </section>
+  );
+}
+
+/** 짧으면 「미션 목표」 밑에 그대로. 길면 요약 한 줄(GitHub 이슈·Jira 설명 칸처럼) + 「전체 보기」로 접는다(실사용 요청 2026-11-07). */
+const GOAL_EXCERPT_MAX = 120;
+function GoalText({ goal }: { goal: string }) {
+  const [open, setOpen] = useState(false);
+  const isLong = goal.trim().length > GOAL_EXCERPT_MAX;
+  if (!isLong) return <p className="aside__goal" data-testid="work-goal">{goal}</p>;
+  return (
+    <>
+      <p className="aside__goal" data-testid="work-goal">{open ? goal : goalExcerpt(goal, GOAL_EXCERPT_MAX)}</p>
+      <button type="button" className="aside__link" onClick={() => setOpen((o) => !o)} data-testid="work-goal-toggle">
+        {open ? WORK_PANEL.goal_less : WORK_PANEL.goal_more}
+      </button>
+    </>
   );
 }
 

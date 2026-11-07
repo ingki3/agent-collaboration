@@ -451,7 +451,7 @@ func (s *Server) openWork(ctx context.Context, tx pgx.Tx, a *rooms.Access, u *ge
 	if goal == "" {
 		errs = append(errs, apperr.Field("goal", "required", "목표를 입력해 주세요"))
 	}
-	title := firstLineOf(goal)
+	title := shortTitleOf(goal)
 	if in.Title != nil && strings.TrimSpace(*in.Title) != "" {
 		title = strings.TrimSpace(*in.Title)
 	}
@@ -838,6 +838,30 @@ func firstLineOf(s string) string {
 		s = string(r[:200])
 	}
 	return s
+}
+
+// shortTitleMaxRunes bounds the title openWork derives from goal when none is
+// given — git's ~50-char commit-subject convention, chosen to make the title
+// a real skimmable headline rather than the field's 200-rune ceiling.
+const shortTitleMaxRunes = 50
+
+// shortTitleOf derives a GitHub/Jira-issue-style headline for a mission
+// opened without an explicit title (실사용 요청 2026-11-07 — 「미션 표시가 너무
+// 복잡하다」). firstLineOf alone still returns the WHOLE goal when it is one
+// long line with no break, which left title indistinguishable from goal and
+// WorkPanel hid the title row entirely (work.title == work.goal, #443 무렵
+// 관측). Clipping further, at a word boundary, keeps title short even then.
+func shortTitleOf(goal string) string {
+	s := firstLineOf(goal)
+	r := []rune(s)
+	if len(r) <= shortTitleMaxRunes {
+		return s
+	}
+	cut := r[:shortTitleMaxRunes]
+	if i := strings.LastIndexAny(string(cut), " \t"); i > 0 {
+		cut = []rune(string(cut)[:i])
+	}
+	return strings.TrimRight(string(cut), " \t") + "…"
 }
 
 // ---------------------------------------------------------------------------
