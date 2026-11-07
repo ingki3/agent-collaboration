@@ -197,15 +197,55 @@ func (s *Service) wakeDelegatorForResult(ctx context.Context, tx pgx.Tx, tc task
 	// case that needs an actual new wake-up, hop and all.
 	requester := uuid.Nil
 	ids := []uuid.UUID{c.ID}
+	trigger := msgID
 	if c.DelegatorTaskID != nil {
 		requester = *c.DelegatorTaskID
-		if group, _, err := groupResultCards(ctx, tx, requester); err != nil {
+		// A raw card bubble as the trigger looks like nothing a delegator (real
+		// agent OR this repo's own test fixtures) recognizes as "the group is
+		// done" — fixtures/agent.sh and the real PRD flow both branch on seeing
+		// the join's exact phrase in <trigger> (실사용 e2e 73_scenario_b 재현:
+		// PM 의 유일한 분기가 "위임한 작업이 모두 끝났습니다" 를 트리거에서 찾는
+		// 것인데, 카드 말풍선이 트리거라 못 찾아 QA 멘션을 건너뛰고 "확인했습니다"
+		// 로 빠졌다 — 합류 메시지는 방에 떴지만 그건 트리거가 아니었다). Post the
+		// same phrase this group's eventual formal join would use, and make
+		// THAT the trigger — the formal join, if it still fires later once
+		// lanes actually end, is the one this dedups via cards_notified_at.
+		//
+		// But only the FIRST time: a revise's re-submission reaches this same
+		// idle/no-pending-sibling branch again later, and "위임한 작업이 모두
+		// 끝났습니다" a second time for the same group is simply false — the
+		// group already finished once (실사용 e2e 101_task_cards 재현, "합류
+		// 묶음 1건" 이 2건으로 깨졌다). cards_notified_at (set below, once)
+		// doubles as that "already told the group is done" marker.
+		var alreadyNotified bool
+		if err := tx.QueryRow(ctx, `SELECT cards_notified_at IS NOT NULL FROM task WHERE id = $1`, requester).Scan(&alreadyNotified); err != nil {
 			return err
-		} else if len(group) > 0 {
-			ids = group
 		}
+		var body string
+		if alreadyNotified {
+			body = "요청하신 작업이 끝났습니다."
+			if res := cards.ParseResult(c.Result); res != nil {
+				body += fmt.Sprintf("\n결과 카드: %s v%d — 기준 %d/%d 충족", c.Label(), c.Version, res.MetCount, len(c.Criteria))
+			}
+		} else {
+			lines := ""
+			if group, l, err := groupResultCards(ctx, tx, requester); err != nil {
+				return err
+			} else if len(group) > 0 {
+				ids, lines = group, l
+			}
+			body = "위임한 작업이 모두 끝났습니다.\n"
+			if lines != "" {
+				body += "\n결과 카드:\n" + lines
+			}
+		}
+		posted, err := s.SystemPost(ctx, tx, tc.sessionID, body)
+		if err != nil {
+			return err
+		}
+		trigger = posted
 	}
-	woken, err := s.wakeTask(ctx, tx, tc.sessionID, tc.wsID, tc.director, tc.agentID, c.DelegatorID, submittingTaskID, requester, msgID, "", now)
+	woken, err := s.wakeTask(ctx, tx, tc.sessionID, tc.wsID, tc.director, tc.agentID, c.DelegatorID, submittingTaskID, requester, trigger, "", now)
 	if err != nil {
 		return err
 	}

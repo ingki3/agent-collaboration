@@ -562,6 +562,26 @@ func (s *Service) maybeFireJoin(ctx context.Context, tx pgx.Tx, sessionID, wsID 
 	if _, err := tx.Exec(ctx, `UPDATE task SET join_fired_at = $2, updated_at = $2 WHERE id = $1`, delegTask, now); err != nil {
 		return false, err
 	}
+	if cardsNotified != nil && unanswered == 0 {
+		// wakeDelegatorForResult already posted this group's one bundle early
+		// (when the last card arrived before any lane had formally ended) and
+		// used it as the delegator's trigger — this lane finishing now is
+		// just the formal confirmation, not new information worth a SECOND
+		// "위임한 작업이 모두 끝났습니다" (실사용 e2e 73_scenario_b·101_task_cards
+		// 재현: 두 번째 묶음이 뜨면 "합류 묶음 1건" 류 단언이 깨진다). A child
+		// left unanswered still needs the real body/wake below — cards alone
+		// never carry that.
+		resultCards, _, err := groupResultCards(ctx, tx, delegTask)
+		if err != nil {
+			return false, err
+		}
+		if woken, activeStatus, err := activeTaskFor(ctx, tx, sessionID, delegAgent); err != nil {
+			return false, err
+		} else if activeStatus == "queued" {
+			return true, attachResultCards(ctx, tx, woken, resultCards)
+		}
+		return true, nil
+	}
 	body := "위임한 작업이 모두 끝났습니다.\n"
 	for _, c := range children {
 		body += "- " + c.name + ": " + c.status
@@ -655,13 +675,26 @@ func (s *Service) notifyReentry(ctx context.Context, tx pgx.Tx, sessionID, wsID,
 	}
 	var authorType string
 	var authorID, authorTask *uuid.UUID
-	err := tx.QueryRow(ctx, `SELECT author_type::text, author_id, source_task_id FROM message WHERE id = $1`, *triggerMsg).
-		Scan(&authorType, &authorID, &authorTask)
+	var cardRole *string
+	err := tx.QueryRow(ctx, `SELECT author_type::text, author_id, source_task_id, card_role FROM message WHERE id = $1`, *triggerMsg).
+		Scan(&authorType, &authorID, &authorTask, &cardRole)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil
 	}
 	if err != nil {
 		return err
+	}
+	// A result-card bubble is a REPORT, not a request — wakeDelegatorForResult
+	// reuses it as the delegator's own woken task's trigger (no extra chat
+	// line), so when THAT task's own lane later ends with no delegator of its
+	// own (the common root-lane case), this message's author would otherwise
+	// look like "whoever requested this work" and get woken right back for
+	// having merely reported (실사용 e2e 100_lane_end_join 재현: Beta 가 카드를
+	// 내고 Lead 가 그걸로 깨어난 뒤 턴을 끝내자, Beta 가 "요청하신 작업이
+	// 끝났습니다" 로 다시 깨어나 lane 이 재진입했다). Treat it like a system
+	// trigger instead — same fallback the join bundle's own trigger gets.
+	if cardRole != nil && *cardRole == "result" {
+		authorType = "system"
 	}
 	switch {
 	case authorType == "agent" && authorID != nil:
