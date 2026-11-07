@@ -297,7 +297,7 @@ func (s *Service) AfterLaneEnded(ctx context.Context, e tasks.LaneEnd) error {
 		if delegTask == nil {
 			return nil
 		}
-		if _, err := s.maybeFireJoin(ctx, tx, c.sessionID, c.wsID, c.director, c.agentID, e.TaskID, *delegTask, now); err != nil {
+		if _, err := s.maybeFireJoin(ctx, tx, c.sessionID, c.wsID, c.director, c.agentID, e.TaskID, *delegTask, false, now); err != nil {
 			return err
 		}
 	default:
@@ -436,7 +436,7 @@ func (s *Service) recoverJoin(ctx context.Context, delegTask, lastChildTask uuid
 	// is set afterwards", which a sibling's late hook firing between an early
 	// check and the lock also makes true (a false positive in the count and
 	// in join_recovered). No early check is needed for correctness either.
-	fired, err := s.maybeFireJoin(ctx, tx, c.sessionID, c.wsID, c.director, c.agentID, lastChildTask, delegTask, now)
+	fired, err := s.maybeFireJoin(ctx, tx, c.sessionID, c.wsID, c.director, c.agentID, lastChildTask, delegTask, false, now)
 	if err != nil {
 		return false, err
 	}
@@ -477,6 +477,7 @@ func (s *Service) afterLaneDone(ctx context.Context, tx pgx.Tx, sessionID, wsID,
 	// the group was complete — join_fired_at stayed null and FR-6.5's bundle
 	// was lost silently. It is the easiest order to hit, because E3-05 exists
 	// to make the delegator answer the question FAST.
+	reentryRan := false
 	if reentry > 0 || delegTask == nil {
 		// The re-entry's author gets told. Leaving it to the agent's prompt
 		// means QA never learns Frontend produced a new diff (리뷰#04-5).
@@ -485,14 +486,21 @@ func (s *Service) afterLaneDone(ctx context.Context, tx pgx.Tx, sessionID, wsID,
 		if err := s.notifyReentry(ctx, tx, sessionID, wsID, laneID, agentID, taskID, triggerMsg, director, now); err != nil {
 			return err
 		}
+		reentryRan = true
 	}
 	if delegTask == nil {
 		return nil
 	}
 	// Both notices can land on the same delegator. That is not two turns:
 	// wake() coalesces onto the lane's queued task (FR-3.4), so the delegator
-	// wakes once with both messages.
-	_, err := s.maybeFireJoin(ctx, tx, sessionID, wsID, director, agentID, taskID, *delegTask, now)
+	// wakes once with both messages — reentryRan tells maybeFireJoin whether
+	// notifyReentry (just above) may already be the reason a queued task
+	// exists, so it knows NOT to treat that task as a hop-free freebie (its
+	// own activeTaskFor check assumes the only thing that could have queued
+	// the delegator before it ran is wakeDelegatorForResult — true only when
+	// notifyReentry did not also just run this same call, 코드리뷰 2026-11-07
+	// TestG5JoinFiresWhenReenteredLaneEndsLast).
+	_, err := s.maybeFireJoin(ctx, tx, sessionID, wsID, director, agentID, taskID, *delegTask, reentryRan, now)
 	return err
 }
 
@@ -505,7 +513,7 @@ func (s *Service) afterLaneDone(ctx context.Context, tx pgx.Tx, sessionID, wsID,
 // agent→agent hop from that child to the delegator (S-76), and the pair it
 // forms with the delegation that created the child is what
 // max_pair_roundtrips counts.
-func (s *Service) maybeFireJoin(ctx context.Context, tx pgx.Tx, sessionID, wsID uuid.UUID, director *uuid.UUID, from, waker, delegTask uuid.UUID, now time.Time) (bool, error) {
+func (s *Service) maybeFireJoin(ctx context.Context, tx pgx.Tx, sessionID, wsID uuid.UUID, director *uuid.UUID, from, waker, delegTask uuid.UUID, reentryRan bool, now time.Time) (bool, error) {
 	var delegAgent uuid.UUID
 	var fired *time.Time
 	if err := tx.QueryRow(ctx, `SELECT agent_id, join_fired_at FROM task WHERE id = $1 FOR UPDATE`, delegTask).
@@ -583,9 +591,29 @@ func (s *Service) maybeFireJoin(ctx context.Context, tx pgx.Tx, sessionID, wsID 
 	if err != nil {
 		return false, err
 	}
-	woken, err := s.wakeTask(ctx, tx, sessionID, wsID, director, from, delegAgent, waker, delegTask, msgID, "", now)
+	// If the delegator is ALREADY queued AND notifyReentry did NOT just run
+	// (reentryRan) — meaning the only thing that could have queued them
+	// before this point is wakeDelegatorForResult, moments earlier, for the
+	// very card this bundle also carries — this join is the same round-trip,
+	// not a new one: attach to that task directly instead of calling wakeTask
+	// again. wakeTask's judgeHop fires on every call whether or not it ends
+	// up coalescing, so calling it here too would double-count one report as
+	// two FR-3.5 hops (실사용 코드리뷰 2026-11-07, session_hop 실측: 단일 child 가
+	// 카드를 내고 바로 턴을 끝내는, 흔한 패턴에서 재현됨). When notifyReentry DID
+	// just run, any queued task it finds is that call's OWN fresh wake-up —
+	// genuinely separate information (a re-entry report, not this card), so
+	// it keeps its own hop (TestG5JoinFiresWhenReenteredLaneEndsLast: S-31's
+	// re-entered-lane-ends-the-group case needs both). A delegator that is
+	// merely "running" (not queued) also keeps the existing behaviour —
+	// nothing woke it for this round yet, so this notice is the one real hop.
+	woken, activeStatus, err := activeTaskFor(ctx, tx, sessionID, delegAgent)
 	if err != nil {
 		return false, err
+	}
+	if reentryRan || activeStatus != "queued" {
+		if woken, err = s.wakeTask(ctx, tx, sessionID, wsID, director, from, delegAgent, waker, delegTask, msgID, "", now); err != nil {
+			return false, err
+		}
 	}
 	if err := attachResultCards(ctx, tx, woken, resultCards); err != nil {
 		return false, err
@@ -595,7 +623,23 @@ func (s *Service) maybeFireJoin(ctx context.Context, tx pgx.Tx, sessionID, wsID 
 
 // notifyReentry tells whoever caused the work that it is finished. A human
 // author gets an inbox item; an agent author gets a task — unless the lane's
-// own messages already woke that agent (requesterAlreadyWoken, T-FIX-B).
+// own messages already woke that agent (requesterAlreadyWoken, T-FIX-B) AND
+// there is no result card of theirs still waiting on a judgement.
+//
+// That second condition is load-bearing (실사용 사고 2026-11-06/07, 최대 10시간
+// 두 번 방치): `cards.StoreResult` writes the result bubble with a direct
+// INSERT that never goes through Decide()/routeTrigger — a card being
+// `result_submitted` creates no task for the delegator by itself, ever. The
+// ONLY place that can still catch it is here, when the assignee's lane ends.
+// But requesterAlreadyWoken only asks whether the delegator's lane got SOME
+// task since the delegation — a courtesy "다 했습니다" mention the assignee
+// posted BEFORE calling card_report already satisfies it, so the real,
+// still-unjudged card that arrives seconds later was silently swallowed:
+// the delegator's already-running task glimpsed it in its own room reads at
+// best, with no `<result_cards>` prompt telling it to act, and no task ever
+// got created once its turn ended. A pending card for this exact author
+// must always get through, whether or not they were "already woken" for
+// something else.
 func (s *Service) notifyReentry(ctx context.Context, tx pgx.Tx, sessionID, wsID, laneID, from, waker uuid.UUID, triggerMsg *uuid.UUID, director *uuid.UUID, now time.Time) error {
 	if triggerMsg == nil {
 		return nil
@@ -616,22 +660,24 @@ func (s *Service) notifyReentry(ctx context.Context, tx pgx.Tx, sessionID, wsID,
 		if authorTask != nil {
 			requester = *authorTask
 		}
-		if woken, err := requesterAlreadyWoken(ctx, tx, laneID, *authorID, *triggerMsg); err != nil {
-			return err
-		} else if woken {
-			return nil
-		}
 		prefix := "요청하신 작업이 끝났습니다."
 		var resultCards []uuid.UUID
-		if c, err := cards.OfLane(ctx, tx, laneID); err != nil {
+		c, err := cards.OfLane(ctx, tx, laneID)
+		if err != nil {
 			return err
-		} else if c != nil && c.Status == cards.ResultSubmitted && c.DelegatorID == *authorID {
+		}
+		pending := c != nil && c.Status == cards.ResultSubmitted && c.DelegatorID == *authorID
+		if pending {
 			// A revise's re-entry ended with a new result: the delegator
 			// judges it again (<result_cards>).
 			if res := cards.ParseResult(c.Result); res != nil {
 				prefix += fmt.Sprintf("\n결과 카드: %s v%d — 기준 %d/%d 충족", c.Label(), c.Version, res.MetCount, len(c.Criteria))
 			}
 			resultCards = []uuid.UUID{c.ID}
+		} else if woken, err := requesterAlreadyWoken(ctx, tx, laneID, *authorID, *triggerMsg); err != nil {
+			return err
+		} else if woken {
+			return nil
 		}
 		woken, err := s.wakeTask(ctx, tx, sessionID, wsID, director, from, *authorID, waker, requester, *triggerMsg, prefix, now)
 		if err != nil {
@@ -708,6 +754,26 @@ func requesterAlreadyWoken(ctx context.Context, tx pgx.Tx, laneID, requester, re
 func (s *Service) wake(ctx context.Context, tx pgx.Tx, sessionID, wsID uuid.UUID, director *uuid.UUID, from, agentID, waker, requester, triggerMsg uuid.UUID, prefix string, now time.Time) error {
 	_, err := s.wakeTask(ctx, tx, sessionID, wsID, director, from, agentID, waker, requester, triggerMsg, prefix, now)
 	return err
+}
+
+// activeTaskFor is the agent's currently live (running or queued) task in
+// this session, if any — uuid.Nil/"" when none. Server-raised wake-ups
+// (wakeDelegatorForResult, maybeFireJoin) read it to decide whether this
+// round already has a hop coming: wakeTask's judgeHop fires on every call
+// regardless of whether it ends up coalescing onto an existing queued task,
+// so calling it twice for one logical "child reports back" event — once when
+// a result is submitted, again moments later when that child's lane/group
+// finishes — double-counts FR-3.5's hop history (실사용 코드리뷰 2026-11-07,
+// session_hop 실측으로 재현).
+func activeTaskFor(ctx context.Context, tx pgx.Tx, sessionID, agentID uuid.UUID) (id uuid.UUID, status string, err error) {
+	err = tx.QueryRow(ctx, `
+		SELECT id, status::text FROM task
+		WHERE session_id = $1 AND agent_id = $2 AND status IN ('running', 'queued')
+		ORDER BY created_at DESC LIMIT 1`, sessionID, agentID).Scan(&id, &status)
+	if errors.Is(err, pgx.ErrNoRows) {
+		return uuid.Nil, "", nil
+	}
+	return id, status, err
 }
 
 // wakeTask is wake, answering the task that will carry the wake-up (the

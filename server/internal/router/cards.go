@@ -100,6 +100,9 @@ func (s *Service) SubmitResult(ctx context.Context, taskID uuid.UUID, attempt in
 	if err != nil {
 		return nil, err
 	}
+	if err := s.wakeDelegatorForResult(ctx, tx, tc, c, taskID, msgID, now); err != nil {
+		return nil, err
+	}
 	if attempt < 1 {
 		attempt = 1
 	}
@@ -117,7 +120,66 @@ func (s *Service) SubmitResult(ctx context.Context, taskID uuid.UUID, attempt in
 	if err := tx.Commit(ctx); err != nil {
 		return nil, err
 	}
+	if s.Notifier != nil {
+		s.Notifier.Notify()
+	}
 	return out, nil
+}
+
+// wakeDelegatorForResult makes sure the card's delegator ends up with the
+// just-submitted result on its <result_cards> (PRD FR-3.8 4) — without
+// double-counting the hop FR-3.5 already gives this report through whatever
+// ELSE wakes the delegator for the same round (an ordinary mention the
+// assignee's turn also posts, or the lane's eventual end via
+// maybeFireJoin/notifyReentry).
+//
+// cards.StoreResult writes the result bubble with a direct INSERT that never
+// reaches Decide()/routeTrigger (no mention link, no routing) — submitting a
+// result otherwise creates no task for the delegator by itself, ever
+// (실사용 사고 2026-11-06/07, 최대 10시간 두 번 방치). An earlier version of this
+// fix called wakeTask unconditionally, which calls judgeHop every time
+// (service.go routeTrigger's "every trigger is judged" is the same rule) —
+// for the common case where the assignee's turn ALSO posts an ordinary
+// mention in the same breath, that counted the one round-trip as two hops
+// and broke FR-3.5's pair/chain-depth accounting (TestS76/TestS78...,
+// 코드리뷰 2026-11-07). The fix: only call wakeTask — a genuinely NEW hop —
+// when nothing else is going to carry the card to the delegator right now.
+//
+// The idle branch below still has a twin outside this function: if the
+// delegator's whole GROUP finishes moments later (the common
+// "one child, reports and ends its turn" shape), maybeFireJoin would see
+// this call's queued task and, without its own matching check, hop it
+// again for the same round — fixed there via the same activeTaskFor.
+func (s *Service) wakeDelegatorForResult(ctx context.Context, tx pgx.Tx, tc taskCtx, c *cards.Row, submittingTaskID, msgID uuid.UUID, now time.Time) error {
+	activeID, activeStatus, err := activeTaskFor(ctx, tx, tc.sessionID, c.DelegatorID)
+	if err != nil {
+		return err
+	}
+	switch activeStatus {
+	case "queued":
+		// Already going to run (coalescing would land here anyway) — hang
+		// the card on it directly, no extra hop.
+		return attachResultCards(ctx, tx, activeID, []uuid.UUID{c.ID})
+	case "running":
+		// Mid-turn already. Its own report (if any) hopped this round, or —
+		// if the assignee's lane keeps running past this submission with no
+		// accompanying mention — the lane's eventual end still reaches the
+		// delegator via maybeFireJoin/notifyReentry, both card-aware. Only a
+		// lane that both skips the mention AND never ends again would miss
+		// this; narrower than the bug this fixes, left as a follow-up.
+		return nil
+	}
+	// Idle: nothing else is ever going to tell the delegator. This is the
+	// one case that needs an actual new wake-up, hop and all.
+	requester := uuid.Nil
+	if c.DelegatorTaskID != nil {
+		requester = *c.DelegatorTaskID
+	}
+	woken, err := s.wakeTask(ctx, tx, tc.sessionID, tc.wsID, tc.director, tc.agentID, c.DelegatorID, submittingTaskID, requester, msgID, "", now)
+	if err != nil {
+		return err
+	}
+	return attachResultCards(ctx, tx, woken, []uuid.UUID{c.ID})
 }
 
 func fillEvidenceLabels(ctx context.Context, tx pgx.Tx, r *cards.Result) {
