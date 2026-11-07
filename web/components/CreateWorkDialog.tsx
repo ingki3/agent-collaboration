@@ -31,7 +31,7 @@ import { useAuth } from "@/lib/auth/AuthContext";
 import { draftNames, fromCompletionCondition, toCompletionCondition, type ConditionDraft } from "@/lib/completion";
 import { conditionSentence } from "@/lib/wording";
 import {
-  AUTONOMY_TEXT, COMMON, CREATE_WORK, defaultConditionTypes, firstLine, maxConcurrentWorks, openWorkCount, openWorkGate, personName, RUNNING_WORK,
+  AUTONOMY_TEXT, COMMON, CREATE_WORK, defaultConditionTypes, maxConcurrentWorks, openWorkCount, openWorkGate, personName, RUNNING_WORK, shortTitle,
   suggestedAssignee, type RoomParticipant, type Work, type WorkCreate, type WorkProposal,
 } from "@/lib/room-dialogs";
 import { pageItems, type AutonomyLevel, type Member, type Message, type Room, type WorkListItem } from "@/lib/api/types";
@@ -375,7 +375,7 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
             <div className="rd-fold__body">
               <label className="rd-field">
                 <span className="rd-field__label">{CREATE_WORK.title}</span>
-                <input className="input" value={title} maxLength={200} placeholder={firstLine(goal) || CREATE_WORK.title_placeholder} onChange={(e) => setTitle(e.target.value)} data-testid="rd-create-work-name" />
+                <input className="input" value={title} maxLength={200} placeholder={shortTitle(goal) || CREATE_WORK.title_placeholder} onChange={(e) => setTitle(e.target.value)} data-testid="rd-create-work-name" />
                 {fieldErr("title") && <span className="rd-err">{fieldErr("title")}</span>}
               </label>
               <div className="rd-criteria">

@@ -10,7 +10,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   agentInviteGate, AUTONOMY_TEXT, COMMON, CREATE_WORK, defaultConditionTypes, deniedText, directedWork, inviteGate, LINKS, linkGate, losingViewers, openWorkCount,
-  openWorkGate, PARTICIPANTS, PROPOSAL, READS, removeGate, ROOM_ROLE_LABEL, runtimeKindNote, runtimePinned, SETTINGS, settingsGates, showsRoomName, suggestedAssignee, TRANSFER_DIALOG,
+  openWorkGate, PARTICIPANTS, PROPOSAL, READS, removeGate, ROOM_ROLE_LABEL, runtimeKindNote, runtimePinned, SETTINGS, settingsGates, shortTitle, showsRoomName, suggestedAssignee, TRANSFER_DIALOG,
 } from "./room-dialogs";
 import type { Room } from "@/lib/api/types";
 
@@ -229,6 +229,13 @@ describe("판정 — 누르기 전에 말한다", () => {
     expect(suggestedAssignee([{ kind: "agent", id: "a9" }], ["a1"])).toBeNull(); // 방 참여자가 아니면 제시하지 않는다
     expect(suggestedAssignee([{ kind: "user", id: "u1" }, { kind: "agent", id: "a1" }], ["a1"])).toBe("a1");
     expect(openWorkCount([{ status: "active" }, { status: "paused" }, { status: "completing" }, { status: "draft" }, { status: "completed" }] as never[])).toBe(3);
+  });
+
+  it("title 칸 placeholder — 서버 shortTitleOf 와 같은 규칙으로 짧게 뽑는다(길면 50자에서 낱말 경계로 접음)", () => {
+    expect(shortTitle("릴리스 노트 정리\n세부는 나중에")).toBe("릴리스 노트 정리");
+    const long = "사용자들이 자신의 에이전트를 보내서 에이전트들끼리 자동으로 게임을 하는 플랫폼 예를 들면 바둑 같은 전략 게임을 들 수 있다";
+    expect(shortTitle(long)).toBe("사용자들이 자신의 에이전트를 보내서 에이전트들끼리 자동으로 게임을 하는 플랫폼 예를 들면…");
+    expect(shortTitle(long).length).toBeLessThanOrEqual(51);
   });
 
   it("거부 행 — 방 이름은 originator_left 에서만", () => {

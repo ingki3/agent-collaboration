@@ -657,6 +657,9 @@ export const WORK_PANEL = {
   director: "Director",
   deputy: "deputy",
   goal: "미션 목표",
+  /** 목표가 길 때 접힌 줄 아래 버튼(GoalText) — 펼침·접음 둘 다 한 버튼. */
+  goal_more: "전체 보기",
+  goal_less: "접기",
   progress: "종료 조건 진행률",
   cost: "미션 비용",
   cost_this: "이 미션 ",

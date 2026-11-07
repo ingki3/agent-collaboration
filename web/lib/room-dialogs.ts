@@ -533,6 +533,16 @@ export function openWorkGate(room: RoomGateLike & Pick<Room, "blocked_reason">):
 
 export const firstLine = (s: string) => s.trim().split("\n")[0]?.trim() ?? "";
 
+/** title 칸을 비워 뒀을 때 실제로 저장될 값(서버 `shortTitleOf` 와 같은 규칙 — 자리표시자가 보여 주는 것과 저장되는 것을 맞춘다). */
+const SHORT_TITLE_MAX = 50;
+export function shortTitle(goal: string): string {
+  const s = firstLine(goal);
+  if (s.length <= SHORT_TITLE_MAX) return s;
+  const cut = s.slice(0, SHORT_TITLE_MAX);
+  const i = Math.max(cut.lastIndexOf(" "), cut.lastIndexOf("\t"));
+  return (i > 0 ? cut.slice(0, i) : cut).trimEnd() + "…";
+}
+
 // ── S26 미션 제안 확인 ──────────────────────────────────────────────────
 
 export const PROPOSAL = {
