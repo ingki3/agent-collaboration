@@ -252,3 +252,77 @@ describe("LaneBoard — done·failed 는 기본 접힘(SCREEN §4.6 SCR-C I), �
     expect(screen.getByTestId("lane-paused-layer").textContent).toBe("⏸ 일시정지 · 할 일 예산 · 이 승인은 이 할 일에만 적용됩니다");
   });
 });
+
+// ── 기본 한 줄 칩(UX 단순화, 2026-11) — running·queued·done·failed 는 기본 접힘, blocked·waiting_human·paused 는 그대로 ──
+describe("LaneCard — 기본 한 줄 칩", () => {
+  const COLLAPSIBLE: LaneStatus[] = ["running", "queued", "done", "failed"];
+  const NOT_COLLAPSIBLE: LaneStatus[] = ["blocked", "waiting_human", "paused"];
+
+  it.each(COLLAPSIBLE)("%s 는 기본으로 접혀 본문이 hidden 이다 — DOM 에는 그대로 있다", (st) => {
+    render(<LaneCard lane={lane(st)} />);
+    const toggle = screen.getByTestId("lane-chip-toggle");
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(toggle.textContent).toBe("펼치기");
+    // 본문은 article 의 직계 자식(.lane__body)에 hidden 속성으로 — 지워지지 않는다.
+    const body = screen.getByTestId("lane-card").querySelector(".lane__body");
+    expect(body).not.toBeNull();
+    expect(body!.hasAttribute("hidden")).toBe(true);
+    // 접힌 상태에서도 머리 줄에 한 줄 요약이 보인다.
+    expect(screen.getByTestId("lane-chip-note").textContent).toBe(laneNote(lane(st)));
+  });
+
+  it.each(COLLAPSIBLE)("%s — 펼침 단추를 누르면 hidden 이 풀리고 「접기」로 바뀐다", (st) => {
+    render(<LaneCard lane={lane(st)} />);
+    fireEvent.click(screen.getByTestId("lane-chip-toggle"));
+    const toggle = screen.getByTestId("lane-chip-toggle");
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(toggle.textContent).toBe("접기");
+    const body = screen.getByTestId("lane-card").querySelector(".lane__body");
+    expect(body!.hasAttribute("hidden")).toBe(false);
+    // 펼친 뒤에는 칩의 한 줄 요약이 사라진다(본문 쪽 lane-note 와 중복하지 않는다).
+    expect(screen.queryByTestId("lane-chip-note")).toBeNull();
+  });
+
+  it.each(NOT_COLLAPSIBLE)("%s 는 접지 않는다 — CTA 가 있는 상태라 펼침 단추 자체가 없다", (st) => {
+    render(<LaneCard lane={lane(st)} />);
+    expect(screen.queryByTestId("lane-chip-toggle")).toBeNull();
+    expect(screen.queryByTestId("lane-chip-note")).toBeNull();
+    const body = screen.getByTestId("lane-card").querySelector(".lane__body");
+    expect(body!.hasAttribute("hidden")).toBe(false);
+  });
+
+  it("접힌 칩의 요약은 펼침 단추 클릭이 article 의 onSelect 를 트리거하지 않는다(stopPropagation)", () => {
+    const onSelect = vi.fn();
+    render(<LaneCard lane={lane("running")} onSelect={onSelect} />);
+    fireEvent.click(screen.getByTestId("lane-chip-toggle"));
+    expect(onSelect).not.toHaveBeenCalled();
+    expect(screen.getByTestId("lane-chip-toggle").getAttribute("aria-expanded")).toBe("true");
+  });
+
+  it("running 의 칩 요약은 「지금」 줄이 있으면 그 문장을 쓴다(펼친 뒤와 같은 정보원)", () => {
+    const l = lane("running", { focus: { text: "코너 진입 속도를 줄이는 중", at: "2026-09-06T10:00:30Z", source: "agent" } });
+    render(<LaneCard lane={l} />);
+    expect(screen.getByTestId("lane-chip-note").textContent).toBe("코너 진입 속도를 줄이는 중");
+  });
+
+  it("접힌 머리 줄 어디를 눌러도 펼쳐진다(단추뿐 아니라 — 작은 손잡이만 누르게 하지 않는다)", () => {
+    render(<LaneCard lane={lane("running")} />);
+    fireEvent.click(screen.getByTestId("lane-agent").closest(".lane__head")!);
+    expect(screen.getByTestId("lane-chip-toggle").getAttribute("aria-expanded")).toBe("true");
+    const body = screen.getByTestId("lane-card").querySelector(".lane__body");
+    expect(body!.hasAttribute("hidden")).toBe(false);
+  });
+
+  it("머리 줄 클릭도 article 의 onSelect 를 트리거하지 않는다(stopPropagation)", () => {
+    const onSelect = vi.fn();
+    render(<LaneCard lane={lane("running")} onSelect={onSelect} />);
+    fireEvent.click(screen.getByTestId("lane-agent").closest(".lane__head")!);
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("done 인데 아직 실행 중이면(K-16 cancel 액션) 접힌 칩에도 그 사실이 드러난다", () => {
+    const l = lane("done", { actions: ["cancel"] });
+    render(<LaneCard lane={l} />);
+    expect(screen.getByTestId("lane-chip-note").textContent).toBe("결제 모듈 정리 · 아직 실행 중");
+  });
+});
