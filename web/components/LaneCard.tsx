@@ -13,6 +13,12 @@
  *
  * **`paused`는 `failed`가 아니다**(SCREEN §4.5 C2) — 예산 초과는 오류가 아니라 정책이고 승인하면 같은 경로로 이어간다.
  * **일반 "재시도" 버튼을 두지 않는다**(m6) — 사람은 항상 "다시 지시"로 맥락을 더한다.
+ *
+ * **기본 한 줄 칩(UX 단순화, 2026-11)** — `running`·`queued`·`done`·`failed` 는 사람이 당장 답할 일이 없는 상태라
+ * 기본은 머리 줄(에이전트·배지·한 줄 요약)만 보이고, 본문(브리프·버튼·이력)은 펼쳐야 보인다. **`blocked`·`waiting_human`·
+ * `paused` 는 접지 않는다** — 그 셋은 사람이 당장 할 일이 있는 상태라 CTA 버튼이 클릭 한 번 뒤에 숨으면 안 된다
+ * (SCREEN §4.6 「사람이 할 일 우선」과 같은 원칙). 본문은 DOM 에서 지우지 않고 `hidden` 속성으로만 가린다 — 테스트와
+ * 스크린리더가 구조를 그대로 보되, 시각적으로만 접힌다.
  */
 import { useState } from "react";
 import { renderInline } from "@/lib/markdown";
@@ -26,6 +32,9 @@ import { FocusLine } from "./FocusLine";
 import type { Lane, Task } from "@/lib/api/types";
 
 export type LaneAction = NonNullable<Lane["actions"]>[number];
+
+/** 기본 한 줄 칩으로 접는 상태 — 사람이 당장 답할 일이 없는 넷. `blocked`·`waiting_human`·`paused` 는 CTA 가 있어 접지 않는다. */
+const COLLAPSIBLE: ReadonlySet<Lane["status"]> = new Set(["running", "queued", "done", "failed"]);
 
 export interface LaneCardProps {
   lane: Lane;
@@ -89,13 +98,19 @@ export function laneNote(lane: Lane): string | null {
 export function LaneCard(props: LaneCardProps) {
   const { lane } = props;
   const [openTasks, setOpenTasks] = useState(false);
+  const collapsible = COLLAPSIBLE.has(lane.status);
+  const [expanded, setExpanded] = useState(!collapsible);
   const actions = new Set<LaneAction>(lane.actions ?? []);
   const note = laneNote(lane);
   const reason = props.disabledReason ?? "Director·deputy 만 할 수 있습니다";
+  const doneStillRunning = lane.status === "done" && actions.has("cancel");
 
   // 「지금」 줄(SCREEN v0.19.13 · PRD FR-3.1.5) — 실행 중인 카드는 상태 문구 자리에 lane `focus` 한 줄. 없으면(선언 전 대신 문장도 없는
   // 경우·대기·끝남) 지금 문구 그대로.
   const focus = lane.status === "running" && lane.focus?.text ? lane.focus : null;
+  // 접힌 칩의 한 줄 요약 — 펼친 뒤와 같은 정보원(지금 줄 우선, 없으면 상태 한 줄)을 CSS 한 줄 말줄임으로. done 인데
+  // 아직 실행 중이면(K-16) 그 사실이 「중단」 버튼의 이유라 접힌 채로도 드러나야 한다.
+  const chipNote = focus?.text ?? (doneStillRunning ? `${note ? `${note} · ` : ""}아직 실행 중` : note);
   const btn = (key: LaneAction, label: string, onClick: (() => void) | undefined, primary = false, title?: string) => {
     const allowed = actions.has(key);
     return (
@@ -147,7 +162,6 @@ export function LaneCard(props: LaneCardProps) {
     // `actions` 에 cancel 을 싣는다 — 카드는 서버가 준 목록 그대로 「중단」을 낸다(산출물은 이미 제출됐고 실행만 멈춘다).
     buttons.push(btn("cancel", "중단", props.onCancel && (() => props.onCancel!(lane))));
   }
-  const doneStillRunning = lane.status === "done" && actions.has("cancel");
 
   return (
     <article
@@ -157,73 +171,94 @@ export function LaneCard(props: LaneCardProps) {
       data-status={lane.status}
       onClick={props.onSelect ? () => props.onSelect!(lane) : undefined}
     >
-      <div className="lane__head">
-        <span className="lane__agent" data-testid="lane-agent">@{lane.agent_name ?? "agent"}</span>
-        <Badge kind="lane" value={lane.status} size="sm" />
-        {lane.status === "queued" && lane.queued_reason === "approval_pending" && (
-          // T-QUIET (SCREEN v0.19.14): 승인 대기로 보류된 할 일 — 상태 칩(neutral).
-          <span data-testid="lane-approval-pending">
-            <Badge kind="lane" value="queued" size="sm" tone="neutral" label={ROOM_LEFT.queued_approval_pending} />
-          </span>
+      <div
+        className={`lane__head${collapsible ? " lane__head--toggle" : ""}`}
+        onClick={collapsible ? (e) => { e.stopPropagation(); setExpanded((v) => !v); } : undefined}
+      >
+        <span className="lane__head-main">
+          <span className="lane__agent" data-testid="lane-agent">@{lane.agent_name ?? "agent"}</span>
+          <Badge kind="lane" value={lane.status} size="sm" />
+          {lane.status === "queued" && lane.queued_reason === "approval_pending" && (
+            // T-QUIET (SCREEN v0.19.14): 승인 대기로 보류된 할 일 — 상태 칩(neutral).
+            <span data-testid="lane-approval-pending">
+              <Badge kind="lane" value="queued" size="sm" tone="neutral" label={ROOM_LEFT.queued_approval_pending} />
+            </span>
+          )}
+        </span>
+        {collapsible && !expanded && chipNote && (
+          <span className="lane__chip-note" data-testid="lane-chip-note">{chipNote}</span>
         )}
-      </div>
-      {lane.brief && lane.status !== "done" && (
-        <div className="lane__brief" data-testid="lane-brief">{renderInline(lane.brief)}</div>
-      )}
-      {props.workLabel && <div className="lane__work">{props.workLabel}</div>}
-      {props.queuedReason && lane.status === "queued" ? (
-        <div className="lane__note" data-testid="lane-queued-reason" data-reason={lane.queued_reason ?? undefined}>{props.queuedReason}</div>
-      ) : focus ? (
-        <FocusLine focus={focus} now={props.now} variant="lane" testId="lane-focus" />
-      ) : note ? (
-        <div className="lane__note" data-testid="lane-note" data-status={lane.status}>{note}</div>
-      ) : null}
-      {props.pausedLayer && lane.status === "paused" && (
-        <div className="lane__note" data-testid="lane-paused-layer">
-          <span className="lane__layer">{props.pausedLayer.label}</span>
-          {props.pausedLayer.taskOnly && <span className="lane__quiet" data-testid="lane-task-only"> · {props.pausedLayer.taskOnly}</span>}
-        </div>
-      )}
-      {doneStillRunning && (
-        <div className="lane__note lane__note--info" data-testid="lane-done-running">제출은 끝났지만 실행이 아직 돌고 있습니다 — 「중단」은 그 실행만 멈춥니다</div>
-      )}
-      {props.emptyTurnNote && (
-        <div className="lane__note lane__note--info" data-testid="lane-empty-turn" title={EMPTY_TURN.kind}>
-          <span aria-hidden="true">ⓘ </span>{props.emptyTurnNote}
-        </div>
-      )}
-      <div className="lane__meta">
-        <span data-testid="lane-elapsed">{durationSince(lane.created_at, lane.finished_at, props.now)}</span>
-        {lane.reentry_count > 0 && (
-          <span className="lane__reentry" data-testid="lane-reentry" title="이 서브 미션이 끝났다가 다시 열린 횟수">
-            재진입 {lane.reentry_count}회
-          </span>
-        )}
-        {lane.workdir_ref && <span className="lane__workdir" data-testid="lane-workdir">{lane.workdir_ref}</span>}
-        {lane.has_runtime_session === false && lane.status === "running" && (
-          <span className="lane__cold" data-testid="lane-cold-start" title="이어서 실행할 수 없어 처음부터 시작합니다">콜드 스타트</span>
-        )}
-        {lane.finished_at && <span className="lane__quiet">{relativeTime(lane.finished_at, props.now)}</span>}
-      </div>
-      {buttons.length > 0 && (
-        <div className="lane__actions" data-testid="lane-actions" onClick={(e) => e.stopPropagation()}>
-          {buttons}
-        </div>
-      )}
-      {props.loadTasks && (
-        <div onClick={(e) => e.stopPropagation()}>
+        {collapsible && (
           <button
             type="button"
-            className="msg__link lane__more"
-            aria-expanded={openTasks}
-            onClick={() => setOpenTasks((v) => !v)}
-            data-testid="lane-tasks-toggle"
+            className="msg__link lane__chip-toggle"
+            aria-expanded={expanded}
+            onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+            data-testid="lane-chip-toggle"
           >
-            {openTasks ? "이전 작업 접기" : "이전 작업"}
+            {expanded ? ROOM_LEFT.fold_close : ROOM_LEFT.fold_open}
           </button>
-          {openTasks && <LaneTaskHistory laneId={lane.id} load={props.loadTasks} renderActivity={props.renderTaskActivity} />}
+        )}
+      </div>
+      <div className="lane__body" hidden={collapsible && !expanded ? true : undefined}>
+        {lane.brief && lane.status !== "done" && (
+          <div className="lane__brief" data-testid="lane-brief">{renderInline(lane.brief)}</div>
+        )}
+        {props.workLabel && <div className="lane__work">{props.workLabel}</div>}
+        {props.queuedReason && lane.status === "queued" ? (
+          <div className="lane__note" data-testid="lane-queued-reason" data-reason={lane.queued_reason ?? undefined}>{props.queuedReason}</div>
+        ) : focus ? (
+          <FocusLine focus={focus} now={props.now} variant="lane" testId="lane-focus" />
+        ) : note ? (
+          <div className="lane__note" data-testid="lane-note" data-status={lane.status}>{note}</div>
+        ) : null}
+        {props.pausedLayer && lane.status === "paused" && (
+          <div className="lane__note" data-testid="lane-paused-layer">
+            <span className="lane__layer">{props.pausedLayer.label}</span>
+            {props.pausedLayer.taskOnly && <span className="lane__quiet" data-testid="lane-task-only"> · {props.pausedLayer.taskOnly}</span>}
+          </div>
+        )}
+        {doneStillRunning && (
+          <div className="lane__note lane__note--info" data-testid="lane-done-running">제출은 끝났지만 실행이 아직 돌고 있습니다 — 「중단」은 그 실행만 멈춥니다</div>
+        )}
+        {props.emptyTurnNote && (
+          <div className="lane__note lane__note--info" data-testid="lane-empty-turn" title={EMPTY_TURN.kind}>
+            <span aria-hidden="true">ⓘ </span>{props.emptyTurnNote}
+          </div>
+        )}
+        <div className="lane__meta">
+          <span data-testid="lane-elapsed">{durationSince(lane.created_at, lane.finished_at, props.now)}</span>
+          {lane.reentry_count > 0 && (
+            <span className="lane__reentry" data-testid="lane-reentry" title="이 서브 미션이 끝났다가 다시 열린 횟수">
+              재진입 {lane.reentry_count}회
+            </span>
+          )}
+          {lane.workdir_ref && <span className="lane__workdir" data-testid="lane-workdir">{lane.workdir_ref}</span>}
+          {lane.has_runtime_session === false && lane.status === "running" && (
+            <span className="lane__cold" data-testid="lane-cold-start" title="이어서 실행할 수 없어 처음부터 시작합니다">콜드 스타트</span>
+          )}
+          {lane.finished_at && <span className="lane__quiet">{relativeTime(lane.finished_at, props.now)}</span>}
         </div>
-      )}
+        {buttons.length > 0 && (
+          <div className="lane__actions" data-testid="lane-actions" onClick={(e) => e.stopPropagation()}>
+            {buttons}
+          </div>
+        )}
+        {props.loadTasks && (
+          <div onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              className="msg__link lane__more"
+              aria-expanded={openTasks}
+              onClick={() => setOpenTasks((v) => !v)}
+              data-testid="lane-tasks-toggle"
+            >
+              {openTasks ? "이전 작업 접기" : "이전 작업"}
+            </button>
+            {openTasks && <LaneTaskHistory laneId={lane.id} load={props.loadTasks} renderActivity={props.renderTaskActivity} />}
+          </div>
+        )}
+      </div>
     </article>
   );
 }
