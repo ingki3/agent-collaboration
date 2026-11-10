@@ -4,7 +4,10 @@
  *
  * 마법사 1·2·6·7단계가 여기로 왔다. **다이얼로그 하나이고 필수 칸은 goal 하나**다(FR-2A.1). 나머지는 접혀 있고 기본값이 **문장으로** 보인다
  * — 그 문장이 없으면 W-3·W-4 사고(마법사가 강제로 읽히던 것을 아무도 안 읽는다)가 그대로 난다.
- *   - 제목 바로 아래 회색 한 줄: 미션의 정의(SCR-C H — 세 길 모두 같은 문장).
+ *   - 다이얼로그 제목 바로 아래 회색 한 줄: 미션의 정의(SCR-C H — 세 길 모두 같은 문장).
+ *   - **미션 이름(선택)은 goal 바로 아래, 접힌 묶음 밖에 둔다**(실사용 피드백 2026-11 — 「기본값」 안에 숨겨두니 있는지도 몰랐다는 보고).
+ *     미션이 드러나는 곳(칩·미션 패널·lane 의 「미션 〈…〉」 라벨)은 전부 `title` 을 쓰므로, 비워두면 서버가 goal 앞부분을 그대로 잘라
+ *     만드는 것보다 사람이 직접 짧게 적는 쪽이 더 낫다. 그래도 필수는 아니다 — 비우면 자동 생성.
  *   - 담당 에이전트(비어 있음이 기본) → **종료 조건 문장이 바뀐다**: 있으면 「보고서 제출(@담당) 그리고 Director 승인」, 없으면 「Director 승인」
  *     단독 + 이유 한 줄. 메시지에서 열 때 그 메시지가 멘션한 에이전트가 하나뿐이면 **제시하되 사람이 확인한다**.
  *   - 종료 조건을 바꾸면 S6·S7 과 **같은 편집기**(ConditionEditor) — 「에이전트 검토 승인」은 리뷰어 필수(S-84, 서버 422), 사람 관문이 없으면 경고.
@@ -297,6 +300,12 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
             {fieldErr("goal") && <span className="rd-err">{fieldErr("goal")}</span>}
           </label>
 
+          <label className="rd-field">
+            <span className="rd-field__label">{CREATE_WORK.title}</span>
+            <input className="input" value={title} maxLength={200} placeholder={shortTitle(goal) || CREATE_WORK.title_placeholder} onChange={(e) => setTitle(e.target.value)} data-testid="rd-create-work-name" />
+            {fieldErr("title") && <span className="rd-err">{fieldErr("title")}</span>}
+          </label>
+
           <div className="rd-section">
             <label className="rd-field">
               <span className="rd-field__label">{CREATE_WORK.assignee}</span>
@@ -373,11 +382,6 @@ export function CreateWorkDialog({ roomId, mode, messageId, message: given, prop
           <details className="rd-fold" open={edit || undefined} data-testid="rd-create-work-more">
             <summary>{CREATE_WORK.defaults}</summary>
             <div className="rd-fold__body">
-              <label className="rd-field">
-                <span className="rd-field__label">{CREATE_WORK.title}</span>
-                <input className="input" value={title} maxLength={200} placeholder={shortTitle(goal) || CREATE_WORK.title_placeholder} onChange={(e) => setTitle(e.target.value)} data-testid="rd-create-work-name" />
-                {fieldErr("title") && <span className="rd-err">{fieldErr("title")}</span>}
-              </label>
               <div className="rd-criteria">
                 <span className="rd-field__label">{CREATE_WORK.criteria}</span>
                 {criteria.map((c, i) => (
