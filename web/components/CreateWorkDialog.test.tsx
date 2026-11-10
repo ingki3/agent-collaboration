@@ -59,6 +59,20 @@ describe("S21 미션 열기", () => {
     expect(w.completion_condition).toEqual({ op: "and", conditions: [{ type: "user_approval" }] });
   });
 
+  it("제목(선택) 칸은 「기본값」 묶음을 열지 않아도 바로 보인다 — goal 입력해 직접 적을 수 있다(실사용 피드백 2026-11)", async () => {
+    const onOpened = vi.fn();
+    render(<CreateWorkDialog roomId={roomId} mode="new" onOpened={onOpened} onClose={() => {}} />);
+    expect(screen.getByTestId("rd-create-work-more")).not.toHaveAttribute("open");
+    const name = screen.getByTestId("rd-create-work-name");
+    expect(name).toBeVisible();
+    fireEvent.change(screen.getByTestId("rd-create-work-goal"), { target: { value: "결제 실패율 보고서\n표 3개" } });
+    fireEvent.change(name, { target: { value: "결제 실패율" } });
+    waiveDeputy();
+    fireEvent.click(screen.getByTestId("rd-create-work-open"));
+    await waitFor(() => expect(onOpened).toHaveBeenCalled());
+    expect((onOpened.mock.calls[0][0] as Work).title).toBe("결제 실패율");
+  });
+
   it("에이전트가 없으면 담당 자리에 「먼저 초대하세요」 + 참여자 초대 링크(S19)", async () => {
     render(<CreateWorkDialog roomId={roomId} mode="new" onOpened={() => {}} onClose={() => {}} />);
     const none = await screen.findByTestId("rd-create-work-no-agents");
