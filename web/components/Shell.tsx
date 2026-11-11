@@ -14,6 +14,16 @@ import { StreamProvider, useStreamState, useWorkspaceStream } from "@/lib/realti
 import { useRoomsUnreadTotal } from "@/lib/unread";
 import type { StreamEvent } from "@/lib/api/types";
 
+/**
+ * Room 화면(S7, `/rooms/:id`)에서만 내비를 아이콘 레일로 접는다 — 좌(참여자·서브 미션 보드)·가운데·우 3열이
+ * 이미 268+1fr+268 로 꽉 차 있어, 모든 화면 공통인 220px 내비가 그 안에서는 상대적으로 비효율적이다(실사용 제안 2026-11).
+ * 방 목록(`/rooms`)·방 만들기(`/rooms/new`)·설정/참여자/읽음 기록 같은 하위 페이지는 단순 폼·표라 접지 않는다.
+ */
+export function isRoomScreenPath(pathname: string): boolean {
+  const segs = pathname.split("/").filter(Boolean);
+  return segs[0] === "rooms" && segs.length === 2 && segs[1] !== "new";
+}
+
 export function Shell({ children }: { children: React.ReactNode }) {
   const { me, workspace, loading } = useAuth();
 
@@ -71,9 +81,10 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
   const conn = useStreamState() ?? "connecting";
   const roomsUnread = useRoomsUnreadTotal(workspace?.id); // 「방」 옆 안 읽음 합계(v0.19 M4)
   if (!me || !workspace) return null;
+  const railNav = isRoomScreenPath(pathname);
 
   return (
-    <div className="shell">
+    <div className={`shell${railNav ? " shell--rail" : ""}`}>
       <AppNav
         workspaceName={workspace.name}
         current={pathname}
@@ -85,6 +96,7 @@ function ShellFrame({ children }: { children: React.ReactNode }) {
         workspaces={me.workspaces}
         currentWorkspaceId={workspace.id}
         onSelectWorkspace={selectWorkspace}
+        collapsed={railNav}
       />
       <div className="shell__main">
         <ConnectionBanner state={conn} />

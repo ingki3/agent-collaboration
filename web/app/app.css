@@ -54,6 +54,8 @@ button, input, textarea, select { font: inherit; color: inherit; }
 /* 앱 셸 — 상단 바는 없다(§8.5). 내비 옆이 바로 본문이고, 제목은 각 화면의 PageHead 가 쓴다. */
 .shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
 .shell__main { min-width: 0; display: flex; flex-direction: column; }
+/* Room 화면(S7)에서는 내비가 아이콘 레일로 접힌다(`isRoomScreenPath`) — 3열 본문이 이미 꽉 차 있어서다. */
+.shell--rail { grid-template-columns: 56px 1fr; }
 /*
  * 본문 폭(§8.5 "넓은 화면에서 콘텐츠가 좌상단에만 몰리지 않게"):
  * - 카드 목록(.cards)은 가용 폭만큼 열을 늘린다 — 1280px 에서 2~3열, 1920px 에서 4열.

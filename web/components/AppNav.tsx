@@ -27,6 +27,8 @@ export interface AppNavProps {
   workspaces?: { id: string; name: string }[];
   currentWorkspaceId?: string;
   onSelectWorkspace?: (id: string) => void;
+  /** Room 화면에서 아이콘 레일로 접힌 상태(56px) — 라벨·워크스페이스·사용자 칸은 숨기고 아이콘만 남는다. */
+  collapsed?: boolean;
 }
 
 /**
@@ -54,11 +56,12 @@ export function AppNav({
   workspaces,
   currentWorkspaceId,
   onSelectWorkspace,
+  collapsed,
 }: AppNavProps) {
   const items = NAV_ITEMS.filter((i) => i.href !== "/settings" || showSettings);
   const canSwitch = !!workspaces && workspaces.length > 1 && !!onSelectWorkspace;
   return (
-    <nav className="app-nav" aria-label="주 내비게이션" data-testid="app-nav">
+    <nav className={`app-nav${collapsed ? " app-nav--rail" : ""}`} aria-label="주 내비게이션" data-testid="app-nav">
       <div className="app-nav__brand">COLAB</div>
       {canSwitch ? (
         <select
@@ -87,6 +90,7 @@ export function AppNav({
             href={item.href}
             className="app-nav__item"
             aria-current={active ? "page" : undefined}
+            title={collapsed ? item.label : undefined}
             data-testid={`nav-${item.key}`}
           >
             <span className="app-nav__label">

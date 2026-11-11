@@ -25,3 +25,17 @@
 .app-nav__user b { color: var(--ink-2); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* 안 읽음 합계(v0.19 M4) — 할 일(받은 요청)과 구분되게 채움이 아니라 테두리만. 0 이면 그리지 않는다. */
 .app-nav__badge--unread { background: transparent; color: var(--ink); border: 1px solid var(--ink-2); }
+
+/* 아이콘 레일(Room 화면 전용, T-R2) — 라벨·워크스페이스·사용자 칸을 감추고 아이콘만 남긴다. 텍스트는
+   지우지 않고 화면 밖으로 치워 스크린리더에는 그대로 남는다(라벨 hover 는 Link 의 title 이 대신한다). */
+.app-nav--rail { width: 56px; padding: 14px 6px; align-items: center; }
+.app-nav--rail .app-nav__brand,
+.app-nav--rail .app-nav__ws,
+.app-nav--rail .app-nav__ws-select,
+.app-nav--rail .app-nav__user { display: none; }
+.app-nav--rail .app-nav__item { position: relative; width: 40px; justify-content: center; padding: 8px 0; }
+.app-nav--rail .app-nav__label { gap: 0; }
+.app-nav--rail .app-nav__label > span:last-child {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.app-nav--rail .app-nav__badge { position: absolute; top: 2px; right: 2px; min-width: 16px; padding: 0 4px; font-size: var(--fs-meta); }
