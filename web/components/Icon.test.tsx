@@ -49,4 +49,18 @@ describe("AppNav 의 아이콘", () => {
     expect(screen.queryByLabelText("워크스페이스 선택")).toBeNull();
     expect(screen.getByText("A")).toBeTruthy();
   });
+
+  it("collapsed 면 아이콘 레일 — 라벨 텍스트는 지우지 않고 숨기기만, hover 는 title 로", () => {
+    render(<AppNav workspaceName="A" current="/rooms/r1" inboxCount={0} showSettings userName="u" collapsed />);
+    expect(screen.getByTestId("app-nav").className).toContain("app-nav--rail");
+    const link = screen.getByTestId("nav-rooms");
+    expect(link.getAttribute("title")).toBe("방");
+    expect(link.textContent).toContain("방"); // DOM 에는 남아 스크린리더가 읽는다
+  });
+
+  it("collapsed 아니면(기본) 레일 클래스도 title 도 없다", () => {
+    render(<AppNav workspaceName="A" current="/rooms/r1" inboxCount={0} showSettings userName="u" />);
+    expect(screen.getByTestId("app-nav").className).not.toContain("app-nav--rail");
+    expect(screen.getByTestId("nav-rooms").getAttribute("title")).toBeNull();
+  });
 });
