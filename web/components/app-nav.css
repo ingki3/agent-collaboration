@@ -38,4 +38,6 @@
 .app-nav--rail .app-nav__label > span:last-child {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
-.app-nav--rail .app-nav__badge { position: absolute; top: 2px; right: 2px; min-width: 16px; padding: 0 4px; font-size: var(--fs-meta); }
+/* 배지는 아이콘의 바깥 위 모서리에 걸친다 — 아이콘은 40px 항목 안에서 가운데(12~28px)에 있으므로
+   항목의 위·오른쪽 모서리에 그대로 붙이면 아이콘 절반을 덮는다(실측 발견, 2026-11-22). */
+.app-nav--rail .app-nav__badge { position: absolute; top: -4px; right: 0; min-width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; padding: 0 3px; font-size: var(--fs-meta); line-height: 1; }
