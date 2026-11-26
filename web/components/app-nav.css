@@ -8,8 +8,11 @@
 .app-nav__label { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
 .app-nav__label .icon { color: var(--ink-2); }
 .app-nav__item[aria-current="page"] .app-nav__label .icon { color: var(--ink); }
+/* <Link> 는 기본값이 깨끗하지만 레일 계정 메뉴는 <button> 에도 이 클래스를 쓴다(T-R2 리뷰 보완) —
+   버튼 기본 배경·테두리를 지워야 둘이 똑같이 보인다. */
 .app-nav__item { display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 8px 10px; border-radius: 8px; font-size: var(--fs-body); color: var(--ink-2); text-decoration: none; }
+  padding: 8px 10px; border-radius: 8px; font-size: var(--fs-body); color: var(--ink-2); text-decoration: none;
+  appearance: none; background: none; border: 0; width: 100%; text-align: left; cursor: pointer; }
 .app-nav__item:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
 .app-nav__item[aria-current="page"] { background: var(--bg); color: var(--ink); font-weight: 600; border: 1px solid var(--line); }
 /*
@@ -35,9 +38,44 @@
 .app-nav--rail .app-nav__user { display: none; }
 .app-nav--rail .app-nav__item { position: relative; width: 40px; justify-content: center; padding: 8px 0; }
 .app-nav--rail .app-nav__label { gap: 0; }
+/*
+ * 라벨은 레일에서 평소엔 안 보이지만, hover·키보드 focus 때는 아이콘 옆에 툴팁으로 뜬다(AgentChip 의
+ * info-pop 과 같은 패턴 — agent-chip.css:23). title 속성만으로는 마우스 hover 에서만 뜨고 Tab 으로
+ * 포커스만 줬을 때는 아무 라벨도 안 보이는 공백이 있었다(Codex 리뷰 T-R2, 2026-11-25).
+ */
 .app-nav--rail .app-nav__label > span:last-child {
-  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%);
+  width: max-content; max-width: 160px; padding: 4px 8px; border-radius: 6px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  font-size: var(--fs-sub); line-height: 1.4; white-space: nowrap; z-index: 20;
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--ink) 16%, transparent);
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.1s ease;
+}
+.app-nav--rail .app-nav__item:hover .app-nav__label > span:last-child,
+.app-nav--rail .app-nav__item:focus-visible .app-nav__label > span:last-child {
+  opacity: 1; visibility: visible;
 }
 /* 배지는 아이콘의 바깥 위 모서리에 걸친다 — 아이콘은 40px 항목 안에서 가운데(12~28px)에 있으므로
    항목의 위·오른쪽 모서리에 그대로 붙이면 아이콘 절반을 덮는다(실측 발견, 2026-11-22). */
 .app-nav--rail .app-nav__badge { position: absolute; top: -4px; right: 0; min-width: 16px; height: 16px; display: flex; align-items: center; justify-content: center; padding: 0 3px; font-size: var(--fs-meta); line-height: 1; }
+
+/*
+ * 레일 계정 메뉴(T-R2 리뷰 보완) — 워크스페이스 전환·로그아웃이 레일에서 완전히 숨겨져 있던 공백을 메운다.
+ * AgentChip 의 info-pop 과 같이 hover·focus-within 으로만 열리는 가벼운 팝오버. 버튼 자체엔 onClick 이
+ * 없다 — 항목 목록과 똑같이 아이콘+라벨 구조라 위 레일 툴팁 규칙을 그대로 받는다.
+ */
+.app-nav__rail-account { position: relative; }
+.app-nav__rail-account-pop {
+  position: absolute; left: calc(100% + 8px); bottom: 0; width: 200px; z-index: 30;
+  display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 8px;
+  border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--ink) 20%, transparent);
+  opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.1s ease;
+}
+.app-nav__rail-account:hover .app-nav__rail-account-pop,
+.app-nav__rail-account:focus-within .app-nav__rail-account-pop {
+  opacity: 1; visibility: visible; pointer-events: auto;
+}
+.app-nav__rail-account-ws { font-size: var(--fs-card); font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-nav__rail-account-user { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: var(--fs-sub); color: var(--ink-2); }
+.app-nav__rail-account-user b { font-weight: 500; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

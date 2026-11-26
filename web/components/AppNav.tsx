@@ -90,7 +90,6 @@ export function AppNav({
             href={item.href}
             className="app-nav__item"
             aria-current={active ? "page" : undefined}
-            title={collapsed ? item.label : undefined}
             data-testid={`nav-${item.key}`}
           >
             <span className="app-nav__label">
@@ -115,15 +114,63 @@ export function AppNav({
         );
       })}
       <div className="app-nav__spacer" />
-      {userName && (
-        <div className="app-nav__user">
-          <b title={userName}>{userName}</b>
-          {onLogout && (
-            <button type="button" className="btn btn--sm btn--ghost" onClick={onLogout}>
-              로그아웃
+      {collapsed ? (
+        (userName || canSwitch) && (
+          /*
+           * 레일에서는 워크스페이스 전환·로그아웃 칸이 사라지므로(T-R2 리뷰 보완), hover·키보드 focus 로 여는
+           * 계정 메뉴 하나로 같은 기능을 되돌려준다 — AgentChip 의 info-pop(agent-chip.css)과 같은 패턴.
+           */
+          <div className="app-nav__rail-account" data-testid="nav-rail-account">
+            <button type="button" className="app-nav__item" aria-label="계정">
+              <span className="app-nav__label">
+                <Icon name="more" />
+                <span>계정</span>
+              </span>
             </button>
-          )}
-        </div>
+            <div className="app-nav__rail-account-pop">
+              {canSwitch ? (
+                <select
+                  className="select"
+                  value={currentWorkspaceId ?? ""}
+                  onChange={(e) => onSelectWorkspace?.(e.target.value)}
+                  aria-label="워크스페이스 선택"
+                  data-testid="workspace-select-rail"
+                >
+                  {workspaces!.map((w) => (
+                    <option key={w.id} value={w.id}>
+                      {w.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div className="app-nav__rail-account-ws" title={workspaceName}>
+                  {workspaceName}
+                </div>
+              )}
+              {userName && (
+                <div className="app-nav__rail-account-user">
+                  <b title={userName}>{userName}</b>
+                  {onLogout && (
+                    <button type="button" className="btn btn--sm btn--ghost" onClick={onLogout}>
+                      로그아웃
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      ) : (
+        userName && (
+          <div className="app-nav__user">
+            <b title={userName}>{userName}</b>
+            {onLogout && (
+              <button type="button" className="btn btn--sm btn--ghost" onClick={onLogout}>
+                로그아웃
+              </button>
+            )}
+          </div>
+        )
       )}
     </nav>
   );
