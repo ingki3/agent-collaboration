@@ -1,6 +1,6 @@
 /** 아이콘 한 벌(§8.5) — stroke 기반 16px 인라인 SVG, 이모지 없음. 내비 다섯 + 상태 점. */
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/react";
+import { render, screen, within, cleanup } from "@testing-library/react";
 import { Icon, ICON_NAMES } from "./Icon";
 import { AppNav, NAV_ITEMS } from "./AppNav";
 
@@ -50,17 +50,60 @@ describe("AppNav 의 아이콘", () => {
     expect(screen.getByText("A")).toBeTruthy();
   });
 
-  it("collapsed 면 아이콘 레일 — 라벨 텍스트는 지우지 않고 숨기기만, hover 는 title 로", () => {
+  it("collapsed 면 아이콘 레일 — 라벨 텍스트는 지우지 않고 DOM 에 남긴다(hover·키보드 focus 로 보여줄 몫)", () => {
     render(<AppNav workspaceName="A" current="/rooms/r1" inboxCount={0} showSettings userName="u" collapsed />);
     expect(screen.getByTestId("app-nav").className).toContain("app-nav--rail");
     const link = screen.getByTestId("nav-rooms");
-    expect(link.getAttribute("title")).toBe("방");
+    expect(link.getAttribute("title")).toBeNull(); // 이제 title 이 아니라 CSS 툴팁(hover·:focus-visible)이 라벨을 보여준다
     expect(link.textContent).toContain("방"); // DOM 에는 남아 스크린리더가 읽는다
   });
 
-  it("collapsed 아니면(기본) 레일 클래스도 title 도 없다", () => {
+  it("collapsed 아니면(기본) 레일 클래스가 없다", () => {
     render(<AppNav workspaceName="A" current="/rooms/r1" inboxCount={0} showSettings userName="u" />);
     expect(screen.getByTestId("app-nav").className).not.toContain("app-nav--rail");
-    expect(screen.getByTestId("nav-rooms").getAttribute("title")).toBeNull();
+  });
+
+  it("collapsed + 워크스페이스 둘 이상이면 레일 계정 메뉴로 전환·로그아웃 접근을 되돌려준다", () => {
+    const ws = [{ id: "a", name: "A" }, { id: "b", name: "B" }];
+    render(
+      <AppNav
+        workspaceName="A"
+        current="/rooms/r1"
+        inboxCount={0}
+        showSettings
+        userName="사용자"
+        onLogout={() => {}}
+        workspaces={ws}
+        currentWorkspaceId="a"
+        onSelectWorkspace={() => {}}
+        collapsed
+      />
+    );
+    expect(screen.getByTestId("nav-rail-account")).toBeTruthy();
+    expect((screen.getByTestId("workspace-select-rail") as HTMLSelectElement).value).toBe("a");
+    expect(screen.getByText("사용자")).toBeTruthy();
+    expect(screen.getByText("로그아웃")).toBeTruthy();
+  });
+
+  it("collapsed + 워크스페이스 하나면 레일 계정 메뉴는 이름만(선택 상자 없음)", () => {
+    render(
+      <AppNav
+        workspaceName="혼자인방"
+        current="/rooms/r1"
+        inboxCount={0}
+        showSettings
+        userName="사용자"
+        onLogout={() => {}}
+        workspaces={[{ id: "a", name: "혼자인방" }]}
+        currentWorkspaceId="a"
+        onSelectWorkspace={() => {}}
+        collapsed
+      />
+    );
+    const railAccount = screen.getByTestId("nav-rail-account");
+    expect(railAccount).toBeTruthy();
+    expect(screen.queryByTestId("workspace-select-rail")).toBeNull();
+    // workspaceName 은 상단(평소엔 CSS 로 숨는 자리)에도 같이 있어 전역 getByText 는 중복으로 걸린다 — 레일 계정 메뉴 안으로 한정한다.
+    expect(within(railAccount).getByText("혼자인방")).toBeTruthy();
   });
 });
